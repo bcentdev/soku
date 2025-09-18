@@ -32,6 +32,9 @@ enum Commands {
         /// Output directory
         #[arg(short, long, default_value = "dist")]
         outdir: String,
+        /// Disable tree shaking for faster builds
+        #[arg(long)]
+        no_tree_shaking: bool,
     },
     /// Preview production build
     Preview {
@@ -77,7 +80,7 @@ async fn main() -> Result<()> {
 
             simulate_dev_server(port).await?;
         }
-        Commands::Build { root, outdir } => {
+        Commands::Build { root, outdir, no_tree_shaking } => {
             println!("🔨 Ultra Bundler - Production Build");
             println!("═══════════════════════════════════════");
             println!("📁 Input: {}", root);
@@ -85,7 +88,7 @@ async fn main() -> Result<()> {
             println!("🎯 Target: Sub-2s builds");
             println!();
 
-            real_build(&root, &outdir).await?;
+            real_build(&root, &outdir, !no_tree_shaking).await?;
         }
         Commands::Preview { dir, port } => {
             println!("📦 Ultra Bundler - Preview Server");
@@ -134,7 +137,7 @@ async fn simulate_dev_server(port: u16) -> Result<()> {
     Ok(())
 }
 
-async fn real_build(root: &str, outdir: &str) -> Result<()> {
+async fn real_build(root: &str, outdir: &str, enable_tree_shaking: bool) -> Result<()> {
     use std::fs;
     use std::path::Path;
     use oxc_parser::Parser;
@@ -187,51 +190,61 @@ async fn real_build(root: &str, outdir: &str) -> Result<()> {
 
     println!("📦 Found {} JS modules, {} CSS files", js_modules.len(), css_files.len());
 
-    // Initialize Tree Shaker
-    println!("🌳 Initializing tree shaking analysis...");
-    let mut tree_shaker = TreeShaker::new();
+    // Conditional Tree Shaker initialization
+    let (tree_shaker, stats) = if enable_tree_shaking {
+        println!("🌳 Initializing tree shaking analysis...");
+        let mut tree_shaker = TreeShaker::new();
 
-    // First pass: Analyze all modules for imports/exports
-    for js_file in &js_modules {
-        let file_path = js_file.to_string_lossy();
-        let source = fs::read_to_string(js_file)?;
+        // First pass: Analyze all modules for imports/exports
+        for js_file in &js_modules {
+            let file_path = js_file.to_string_lossy();
+            let source = fs::read_to_string(js_file)?;
 
-        println!("🔍 Analyzing module: {}", js_file.file_name().unwrap().to_str().unwrap());
-        tree_shaker.analyze_module(&file_path, &source)?;
-    }
-
-    // Determine entry points (files with 'main' in name or first file)
-    let entry_points: Vec<String> = js_modules.iter()
-        .filter(|path| {
-            let name = path.file_name().unwrap().to_str().unwrap().to_lowercase();
-            name.contains("main") || name.contains("index")
-        })
-        .map(|path| path.to_string_lossy().to_string())
-        .collect();
-
-    // If no clear entry points, use the first file (if any)
-    let entry_points = if entry_points.is_empty() {
-        if !js_modules.is_empty() {
-            vec![js_modules[0].to_string_lossy().to_string()]
-        } else {
-            // No JS modules found, create empty entry points
-            vec![]
+            println!("🔍 Analyzing module: {}", js_file.file_name().unwrap().to_str().unwrap());
+            tree_shaker.analyze_module(&file_path, &source)?;
         }
+
+        // Determine entry points (files with 'main' in name or first file)
+        let entry_points: Vec<String> = js_modules.iter()
+            .filter(|path| {
+                let name = path.file_name().unwrap().to_str().unwrap().to_lowercase();
+                name.contains("main") || name.contains("index")
+            })
+            .map(|path| path.to_string_lossy().to_string())
+            .collect();
+
+        // If no clear entry points, use the first file (if any)
+        let entry_points = if entry_points.is_empty() {
+            if !js_modules.is_empty() {
+                vec![js_modules[0].to_string_lossy().to_string()]
+            } else {
+                // No JS modules found, create empty entry points
+                vec![]
+            }
+        } else {
+            entry_points
+        };
+
+        println!("🎯 Entry points: {:?}", entry_points);
+
+        // Perform tree shaking
+        let _used_exports = tree_shaker.shake(&entry_points)?;
+        let stats = tree_shaker.get_stats();
+
+        println!("{}", stats);
+        (Some(tree_shaker), Some(stats))
     } else {
-        entry_points
+        println!("⚡ Tree shaking disabled - using fast build mode");
+        (None, None)
     };
 
-    println!("🎯 Entry points: {:?}", entry_points);
-
-    // Perform tree shaking
-    let _used_exports = tree_shaker.shake(&entry_points)?;
-    let stats = tree_shaker.get_stats();
-
-    println!("{}", stats);
-
-    // Process JavaScript with oxc and tree shaking
+    // Process JavaScript with oxc and optional tree shaking
     let mut bundled_js = String::new();
-    bundled_js.push_str("// Ultra Bundler - Real Build Output with Tree Shaking\n");
+    if enable_tree_shaking {
+        bundled_js.push_str("// Ultra Bundler - Real Build Output with Tree Shaking\n");
+    } else {
+        bundled_js.push_str("// Ultra Bundler - Real Build Output (Fast Mode)\n");
+    }
     bundled_js.push_str("(function() {\n'use strict';\n\n");
 
     for js_file in &js_modules {
@@ -250,18 +263,32 @@ async fn real_build(root: &str, outdir: &str) -> Result<()> {
                 result.errors.len());
         }
 
-        // Apply tree shaking to generate optimized code
-        let file_path = js_file.to_string_lossy();
-        let optimized_source = tree_shaker.generate_optimized_code(&file_path, &source)?;
+        // Apply optional tree shaking to generate optimized code
+        let processed = if let Some(ref shaker) = tree_shaker {
+            let file_path = js_file.to_string_lossy();
+            let optimized_source = shaker.generate_optimized_code(&file_path, &source)?;
 
-        // Process the optimized source (remove import/export statements for bundling)
-        let processed = optimized_source
-            .lines()
-            .filter(|line| !line.trim().starts_with("import ") && !line.trim().starts_with("export "))
-            .collect::<Vec<_>>()
-            .join("\n");
+            // Process the optimized source (remove import/export statements for bundling)
+            let processed = optimized_source
+                .lines()
+                .filter(|line| !line.trim().starts_with("import ") && !line.trim().starts_with("export "))
+                .collect::<Vec<_>>()
+                .join("\n");
 
-        bundled_js.push_str(&format!("// From: {} (tree-shaken)\n", js_file.file_name().unwrap().to_str().unwrap()));
+            bundled_js.push_str(&format!("// From: {} (tree-shaken)\n", js_file.file_name().unwrap().to_str().unwrap()));
+            processed
+        } else {
+            // Fast mode: simple processing without tree shaking
+            let processed = source
+                .lines()
+                .filter(|line| !line.trim().starts_with("import ") && !line.trim().starts_with("export "))
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            bundled_js.push_str(&format!("// From: {} (fast mode)\n", js_file.file_name().unwrap().to_str().unwrap()));
+            processed
+        };
+
         bundled_js.push_str(&processed);
         bundled_js.push_str("\n\n");
     }
@@ -340,8 +367,12 @@ async fn real_build(root: &str, outdir: &str) -> Result<()> {
     println!("📊 Build Statistics:");
     println!("  • JS modules processed: {}", js_modules.len());
     println!("  • CSS files processed: {}", css_files.len());
-    println!("  • Tree shaking: {:.1}% code reduction", stats.reduction_percentage);
-    println!("  • Exports removed: {}", stats.removed_exports);
+    if let Some(ref tree_stats) = stats {
+        println!("  • Tree shaking: {:.1}% code reduction", tree_stats.reduction_percentage);
+        println!("  • Exports removed: {}", tree_stats.removed_exports);
+    } else {
+        println!("  • Tree shaking: disabled (fast mode)");
+    }
     println!("  • Build time: {:.2?}", build_time);
     println!("  • Output directory: {}", outdir);
 
