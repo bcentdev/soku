@@ -1,0 +1,24 @@
+{
+  "entry_points": ["index.html"],
+  "resolve": {
+    "alias": {
+      "@": "./src",
+      "@utils": "./utils"
+    },
+    "extensions": [".js", ".ts", ".jsx", ".tsx", ".css", ".json"]
+  },
+  "build": {
+    "target": "es2020",
+    "minify": true,
+    "sourcemap": true
+  },
+  "server": {
+    "host": "localhost",
+    "open": true,
+    "cors": true
+  },
+  "define": {
+    "__DEV__": "true",
+    "process.env.NODE_ENV": "\"development\""
+  }
+}
