@@ -2,6 +2,9 @@
 use clap::{Parser, Subcommand};
 use anyhow::Result;
 
+mod tree_shaking;
+use tree_shaking::TreeShaker;
+
 #[derive(Parser)]
 #[command(name = "ultra")]
 #[command(about = "Ultra - The fastest bundler for modern web development")]
@@ -134,7 +137,7 @@ async fn simulate_dev_server(port: u16) -> Result<()> {
 async fn real_build(root: &str, outdir: &str) -> Result<()> {
     use std::fs;
     use std::path::Path;
-    use oxc_parser::{Parser, ParseOptions};
+    use oxc_parser::Parser;
     use oxc_span::SourceType;
     use oxc_allocator::Allocator;
     use lightningcss::{
@@ -163,23 +166,72 @@ async fn real_build(root: &str, outdir: &str) -> Result<()> {
         let path = entry.path();
 
         if path.is_file() {
-            match path.extension().and_then(|s| s.to_str()) {
+            let extension = path.extension().and_then(|s| s.to_str());
+            println!("  📄 Found file: {} (ext: {:?})", path.display(), extension);
+
+            match extension {
                 Some("js") | Some("ts") | Some("jsx") | Some("tsx") => {
+                    println!("    ✅ Adding JS module: {}", path.display());
                     js_modules.push(path);
                 }
                 Some("css") => {
+                    println!("    🎨 Adding CSS file: {}", path.display());
                     css_files.push(path);
                 }
-                _ => {}
+                _ => {
+                    println!("    ⏭️  Skipping: {}", path.display());
+                }
             }
         }
     }
 
     println!("📦 Found {} JS modules, {} CSS files", js_modules.len(), css_files.len());
 
-    // Process JavaScript with oxc
+    // Initialize Tree Shaker
+    println!("🌳 Initializing tree shaking analysis...");
+    let mut tree_shaker = TreeShaker::new();
+
+    // First pass: Analyze all modules for imports/exports
+    for js_file in &js_modules {
+        let file_path = js_file.to_string_lossy();
+        let source = fs::read_to_string(js_file)?;
+
+        println!("🔍 Analyzing module: {}", js_file.file_name().unwrap().to_str().unwrap());
+        tree_shaker.analyze_module(&file_path, &source)?;
+    }
+
+    // Determine entry points (files with 'main' in name or first file)
+    let entry_points: Vec<String> = js_modules.iter()
+        .filter(|path| {
+            let name = path.file_name().unwrap().to_str().unwrap().to_lowercase();
+            name.contains("main") || name.contains("index")
+        })
+        .map(|path| path.to_string_lossy().to_string())
+        .collect();
+
+    // If no clear entry points, use the first file (if any)
+    let entry_points = if entry_points.is_empty() {
+        if !js_modules.is_empty() {
+            vec![js_modules[0].to_string_lossy().to_string()]
+        } else {
+            // No JS modules found, create empty entry points
+            vec![]
+        }
+    } else {
+        entry_points
+    };
+
+    println!("🎯 Entry points: {:?}", entry_points);
+
+    // Perform tree shaking
+    let _used_exports = tree_shaker.shake(&entry_points)?;
+    let stats = tree_shaker.get_stats();
+
+    println!("{}", stats);
+
+    // Process JavaScript with oxc and tree shaking
     let mut bundled_js = String::new();
-    bundled_js.push_str("// Ultra Bundler - Real Build Output\n");
+    bundled_js.push_str("// Ultra Bundler - Real Build Output with Tree Shaking\n");
     bundled_js.push_str("(function() {\n'use strict';\n\n");
 
     for js_file in &js_modules {
@@ -198,14 +250,18 @@ async fn real_build(root: &str, outdir: &str) -> Result<()> {
                 result.errors.len());
         }
 
-        // Simple bundling - in real implementation would use proper AST transformation
-        let processed = source
+        // Apply tree shaking to generate optimized code
+        let file_path = js_file.to_string_lossy();
+        let optimized_source = tree_shaker.generate_optimized_code(&file_path, &source)?;
+
+        // Process the optimized source (remove import/export statements for bundling)
+        let processed = optimized_source
             .lines()
             .filter(|line| !line.trim().starts_with("import ") && !line.trim().starts_with("export "))
             .collect::<Vec<_>>()
             .join("\n");
 
-        bundled_js.push_str(&format!("// From: {}\n", js_file.file_name().unwrap().to_str().unwrap()));
+        bundled_js.push_str(&format!("// From: {} (tree-shaken)\n", js_file.file_name().unwrap().to_str().unwrap()));
         bundled_js.push_str(&processed);
         bundled_js.push_str("\n\n");
     }
@@ -284,6 +340,8 @@ async fn real_build(root: &str, outdir: &str) -> Result<()> {
     println!("📊 Build Statistics:");
     println!("  • JS modules processed: {}", js_modules.len());
     println!("  • CSS files processed: {}", css_files.len());
+    println!("  • Tree shaking: {:.1}% code reduction", stats.reduction_percentage);
+    println!("  • Exports removed: {}", stats.removed_exports);
     println!("  • Build time: {:.2?}", build_time);
     println!("  • Output directory: {}", outdir);
 

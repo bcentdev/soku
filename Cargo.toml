@@ -69,5 +69,8 @@ zstd = "0.13"
 # Memory mapping
 memmap2 = "0.9"
 
+# Regex for parsing
+regex = "1.10"
+
 [dev-dependencies]
 tempfile = "3.8"
