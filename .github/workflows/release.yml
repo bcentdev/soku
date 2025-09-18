@@ -8,6 +8,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   create-release:
     name: Create Release
@@ -26,12 +30,10 @@ jobs:
 
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Ultra v${{ steps.get_version.outputs.version }}
+        tag_name: ${{ github.ref_name }}
+        name: Ultra v${{ steps.get_version.outputs.version }}
         body: |
           ## Ultra v${{ steps.get_version.outputs.version }}
 
@@ -41,7 +43,7 @@ jobs:
           ### 📦 Installation
           ```bash
           # Install from source
-          git clone https://github.com/yourusername/ultra
+          git clone https://github.com/bcentdev/ultra
           cd ultra
           git checkout v${{ steps.get_version.outputs.version }}
           cargo install --path .
@@ -52,14 +54,16 @@ jobs:
           - 3.3x faster than Vite
           - Zero-config bundling with oxc + Lightning CSS
 
-          **Full Changelog**: https://github.com/yourusername/ultra/compare/v${{ steps.get_version.outputs.version }}...HEAD
+          **Full Changelog**: https://github.com/bcentdev/ultra/compare/v${{ steps.get_version.outputs.version }}...HEAD
         draft: false
         prerelease: ${{ contains(steps.get_version.outputs.version, '-') }}
+        generate_release_notes: true
 
   build:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     needs: create-release
+    if: startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
@@ -109,14 +113,10 @@ jobs:
       run: strip target/${{ matrix.target }}/release/ultra
 
     - name: Upload binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: target/${{ matrix.target }}/release/ultra${{ matrix.os == 'windows-latest' && '.exe' || '' }}
-        asset_name: ${{ matrix.asset_name }}
-        asset_content_type: application/octet-stream
+        tag_name: v${{ needs.create-release.outputs.version }}
+        files: target/${{ matrix.target }}/release/ultra${{ matrix.os == 'windows-latest' && '.exe' || '' }}
 
   publish-crate:
     name: Publish to crates.io
