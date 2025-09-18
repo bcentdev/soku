@@ -82,9 +82,6 @@ impl CssProcessor for LightningCssProcessor {
         Ok(bundle)
     }
 
-    fn supports_minification(&self) -> bool {
-        true
-    }
 }
 
 impl LightningCssProcessor {

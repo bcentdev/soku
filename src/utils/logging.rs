@@ -47,9 +47,6 @@ impl Logger {
         debug!("🎨 Processing CSS: {}", name);
     }
 
-    pub fn copied_file(name: &str) {
-        debug!("📄 Copied: {}", name);
-    }
 
     pub fn build_complete(
         js_count: usize,

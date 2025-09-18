@@ -10,7 +10,6 @@ pub trait FileSystemService: Send + Sync {
     async fn read_file(&self, path: &Path) -> Result<String>;
     async fn write_file(&self, path: &Path, content: &str) -> Result<()>;
     async fn create_directory(&self, path: &Path) -> Result<()>;
-    fn file_exists(&self, path: &Path) -> bool;
 }
 
 /// JavaScript/TypeScript processing interface
@@ -26,7 +25,6 @@ pub trait JsProcessor: Send + Sync {
 pub trait CssProcessor: Send + Sync {
     async fn process_css(&self, content: &str, path: &Path) -> Result<String>;
     async fn bundle_css(&self, files: &[PathBuf]) -> Result<String>;
-    fn supports_minification(&self) -> bool;
 }
 
 /// Tree shaking interface
@@ -34,20 +32,10 @@ pub trait CssProcessor: Send + Sync {
 pub trait TreeShaker: Send + Sync {
     async fn analyze_modules(&mut self, modules: &[ModuleInfo]) -> Result<()>;
     async fn shake(&mut self, entry_points: &[String]) -> Result<TreeShakingStats>;
-    async fn optimize_module(&self, module: &ModuleInfo) -> Result<String>;
 }
 
 /// Build service interface
 #[async_trait]
 pub trait BuildService: Send + Sync {
     async fn build(&self, config: &BuildConfig) -> Result<BuildResult>;
-}
-
-/// Cache interface
-#[async_trait]
-pub trait CacheService: Send + Sync {
-    async fn get(&self, key: &str) -> Option<String>;
-    async fn set(&self, key: &str, value: &str) -> Result<()>;
-    async fn invalidate(&self, key: &str) -> Result<()>;
-    async fn clear(&self) -> Result<()>;
 }

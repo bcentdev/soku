@@ -1,5 +1,5 @@
 use crate::core::{interfaces::TreeShaker, models::*};
-use crate::utils::{Result, UltraError, Logger};
+use crate::utils::{Result, Logger};
 use std::collections::{HashMap, HashSet};
 
 pub struct RegexTreeShaker {
@@ -17,16 +17,12 @@ struct ModuleAnalysis {
 #[derive(Debug, Clone)]
 struct ExportInfo {
     name: String,
-    is_default: bool,
-    location: (usize, usize),
 }
 
 #[derive(Debug, Clone)]
 struct ImportInfo {
     name: String,
     source: String,
-    is_default: bool,
-    location: (usize, usize),
 }
 
 impl RegexTreeShaker {
@@ -40,28 +36,24 @@ impl RegexTreeShaker {
     fn analyze_text_based(&self, source: &str, analysis: &mut ModuleAnalysis) -> Result<()> {
         let lines: Vec<&str> = source.lines().collect();
 
-        for (line_num, line) in lines.iter().enumerate() {
+        for (_line_num, line) in lines.iter().enumerate() {
             let trimmed = line.trim();
 
             // Parse import statements
             if trimmed.starts_with("import ") {
-                if let Some(import_info) = self.parse_import_line(trimmed) {
+                if let Some((name, source)) = self.parse_import_line(trimmed) {
                     analysis.imports.push(ImportInfo {
-                        name: import_info.0,
-                        source: import_info.1,
-                        is_default: import_info.2,
-                        location: (line_num * 80, (line_num + 1) * 80),
+                        name,
+                        source,
                     });
                 }
             }
 
             // Parse export statements
             if trimmed.starts_with("export ") {
-                if let Some(export_info) = self.parse_export_line(trimmed) {
+                if let Some(export_name) = self.parse_export_line(trimmed) {
                     analysis.exports.push(ExportInfo {
-                        name: export_info.0,
-                        is_default: export_info.1,
-                        location: (line_num * 80, (line_num + 1) * 80),
+                        name: export_name,
                     });
                 }
             }
@@ -78,48 +70,48 @@ impl RegexTreeShaker {
         Ok(())
     }
 
-    fn parse_import_line(&self, line: &str) -> Option<(String, String, bool)> {
+    fn parse_import_line(&self, line: &str) -> Option<(String, String)> {
         // Handle: import defaultExport from "module"
         if let Ok(re) = regex::Regex::new(r#"import\s+(\w+)\s+from\s+["']([^"']+)["']"#) {
             if let Some(caps) = re.captures(line) {
-                return Some((caps[1].to_string(), caps[2].to_string(), true));
+                return Some((caps[1].to_string(), caps[2].to_string()));
             }
         }
 
         // Handle: import { named } from "module"
         if let Ok(re) = regex::Regex::new(r#"import\s+\{\s*(\w+)\s*\}\s+from\s+["']([^"']+)["']"#) {
             if let Some(caps) = re.captures(line) {
-                return Some((caps[1].to_string(), caps[2].to_string(), false));
+                return Some((caps[1].to_string(), caps[2].to_string()));
             }
         }
 
         // Handle: import * as namespace from "module"
         if let Ok(re) = regex::Regex::new(r#"import\s+\*\s+as\s+(\w+)\s+from\s+["']([^"']+)["']"#) {
             if let Some(caps) = re.captures(line) {
-                return Some((caps[1].to_string(), caps[2].to_string(), false));
+                return Some((caps[1].to_string(), caps[2].to_string()));
             }
         }
 
         None
     }
 
-    fn parse_export_line(&self, line: &str) -> Option<(String, bool)> {
+    fn parse_export_line(&self, line: &str) -> Option<String> {
         // Handle: export default ...
         if line.starts_with("export default") {
-            return Some(("default".to_string(), true));
+            return Some("default".to_string());
         }
 
         // Handle: export const/function/let/var identifier
         if let Ok(re) = regex::Regex::new(r#"export\s+(?:const|let|var|function)\s+(\w+)"#) {
             if let Some(caps) = re.captures(line) {
-                return Some((caps[1].to_string(), false));
+                return Some(caps[1].to_string());
             }
         }
 
         // Handle: export { identifier }
         if let Ok(re) = regex::Regex::new(r#"export\s+\{\s*(\w+)\s*\}"#) {
             if let Some(caps) = re.captures(line) {
-                return Some((caps[1].to_string(), false));
+                return Some(caps[1].to_string());
             }
         }
 
@@ -194,35 +186,6 @@ impl RegexTreeShaker {
         })
     }
 
-    fn generate_optimized_code(&self, module_path: &str, source: &str) -> Result<String> {
-        if let Some(analysis) = self.module_graph.get(module_path) {
-            let mut result = source.to_string();
-
-            // Remove unused exports (in reverse order to maintain positions)
-            let mut removals: Vec<(usize, usize)> = Vec::new();
-
-            for export in &analysis.exports {
-                let export_key = format!("{}::{}", module_path, export.name);
-                if !self.used_exports.contains(&export_key) {
-                    removals.push(export.location);
-                }
-            }
-
-            // Sort removals by position (reverse order)
-            removals.sort_by(|a, b| b.0.cmp(&a.0));
-
-            // Remove unused exports
-            for (start, end) in removals {
-                if start < result.len() && end <= result.len() && start < end {
-                    result.replace_range(start..end, "");
-                }
-            }
-
-            Ok(result)
-        } else {
-            Ok(source.to_string())
-        }
-    }
 }
 
 #[async_trait::async_trait]
@@ -261,10 +224,6 @@ impl TreeShaker for RegexTreeShaker {
         Ok(stats)
     }
 
-    async fn optimize_module(&self, module: &ModuleInfo) -> Result<String> {
-        let module_path = module.path.to_string_lossy();
-        self.generate_optimized_code(&module_path, &module.content)
-    }
 }
 
 impl Default for RegexTreeShaker {

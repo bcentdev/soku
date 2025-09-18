@@ -64,9 +64,6 @@ impl FileSystemService for TokioFileSystemService {
             .map_err(|e| UltraError::Io(e))
     }
 
-    fn file_exists(&self, path: &Path) -> bool {
-        path.exists()
-    }
 }
 
 #[cfg(test)]

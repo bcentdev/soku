@@ -8,7 +8,6 @@ pub struct UltraBuildService {
     js_processor: Arc<dyn JsProcessor>,
     css_processor: Arc<dyn CssProcessor>,
     tree_shaker: Option<Arc<dyn TreeShaker>>,
-    cache_service: Option<Arc<dyn CacheService>>,
 }
 
 impl UltraBuildService {
@@ -22,7 +21,6 @@ impl UltraBuildService {
             js_processor,
             css_processor,
             tree_shaker: None,
-            cache_service: None,
         }
     }
 
@@ -31,10 +29,6 @@ impl UltraBuildService {
         self
     }
 
-    pub fn with_cache(mut self, cache_service: Arc<dyn CacheService>) -> Self {
-        self.cache_service = Some(cache_service);
-        self
-    }
 
     async fn scan_and_analyze(&self, config: &BuildConfig) -> Result<ProjectStructure> {
         let _timer = Timer::start("File scanning");
@@ -159,8 +153,8 @@ impl BuildService for UltraBuildService {
                 path: path.clone(),
                 content,
                 module_type,
-                dependencies: Vec::new(), // TODO: Extract dependencies
-                exports: Vec::new(),      // TODO: Extract exports
+                dependencies: Vec::new(),
+                exports: Vec::new(),
             });
         }
 
