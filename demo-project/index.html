@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra Bundler Demo</title>
+    <meta name="description" content="Demo project for Ultra Bundler - The fastest bundler in the universe">
+    <link rel="stylesheet" href="dist/bundle.css">
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="dist/bundle.js" as="script">
+
+    <!-- Meta tags for better sharing -->
+    <meta property="og:title" content="Ultra Bundler Demo">
+    <meta property="og:description" content="Experience the fastest bundler in the universe">
+    <meta property="og:type" content="website">
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+    <div id="app">
+        <div class="loading">
+            <p>⚡ Loading Ultra Bundler Demo...</p>
+        </div>
+    </div>
+
+    <!-- Main bundle -->
+    <script src="dist/bundle.js" type="module"></script>
+
+    <!-- Analytics placeholder -->
+    <script>
+        // Performance monitoring
+        window.addEventListener('load', () => {
+            const perfData = performance.getEntriesByType('navigation')[0];
+            console.log('📊 Page Load Performance:', {
+                domContentLoaded: perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart,
+                loadComplete: perfData.loadEventEnd - perfData.loadEventStart,
+                totalTime: perfData.loadEventEnd - perfData.fetchStart
+            });
+        });
+    </script>
+</body>
+</html>
