@@ -59,6 +59,13 @@ string-interner = "0.17"
 bumpalo = "3.0"
 parking_lot = "0.12"
 
+# Advanced performance optimizations
+memmap2 = "0.9"
+blake3 = "1.5"
+
+# SIMD and vectorization
+wide = "0.7"
+
 # Serialization for persistent cache
 serde = { version = "1.0", features = ["derive"] }
 bincode = "1.3"
