@@ -102,17 +102,84 @@ impl OxcJsProcessor {
             ));
         }
 
-        // Simple processing: remove import/export statements for bundling
-        let processed = module.content
-            .lines()
-            .filter(|line| {
-                let trimmed = line.trim();
-                !trimmed.starts_with("import ") && !trimmed.starts_with("export ")
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
+        // Process the module content while preserving functionality
+        let processed = self.transform_module_content(&module.content);
 
         Ok(processed)
+    }
+
+    fn transform_module_content(&self, content: &str) -> String {
+        let mut processed_lines = Vec::new();
+
+        for line in content.lines() {
+            let trimmed = line.trim();
+
+            if trimmed.starts_with("import ") {
+                // Transform import statements into comments for now
+                // In a full implementation, we'd resolve and inline the imports
+                processed_lines.push(format!("// {}", line));
+            } else if trimmed.starts_with("export ") {
+                // Handle exports - transform them to regular declarations
+                if trimmed.starts_with("export const ") || trimmed.starts_with("export let ") || trimmed.starts_with("export var ") {
+                    // Transform "export const foo = ..." to "const foo = ..."
+                    processed_lines.push(line.replace("export ", ""));
+                } else if trimmed.starts_with("export function ") {
+                    // Transform "export function foo()" to "function foo()"
+                    processed_lines.push(line.replace("export ", ""));
+                } else if trimmed.starts_with("export {") || trimmed.starts_with("export *") {
+                    // Transform export statements to comments
+                    processed_lines.push(format!("// {}", line));
+                } else {
+                    // Keep other export patterns as comments
+                    processed_lines.push(format!("// {}", line));
+                }
+            } else {
+                // Keep regular code as-is
+                processed_lines.push(line.to_string());
+            }
+        }
+
+        processed_lines.join("\n")
+    }
+
+    pub fn extract_dependencies(&self, content: &str) -> Vec<String> {
+        let mut dependencies = Vec::new();
+
+        println!("🔍 DEBUG: Extracting dependencies from content ({} lines)", content.lines().count());
+
+        for (line_num, line) in content.lines().enumerate() {
+            let trimmed = line.trim();
+
+            // Handle different import patterns
+            if trimmed.starts_with("import ") {
+                println!("  Line {}: Found import: {}", line_num + 1, trimmed);
+
+                if let Some(from_index) = trimmed.rfind(" from ") {
+                    let import_path = &trimmed[from_index + 6..];
+                    // Remove quotes and semicolon
+                    let clean_path = import_path.trim_matches(|c| c == '"' || c == '\'' || c == ';');
+
+                    println!("    Raw import path: '{}', clean path: '{}'", import_path, clean_path);
+
+                    if !clean_path.is_empty() {
+                        // Only handle relative imports for now
+                        if clean_path.starts_with("./") || clean_path.starts_with("../") {
+                            println!("    ✅ Adding dependency: '{}'", clean_path);
+                            dependencies.push(clean_path.to_string());
+                        } else {
+                            println!("    ❌ Skipping non-relative import: '{}'", clean_path);
+                        }
+                    } else {
+                        println!("    ❌ Empty clean path");
+                    }
+                } else {
+                    println!("    ❌ No ' from ' found in import");
+                }
+            }
+        }
+
+        println!("🔍 DEBUG: Found {} dependencies: {:?}", dependencies.len(), dependencies);
+        dependencies
     }
 }
 

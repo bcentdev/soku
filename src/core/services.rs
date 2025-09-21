@@ -1,6 +1,8 @@
 use crate::core::{interfaces::*, models::*};
 use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo};
 use std::sync::Arc;
+use std::path::{Path, PathBuf};
+use std::collections::{HashMap, HashSet};
 
 /// Main build service implementation
 pub struct UltraBuildService {
@@ -132,6 +134,107 @@ impl UltraBuildService {
 
         Ok(output_files)
     }
+
+    async fn resolve_all_dependencies(
+        &self,
+        entry_files: &[PathBuf],
+        root_dir: &Path,
+    ) -> Result<Vec<ModuleInfo>> {
+        let mut resolved_modules = HashMap::new();
+        let mut to_process = Vec::new();
+
+        // Start with entry files
+        for path in entry_files {
+            to_process.push(path.clone());
+        }
+
+        while let Some(current_path) = to_process.pop() {
+            // Skip if already processed
+            let path_key = current_path.to_string_lossy().to_string();
+            if resolved_modules.contains_key(&path_key) {
+                continue;
+            }
+
+            // Read and process the file
+            if let Ok(content) = self.fs_service.read_file(&current_path).await {
+                let module_type = ModuleType::from_extension(
+                    current_path.extension()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("")
+                );
+
+                // Create a temporary JS processor to extract dependencies
+                let js_processor = crate::infrastructure::OxcJsProcessor::new();
+                let dependencies = js_processor.extract_dependencies(&content);
+
+                // Resolve dependency paths
+                let mut resolved_deps = Vec::new();
+                println!("🔍 DEPS: Processing {} dependencies for {}", dependencies.len(), current_path.display());
+                for dep in &dependencies {
+                    println!("  Processing dependency: '{}'", dep);
+                    if let Some(resolved_path) = self.resolve_import_path(&current_path, dep, root_dir).await {
+                        println!("    ✅ Resolved to: {}", resolved_path.display());
+                        resolved_deps.push(dep.clone());
+                        to_process.push(resolved_path);
+                    } else {
+                        println!("    ❌ Failed to resolve: {}", dep);
+                    }
+                }
+
+                let module_info = ModuleInfo {
+                    path: current_path.clone(),
+                    content,
+                    module_type,
+                    dependencies: resolved_deps,
+                    exports: Vec::new(), // TODO: Extract exports
+                };
+
+                resolved_modules.insert(path_key, module_info);
+            }
+        }
+
+        Ok(resolved_modules.into_values().collect())
+    }
+
+    async fn resolve_import_path(
+        &self,
+        current_file: &Path,
+        import_path: &str,
+        _root_dir: &Path,
+    ) -> Option<PathBuf> {
+        println!("🔍 RESOLVE: Resolving '{}' from '{}'", import_path, current_file.display());
+
+        // Handle relative imports
+        if import_path.starts_with("./") || import_path.starts_with("../") {
+            let current_dir = current_file.parent()?;
+            let resolved = current_dir.join(import_path);
+
+            println!("  Current dir: {}", current_dir.display());
+            println!("  Resolved base: {}", resolved.display());
+
+            // Try different extensions
+            for ext in &["", ".js", ".ts", ".jsx", ".tsx"] {
+                let full_path = if ext.is_empty() {
+                    resolved.clone()
+                } else {
+                    resolved.with_extension(&ext[1..])
+                };
+
+                println!("  Trying: {} -> exists: {}", full_path.display(), full_path.exists());
+
+                if full_path.exists() {
+                    println!("  ✅ Found: {}", full_path.display());
+                    return Some(full_path);
+                }
+            }
+
+            println!("  ❌ Not found with any extension");
+        } else {
+            println!("  ❌ Not a relative import, skipping");
+        }
+
+        None
+    }
 }
 
 #[async_trait::async_trait]
@@ -148,23 +251,17 @@ impl BuildService for UltraBuildService {
         // 🔍 FILE DISCOVERY
         let structure = self.scan_and_analyze_with_ui(config).await?;
 
-        // Convert paths to ModuleInfo
-        let mut js_modules = Vec::new();
-        for path in &structure.js_modules {
-            let content = self.fs_service.read_file(path).await?;
-            let module_type = ModuleType::from_extension(
-                path.extension()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("")
-            );
+        // Convert paths to ModuleInfo and resolve dependencies
+        println!("🔍 DEBUG: Found {} JS modules before resolution", structure.js_modules.len());
+        for (i, path) in structure.js_modules.iter().enumerate() {
+            println!("  {}: {}", i, path.display());
+        }
 
-            js_modules.push(ModuleInfo {
-                path: path.clone(),
-                content,
-                module_type,
-                dependencies: Vec::new(),
-                exports: Vec::new(),
-            });
+        let js_modules = self.resolve_all_dependencies(&structure.js_modules, &config.root).await?;
+
+        println!("🔍 DEBUG: Resolved {} JS modules after dependency resolution", js_modules.len());
+        for (i, module) in js_modules.iter().enumerate() {
+            println!("  {}: {} (deps: {})", i, module.path.display(), module.dependencies.len());
         }
 
         // 🌳 TREE SHAKING (if enabled)
