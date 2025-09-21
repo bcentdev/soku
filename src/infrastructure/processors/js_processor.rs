@@ -173,7 +173,21 @@ impl OxcJsProcessor {
                         println!("    ❌ Empty clean path");
                     }
                 } else {
-                    println!("    ❌ No ' from ' found in import");
+                    // Handle CSS/asset imports like: import './styles.css'
+                    let import_regex = regex::Regex::new(r#"import\s+['"]([^'"]+)['"]"#).unwrap();
+                    if let Some(captures) = import_regex.captures(trimmed) {
+                        let import_path = &captures[1];
+                        println!("    Found asset import: '{}'", import_path);
+
+                        if import_path.starts_with("./") || import_path.starts_with("../") {
+                            println!("    ✅ Adding asset dependency: '{}'", import_path);
+                            dependencies.push(import_path.to_string());
+                        } else {
+                            println!("    ❌ Skipping non-relative asset import: '{}'", import_path);
+                        }
+                    } else {
+                        println!("    ❌ No ' from ' found and couldn't parse as asset import");
+                    }
                 }
             }
         }

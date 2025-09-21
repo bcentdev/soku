@@ -163,9 +163,23 @@ impl UltraBuildService {
                         .unwrap_or("")
                 );
 
-                // Create a temporary JS processor to extract dependencies
-                let js_processor = crate::infrastructure::OxcJsProcessor::new();
-                let dependencies = js_processor.extract_dependencies(&content);
+                let mut dependencies = Vec::new();
+
+                // Extract dependencies based on file type
+                match module_type {
+                    ModuleType::JavaScript | ModuleType::TypeScript => {
+                        // Create a temporary JS processor to extract dependencies
+                        let js_processor = crate::infrastructure::OxcJsProcessor::new();
+                        dependencies = js_processor.extract_dependencies(&content);
+                    }
+                    ModuleType::Css => {
+                        // Extract CSS imports (@import statements)
+                        dependencies = self.extract_css_dependencies(&content);
+                    }
+                    _ => {
+                        // Other file types don't have dependencies we can process
+                    }
+                }
 
                 // Resolve dependency paths
                 let mut resolved_deps = Vec::new();
@@ -212,19 +226,22 @@ impl UltraBuildService {
             println!("  Current dir: {}", current_dir.display());
             println!("  Resolved base: {}", resolved.display());
 
-            // Try different extensions
-            for ext in &["", ".js", ".ts", ".jsx", ".tsx"] {
-                let full_path = if ext.is_empty() {
-                    resolved.clone()
-                } else {
-                    resolved.with_extension(&ext[1..])
-                };
+            // Check if the file exists as-is first (with original extension)
+            if resolved.exists() {
+                println!("  ✅ Found exact match: {}", resolved.display());
+                return Some(resolved);
+            }
 
-                println!("  Trying: {} -> exists: {}", full_path.display(), full_path.exists());
+            // Try different extensions for JS/TS files only if no extension provided
+            if !import_path.contains('.') {
+                for ext in &[".js", ".ts", ".jsx", ".tsx"] {
+                    let full_path = resolved.with_extension(&ext[1..]);
+                    println!("  Trying: {} -> exists: {}", full_path.display(), full_path.exists());
 
-                if full_path.exists() {
-                    println!("  ✅ Found: {}", full_path.display());
-                    return Some(full_path);
+                    if full_path.exists() {
+                        println!("  ✅ Found: {}", full_path.display());
+                        return Some(full_path);
+                    }
                 }
             }
 
@@ -234,6 +251,40 @@ impl UltraBuildService {
         }
 
         None
+    }
+
+    fn extract_css_dependencies(&self, content: &str) -> Vec<String> {
+        let mut dependencies = Vec::new();
+
+        println!("🔍 CSS: Extracting CSS dependencies from content ({} lines)", content.lines().count());
+
+        for (line_num, line) in content.lines().enumerate() {
+            let trimmed = line.trim();
+
+            // Handle @import statements
+            if trimmed.starts_with("@import") {
+                println!("  Line {}: Found CSS import: {}", line_num + 1, trimmed);
+
+                // Parse @import statements: @import "path" or @import url("path")
+                let import_regex = regex::Regex::new(r#"@import\s+(?:url\s*\()?\s*['"]([^'"]+)['"]"#).unwrap();
+                if let Some(captures) = import_regex.captures(trimmed) {
+                    let import_path = &captures[1];
+                    println!("    Found CSS import path: '{}'", import_path);
+
+                    if import_path.starts_with("./") || import_path.starts_with("../") {
+                        println!("    ✅ Adding CSS dependency: '{}'", import_path);
+                        dependencies.push(import_path.to_string());
+                    } else {
+                        println!("    ❌ Skipping non-relative CSS import: '{}'", import_path);
+                    }
+                } else {
+                    println!("    ❌ Could not parse CSS import statement");
+                }
+            }
+        }
+
+        println!("🔍 CSS: Found {} dependencies: {:?}", dependencies.len(), dependencies);
+        dependencies
     }
 }
 
@@ -292,19 +343,36 @@ impl BuildService for UltraBuildService {
             None
         };
 
+        // Separate JS modules from CSS modules
+        let js_only_modules: Vec<ModuleInfo> = js_modules.iter()
+            .filter(|m| matches!(m.module_type, ModuleType::JavaScript | ModuleType::TypeScript))
+            .cloned()
+            .collect();
+
+        let css_modules: Vec<ModuleInfo> = js_modules.iter()
+            .filter(|m| matches!(m.module_type, ModuleType::Css))
+            .cloned()
+            .collect();
+
         // ⚡ JAVASCRIPT PROCESSING
-        let module_names: Vec<String> = js_modules.iter()
+        let js_module_names: Vec<String> = js_only_modules.iter()
             .map(|m| m.path.file_name().unwrap().to_str().unwrap().to_string())
             .collect();
-        self.ui.show_processing_phase(&module_names, "⚡ JS");
-        let js_content = self.js_processor.bundle_modules(&js_modules).await?;
+        self.ui.show_processing_phase(&js_module_names, "⚡ JS");
+        let js_content = self.js_processor.bundle_modules(&js_only_modules).await?;
 
         // 🎨 CSS PROCESSING
-        let css_names: Vec<String> = structure.css_files.iter()
+        // Include both original CSS files and CSS modules found through imports
+        let mut all_css_files = structure.css_files.clone();
+        for css_module in &css_modules {
+            all_css_files.push(css_module.path.clone());
+        }
+
+        let css_names: Vec<String> = all_css_files.iter()
             .map(|p| p.file_name().unwrap().to_str().unwrap().to_string())
             .collect();
         self.ui.show_processing_phase(&css_names, "🎨 CSS");
-        let css_content = self.css_processor.bundle_css(&structure.css_files).await?;
+        let css_content = self.css_processor.bundle_css(&all_css_files).await?;
 
         // 💾 WRITE FILES
         let output_files = self.write_output_files(config, &js_content, &css_content).await?;
@@ -313,8 +381,8 @@ impl BuildService for UltraBuildService {
 
         // 🎉 EPIC COMPLETION SHOWCASE!
         let completion_stats = CompletionStats {
-            js_count: structure.js_modules.len(),
-            css_count: structure.css_files.len(),
+            js_count: js_only_modules.len(),
+            css_count: all_css_files.len(),
             tree_shaking_info: if let Some(ref stats) = tree_shaking_stats {
                 format!("{}% reduction, {} exports removed",
                     stats.reduction_percentage as u32,
@@ -332,8 +400,8 @@ impl BuildService for UltraBuildService {
         self.ui.show_epic_completion(completion_stats);
 
         Ok(BuildResult {
-            js_modules_processed: structure.js_modules.len(),
-            css_files_processed: structure.css_files.len(),
+            js_modules_processed: js_only_modules.len(),
+            css_files_processed: all_css_files.len(),
             tree_shaking_stats,
             build_time,
             output_files,
