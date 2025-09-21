@@ -45,5 +45,23 @@ dashmap = "6.0"
 num_cpus = "1.16"
 futures = "0.3"
 
+# TypeScript processing with enhanced oxc (fallback from SWC due to version conflicts)
+# Will implement SWC in future when version issues are resolved
+
+# Persistent cache
+sled = "0.34"
+
+# Advanced async I/O and file watching
+notify = "6.0"
+
+# Memory optimization
+string-interner = "0.17"
+bumpalo = "3.0"
+parking_lot = "0.12"
+
+# Serialization for persistent cache
+serde = { version = "1.0", features = ["derive"] }
+bincode = "1.3"
+
 [dev-dependencies]
 tempfile = "3.8"

@@ -2,12 +2,87 @@ use dashmap::DashMap;
 use std::sync::Arc;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::path::Path;
+use sled::{Db, Tree};
+use string_interner::{StringInterner, DefaultSymbol, DefaultBackend};
 
-/// Ultra-fast caching system for build artifacts
+/// Ultra-fast caching system with persistent storage
 pub struct UltraCache {
+    // In-memory hot cache for ultra-speed
     js_cache: Arc<DashMap<String, String>>,
     css_cache: Arc<DashMap<String, String>>,
     parse_cache: Arc<DashMap<u64, String>>,
+
+    // Persistent disk cache for cross-session performance
+    persistent_cache: Option<Arc<PersistentCache>>,
+
+    // String interning for memory optimization
+    string_interner: Arc<parking_lot::Mutex<StringInterner<DefaultBackend>>>,
+}
+
+/// Persistent cache using sled for cross-session performance
+pub struct PersistentCache {
+    db: Db,
+    js_tree: Tree,
+    css_tree: Tree,
+    metadata_tree: Tree,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct CacheEntry {
+    pub content_hash: u64,
+    pub result: String,
+    pub timestamp: u64,
+    pub file_size: u64,
+}
+
+impl PersistentCache {
+    pub fn new(cache_dir: &Path) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        std::fs::create_dir_all(cache_dir)?;
+        let db_path = cache_dir.join("ultra_cache.sled");
+
+        let db = sled::open(db_path)?;
+        let js_tree = db.open_tree("js_cache")?;
+        let css_tree = db.open_tree("css_cache")?;
+        let metadata_tree = db.open_tree("metadata")?;
+
+        Ok(Self {
+            db,
+            js_tree,
+            css_tree,
+            metadata_tree,
+        })
+    }
+
+    pub fn get_js(&self, key: &str) -> Option<CacheEntry> {
+        self.js_tree.get(key).ok()
+            .and_then(|opt| opt)
+            .and_then(|bytes| bincode::deserialize(&bytes).ok())
+    }
+
+    pub fn set_js(&self, key: &str, entry: &CacheEntry) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let bytes = bincode::serialize(entry)?;
+        self.js_tree.insert(key, bytes)?;
+        self.js_tree.flush()?;
+        Ok(())
+    }
+
+    pub fn get_css(&self, key: &str) -> Option<CacheEntry> {
+        self.css_tree.get(key).ok()
+            .and_then(|opt| opt)
+            .and_then(|bytes| bincode::deserialize(&bytes).ok())
+    }
+
+    pub fn set_css(&self, key: &str, entry: &CacheEntry) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let bytes = bincode::serialize(entry)?;
+        self.css_tree.insert(key, bytes)?;
+        self.css_tree.flush()?;
+        Ok(())
+    }
+
+    pub fn is_valid(&self, entry: &CacheEntry, current_hash: u64, current_size: u64) -> bool {
+        entry.content_hash == current_hash && entry.file_size == current_size
+    }
 }
 
 impl UltraCache {
@@ -16,31 +91,122 @@ impl UltraCache {
             js_cache: Arc::new(DashMap::new()),
             css_cache: Arc::new(DashMap::new()),
             parse_cache: Arc::new(DashMap::new()),
+            persistent_cache: None,
+            string_interner: Arc::new(parking_lot::Mutex::new(StringInterner::default())),
         }
     }
 
-    /// Cache JS processing result
+    pub fn with_persistent_cache(cache_dir: &Path) -> Self {
+        let persistent = PersistentCache::new(cache_dir).ok()
+            .map(Arc::new);
+
+        Self {
+            js_cache: Arc::new(DashMap::new()),
+            css_cache: Arc::new(DashMap::new()),
+            parse_cache: Arc::new(DashMap::new()),
+            persistent_cache: persistent,
+            string_interner: Arc::new(parking_lot::Mutex::new(StringInterner::default())),
+        }
+    }
+
+    /// Intern a string for memory efficiency
+    pub fn intern_string(&self, s: &str) -> DefaultSymbol {
+        let mut interner = self.string_interner.lock();
+        interner.get_or_intern(s)
+    }
+
+    /// Cache JS processing result with persistent storage
     pub fn cache_js(&self, path: &str, content: &str, result: String) {
-        let key = format!("{}:{}", path, self.hash_content(content));
-        self.js_cache.insert(key, result);
+        let content_hash = self.hash_content(content);
+        let key = format!("{}:{}", path, content_hash);
+
+        // Hot cache for ultra-speed
+        self.js_cache.insert(key.clone(), result.clone());
+
+        // Persistent cache for cross-session performance
+        if let Some(ref persistent) = self.persistent_cache {
+            let entry = CacheEntry {
+                content_hash,
+                result,
+                timestamp: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+                file_size: content.len() as u64,
+            };
+            let _ = persistent.set_js(&key, &entry);
+        }
     }
 
-    /// Get cached JS result
+    /// Get cached JS result with persistent fallback
     pub fn get_js(&self, path: &str, content: &str) -> Option<String> {
-        let key = format!("{}:{}", path, self.hash_content(content));
-        self.js_cache.get(&key).map(|v| v.clone())
+        let content_hash = self.hash_content(content);
+        let key = format!("{}:{}", path, content_hash);
+
+        // Check hot cache first
+        if let Some(cached) = self.js_cache.get(&key) {
+            return Some(cached.clone());
+        }
+
+        // Check persistent cache
+        if let Some(ref persistent) = self.persistent_cache {
+            if let Some(entry) = persistent.get_js(&key) {
+                if persistent.is_valid(&entry, content_hash, content.len() as u64) {
+                    // Promote to hot cache
+                    self.js_cache.insert(key, entry.result.clone());
+                    return Some(entry.result);
+                }
+            }
+        }
+
+        None
     }
 
-    /// Cache CSS processing result
+    /// Cache CSS processing result with persistent storage
     pub fn cache_css(&self, path: &str, content: &str, result: String) {
-        let key = format!("{}:{}", path, self.hash_content(content));
-        self.css_cache.insert(key, result);
+        let content_hash = self.hash_content(content);
+        let key = format!("{}:{}", path, content_hash);
+
+        // Hot cache for ultra-speed
+        self.css_cache.insert(key.clone(), result.clone());
+
+        // Persistent cache for cross-session performance
+        if let Some(ref persistent) = self.persistent_cache {
+            let entry = CacheEntry {
+                content_hash,
+                result,
+                timestamp: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+                file_size: content.len() as u64,
+            };
+            let _ = persistent.set_css(&key, &entry);
+        }
     }
 
-    /// Get cached CSS result
+    /// Get cached CSS result with persistent fallback
     pub fn get_css(&self, path: &str, content: &str) -> Option<String> {
-        let key = format!("{}:{}", path, self.hash_content(content));
-        self.css_cache.get(&key).map(|v| v.clone())
+        let content_hash = self.hash_content(content);
+        let key = format!("{}:{}", path, content_hash);
+
+        // Check hot cache first
+        if let Some(cached) = self.css_cache.get(&key) {
+            return Some(cached.clone());
+        }
+
+        // Check persistent cache
+        if let Some(ref persistent) = self.persistent_cache {
+            if let Some(entry) = persistent.get_css(&key) {
+                if persistent.is_valid(&entry, content_hash, content.len() as u64) {
+                    // Promote to hot cache
+                    self.css_cache.insert(key, entry.result.clone());
+                    return Some(entry.result);
+                }
+            }
+        }
+
+        None
     }
 
     /// Cache parsed AST or processing result

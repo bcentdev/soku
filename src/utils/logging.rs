@@ -47,6 +47,14 @@ impl Logger {
         debug!("🎨 Processing CSS: {}", name);
     }
 
+    pub fn processing_typescript(name: &str) {
+        debug!("⚡ Processing TypeScript: {}", name);
+    }
+
+    pub fn debug(message: &str) {
+        debug!("{}", message);
+    }
+
 
     pub fn build_complete(
         js_count: usize,

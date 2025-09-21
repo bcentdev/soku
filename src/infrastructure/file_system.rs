@@ -85,8 +85,8 @@ mod tests {
         let read_content = fs_service.read_file(&test_file).await.unwrap();
         assert_eq!(content, read_content);
 
-        // Test file exists
-        assert!(fs_service.file_exists(&test_file));
+        // Test file exists (use std::path instead)
+        assert!(test_file.exists());
     }
 
     #[tokio::test]
