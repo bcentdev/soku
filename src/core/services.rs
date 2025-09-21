@@ -1,5 +1,5 @@
 use crate::core::{interfaces::*, models::*};
-use crate::utils::{Result, Logger, Timer};
+use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo};
 use std::sync::Arc;
 
 /// Main build service implementation
@@ -8,6 +8,7 @@ pub struct UltraBuildService {
     js_processor: Arc<dyn JsProcessor>,
     css_processor: Arc<dyn CssProcessor>,
     tree_shaker: Option<Arc<dyn TreeShaker>>,
+    ui: UltraUI,
 }
 
 impl UltraBuildService {
@@ -21,6 +22,7 @@ impl UltraBuildService {
             js_processor,
             css_processor,
             tree_shaker: None,
+            ui: UltraUI::new(),
         }
     }
 
@@ -36,6 +38,15 @@ impl UltraBuildService {
 
         let structure = self.fs_service.scan_directory(&config.root).await?;
         Logger::found_files(structure.js_modules.len(), structure.css_files.len());
+
+        Ok(structure)
+    }
+
+    async fn scan_and_analyze_with_ui(&self, config: &BuildConfig) -> Result<ProjectStructure> {
+        let structure = self.fs_service.scan_directory(&config.root).await?;
+
+        // Show file discovery
+        self.ui.show_file_discovery(structure.js_modules.len(), structure.css_files.len());
 
         Ok(structure)
     }
@@ -126,18 +137,16 @@ impl UltraBuildService {
 #[async_trait::async_trait]
 impl BuildService for UltraBuildService {
     async fn build(&self, config: &BuildConfig) -> Result<BuildResult> {
-        let build_start = std::time::Instant::now();
+        // 🚀 EPIC BANNER!
+        self.ui.show_epic_banner();
 
-        Logger::build_start(
-            &config.root.to_string_lossy(),
-            &config.outdir.to_string_lossy(),
-        );
+        let build_start = std::time::Instant::now();
 
         // Create output directory
         self.fs_service.create_directory(&config.outdir).await?;
 
-        // Scan project structure
-        let structure = self.scan_and_analyze(config).await?;
+        // 🔍 FILE DISCOVERY
+        let structure = self.scan_and_analyze_with_ui(config).await?;
 
         // Convert paths to ModuleInfo
         let mut js_modules = Vec::new();
@@ -158,27 +167,72 @@ impl BuildService for UltraBuildService {
             });
         }
 
-        // Process JavaScript modules
-        let (js_content, tree_shaking_stats) =
-            self.process_javascript_modules(&js_modules, config).await?;
+        // 🌳 TREE SHAKING (if enabled)
+        let tree_shaking_stats = if config.enable_tree_shaking {
+            if let Some(_) = self.tree_shaker {
+                self.ui.show_tree_shaking_analysis(js_modules.len());
 
-        // Process CSS files
-        let css_content = self.process_css_files(&structure.css_files).await?;
+                let mut shaker = crate::infrastructure::RegexTreeShaker::new();
+                shaker.analyze_modules(&js_modules).await?;
 
-        // Write output files
+                let entry_points: Vec<String> = js_modules
+                    .iter()
+                    .filter(|m| {
+                        let name = m.path.file_stem()
+                            .and_then(|s| s.to_str())
+                            .unwrap_or("")
+                            .to_lowercase();
+                        name.contains("main") || name.contains("index")
+                    })
+                    .map(|m| m.path.to_string_lossy().to_string())
+                    .collect();
+
+                Some(shaker.shake(&entry_points).await?)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        // ⚡ JAVASCRIPT PROCESSING
+        let module_names: Vec<String> = js_modules.iter()
+            .map(|m| m.path.file_name().unwrap().to_str().unwrap().to_string())
+            .collect();
+        self.ui.show_processing_phase(&module_names, "⚡ JS");
+        let js_content = self.js_processor.bundle_modules(&js_modules).await?;
+
+        // 🎨 CSS PROCESSING
+        let css_names: Vec<String> = structure.css_files.iter()
+            .map(|p| p.file_name().unwrap().to_str().unwrap().to_string())
+            .collect();
+        self.ui.show_processing_phase(&css_names, "🎨 CSS");
+        let css_content = self.css_processor.bundle_css(&structure.css_files).await?;
+
+        // 💾 WRITE FILES
         let output_files = self.write_output_files(config, &js_content, &css_content).await?;
 
         let build_time = build_start.elapsed();
 
-        // Log completion
-        let tree_shaking_str = tree_shaking_stats.as_ref().map(|s| s.to_string());
-        Logger::build_complete(
-            structure.js_modules.len(),
-            structure.css_files.len(),
-            tree_shaking_str.as_deref(),
-            build_time,
-            &config.outdir.to_string_lossy(),
-        );
+        // 🎉 EPIC COMPLETION SHOWCASE!
+        let completion_stats = CompletionStats {
+            js_count: structure.js_modules.len(),
+            css_count: structure.css_files.len(),
+            tree_shaking_info: if let Some(ref stats) = tree_shaking_stats {
+                format!("{}% reduction, {} exports removed",
+                    stats.reduction_percentage as u32,
+                    stats.removed_exports
+                )
+            } else {
+                "disabled (fast mode)".to_string()
+            },
+            output_files: output_files.iter().map(|f| OutputFileInfo {
+                name: f.path.file_name().unwrap().to_str().unwrap().to_string(),
+                size: f.size,
+            }).collect(),
+        };
+
+        self.ui.show_epic_completion(completion_stats);
 
         Ok(BuildResult {
             js_modules_processed: structure.js_modules.len(),
