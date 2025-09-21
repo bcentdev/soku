@@ -1,18 +1,24 @@
 use crate::core::interfaces::CssProcessor;
-use crate::utils::{Result, UltraError, Logger};
+use crate::utils::{Result, UltraError, Logger, UltraCache};
 use lightningcss::{
     stylesheet::{StyleSheet, ParserOptions as CssParserOptions},
     printer::PrinterOptions,
 };
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct LightningCssProcessor {
     minify: bool,
+    cache: Arc<UltraCache>,
 }
 
 impl LightningCssProcessor {
     pub fn new(minify: bool) -> Self {
-        Self { minify }
+        Self {
+            minify,
+            cache: Arc::new(UltraCache::new()),
+        }
     }
 }
 
@@ -24,6 +30,12 @@ impl CssProcessor for LightningCssProcessor {
                 .and_then(|s| s.to_str())
                 .unwrap_or("unknown")));
 
+        // Check cache first
+        let path_str = path.to_string_lossy();
+        if let Some(cached) = self.cache.get_css(&path_str, content) {
+            return Ok(cached);
+        }
+
         Logger::processing_css(
             path.file_name()
                 .and_then(|s| s.to_str())
@@ -31,7 +43,7 @@ impl CssProcessor for LightningCssProcessor {
         );
 
         // Process CSS with lightningcss
-        match StyleSheet::parse(content, CssParserOptions::default()) {
+        let result = match StyleSheet::parse(content, CssParserOptions::default()) {
             Ok(stylesheet) => {
                 match stylesheet.to_css(PrinterOptions {
                     minify: self.minify,
@@ -54,7 +66,14 @@ impl CssProcessor for LightningCssProcessor {
                 ));
                 Ok(self.fallback_minify(content))
             }
+        };
+
+        // Cache the result
+        if let Ok(ref processed) = result {
+            self.cache.cache_css(&path_str, content, processed.clone());
         }
+
+        result
     }
 
     async fn bundle_css(&self, files: &[PathBuf]) -> Result<String> {

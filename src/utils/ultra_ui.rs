@@ -4,7 +4,7 @@ use crossterm::{
     style::{Color, Print, SetForegroundColor},
     ExecutableCommand,
 };
-use std::io::{self, Write as IoWrite};
+use std::io;
 use std::time::Instant;
 
 pub struct UltraUI {

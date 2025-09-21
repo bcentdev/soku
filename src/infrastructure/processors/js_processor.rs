@@ -1,10 +1,14 @@
 use crate::core::{interfaces::JsProcessor, models::*};
-use crate::utils::{Result, UltraError, Logger};
+use crate::utils::{Result, UltraError, Logger, UltraCache};
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
+use std::sync::Arc;
 
-pub struct OxcJsProcessor;
+#[derive(Clone)]
+pub struct OxcJsProcessor {
+    cache: Arc<UltraCache>,
+}
 
 #[async_trait::async_trait]
 impl JsProcessor for OxcJsProcessor {
@@ -14,7 +18,13 @@ impl JsProcessor for OxcJsProcessor {
                 .and_then(|s| s.to_str())
                 .unwrap_or("unknown")));
 
-        match module.module_type {
+        // Check cache first
+        let path_str = module.path.to_string_lossy();
+        if let Some(cached) = self.cache.get_js(&path_str, &module.content) {
+            return Ok(cached);
+        }
+
+        let result = match module.module_type {
             ModuleType::JavaScript | ModuleType::TypeScript => {
                 self.process_js_module(module).await
             }
@@ -22,7 +32,14 @@ impl JsProcessor for OxcJsProcessor {
                 "Unsupported module type: {:?}",
                 module.module_type
             ))),
+        };
+
+        // Cache the result
+        if let Ok(ref processed) = result {
+            self.cache.cache_js(&path_str, &module.content, processed.clone());
         }
+
+        result
     }
 
     async fn bundle_modules(&self, modules: &[ModuleInfo]) -> Result<String> {
@@ -32,6 +49,7 @@ impl JsProcessor for OxcJsProcessor {
         bundle.push_str("// Ultra Bundler - Optimized Build Output\n");
         bundle.push_str("(function() {\n'use strict';\n\n");
 
+        // Process modules sequentially with caching for performance
         for module in modules {
             if self.supports_module_type(&module.module_type) {
                 Logger::processing_file(
@@ -62,7 +80,9 @@ impl JsProcessor for OxcJsProcessor {
 
 impl OxcJsProcessor {
     pub fn new() -> Self {
-        Self
+        Self {
+            cache: Arc::new(UltraCache::new()),
+        }
     }
 
     async fn process_js_module(&self, module: &ModuleInfo) -> Result<String> {
