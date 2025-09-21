@@ -145,54 +145,36 @@ impl OxcJsProcessor {
     pub fn extract_dependencies(&self, content: &str) -> Vec<String> {
         let mut dependencies = Vec::new();
 
-        println!("🔍 DEBUG: Extracting dependencies from content ({} lines)", content.lines().count());
-
-        for (line_num, line) in content.lines().enumerate() {
+        for line in content.lines() {
             let trimmed = line.trim();
 
             // Handle different import patterns
             if trimmed.starts_with("import ") {
-                println!("  Line {}: Found import: {}", line_num + 1, trimmed);
-
                 if let Some(from_index) = trimmed.rfind(" from ") {
                     let import_path = &trimmed[from_index + 6..];
                     // Remove quotes and semicolon
                     let clean_path = import_path.trim_matches(|c| c == '"' || c == '\'' || c == ';');
 
-                    println!("    Raw import path: '{}', clean path: '{}'", import_path, clean_path);
-
                     if !clean_path.is_empty() {
                         // Only handle relative imports for now
                         if clean_path.starts_with("./") || clean_path.starts_with("../") {
-                            println!("    ✅ Adding dependency: '{}'", clean_path);
                             dependencies.push(clean_path.to_string());
-                        } else {
-                            println!("    ❌ Skipping non-relative import: '{}'", clean_path);
                         }
-                    } else {
-                        println!("    ❌ Empty clean path");
                     }
                 } else {
                     // Handle CSS/asset imports like: import './styles.css'
                     let import_regex = regex::Regex::new(r#"import\s+['"]([^'"]+)['"]"#).unwrap();
                     if let Some(captures) = import_regex.captures(trimmed) {
                         let import_path = &captures[1];
-                        println!("    Found asset import: '{}'", import_path);
 
                         if import_path.starts_with("./") || import_path.starts_with("../") {
-                            println!("    ✅ Adding asset dependency: '{}'", import_path);
                             dependencies.push(import_path.to_string());
-                        } else {
-                            println!("    ❌ Skipping non-relative asset import: '{}'", import_path);
                         }
-                    } else {
-                        println!("    ❌ No ' from ' found and couldn't parse as asset import");
                     }
                 }
             }
         }
 
-        println!("🔍 DEBUG: Found {} dependencies: {:?}", dependencies.len(), dependencies);
         dependencies
     }
 }

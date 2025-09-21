@@ -183,15 +183,10 @@ impl UltraBuildService {
 
                 // Resolve dependency paths
                 let mut resolved_deps = Vec::new();
-                println!("🔍 DEPS: Processing {} dependencies for {}", dependencies.len(), current_path.display());
                 for dep in &dependencies {
-                    println!("  Processing dependency: '{}'", dep);
                     if let Some(resolved_path) = self.resolve_import_path(&current_path, dep, root_dir).await {
-                        println!("    ✅ Resolved to: {}", resolved_path.display());
                         resolved_deps.push(dep.clone());
                         to_process.push(resolved_path);
-                    } else {
-                        println!("    ❌ Failed to resolve: {}", dep);
                     }
                 }
 
@@ -216,19 +211,13 @@ impl UltraBuildService {
         import_path: &str,
         _root_dir: &Path,
     ) -> Option<PathBuf> {
-        println!("🔍 RESOLVE: Resolving '{}' from '{}'", import_path, current_file.display());
-
         // Handle relative imports
         if import_path.starts_with("./") || import_path.starts_with("../") {
             let current_dir = current_file.parent()?;
             let resolved = current_dir.join(import_path);
 
-            println!("  Current dir: {}", current_dir.display());
-            println!("  Resolved base: {}", resolved.display());
-
             // Check if the file exists as-is first (with original extension)
             if resolved.exists() {
-                println!("  ✅ Found exact match: {}", resolved.display());
                 return Some(resolved);
             }
 
@@ -236,18 +225,11 @@ impl UltraBuildService {
             if !import_path.contains('.') {
                 for ext in &[".js", ".ts", ".jsx", ".tsx"] {
                     let full_path = resolved.with_extension(&ext[1..]);
-                    println!("  Trying: {} -> exists: {}", full_path.display(), full_path.exists());
-
                     if full_path.exists() {
-                        println!("  ✅ Found: {}", full_path.display());
                         return Some(full_path);
                     }
                 }
             }
-
-            println!("  ❌ Not found with any extension");
-        } else {
-            println!("  ❌ Not a relative import, skipping");
         }
 
         None
@@ -256,34 +238,23 @@ impl UltraBuildService {
     fn extract_css_dependencies(&self, content: &str) -> Vec<String> {
         let mut dependencies = Vec::new();
 
-        println!("🔍 CSS: Extracting CSS dependencies from content ({} lines)", content.lines().count());
-
-        for (line_num, line) in content.lines().enumerate() {
+        for line in content.lines() {
             let trimmed = line.trim();
 
             // Handle @import statements
             if trimmed.starts_with("@import") {
-                println!("  Line {}: Found CSS import: {}", line_num + 1, trimmed);
-
                 // Parse @import statements: @import "path" or @import url("path")
                 let import_regex = regex::Regex::new(r#"@import\s+(?:url\s*\()?\s*['"]([^'"]+)['"]"#).unwrap();
                 if let Some(captures) = import_regex.captures(trimmed) {
                     let import_path = &captures[1];
-                    println!("    Found CSS import path: '{}'", import_path);
 
                     if import_path.starts_with("./") || import_path.starts_with("../") {
-                        println!("    ✅ Adding CSS dependency: '{}'", import_path);
                         dependencies.push(import_path.to_string());
-                    } else {
-                        println!("    ❌ Skipping non-relative CSS import: '{}'", import_path);
                     }
-                } else {
-                    println!("    ❌ Could not parse CSS import statement");
                 }
             }
         }
 
-        println!("🔍 CSS: Found {} dependencies: {:?}", dependencies.len(), dependencies);
         dependencies
     }
 }
@@ -303,17 +274,7 @@ impl BuildService for UltraBuildService {
         let structure = self.scan_and_analyze_with_ui(config).await?;
 
         // Convert paths to ModuleInfo and resolve dependencies
-        println!("🔍 DEBUG: Found {} JS modules before resolution", structure.js_modules.len());
-        for (i, path) in structure.js_modules.iter().enumerate() {
-            println!("  {}: {}", i, path.display());
-        }
-
         let js_modules = self.resolve_all_dependencies(&structure.js_modules, &config.root).await?;
-
-        println!("🔍 DEBUG: Resolved {} JS modules after dependency resolution", js_modules.len());
-        for (i, module) in js_modules.iter().enumerate() {
-            println!("  {}: {} (deps: {})", i, module.path.display(), module.dependencies.len());
-        }
 
         // 🌳 TREE SHAKING (if enabled)
         let tree_shaking_stats = if config.enable_tree_shaking {
