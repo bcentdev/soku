@@ -52,8 +52,8 @@ impl EnhancedJsProcessor {
         // TODO: Implement proper TypeScript transformation once basic bundling works
         let processed = self.simple_typescript_strip(&module.content);
 
-        Logger::debug(&format!(\"Simple TS processing for {}: {} -> {} chars\",
-            module.path.display(), module.content.len(), processed.len()));
+        // Logger::debug(&format!(\"Simple TS processing for {}: {} -> {} chars\",
+        //     module.path.display(), module.content.len(), processed.len()));
 
         Ok(processed)
     }

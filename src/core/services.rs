@@ -143,8 +143,9 @@ impl UltraBuildService {
         }
 
         while let Some(current_path) = to_process.pop() {
-            // Skip if already processed
-            let path_key = current_path.to_string_lossy().to_string();
+            // Skip if already processed - normalize path for consistent deduplication
+            let normalized_path = current_path.canonicalize().unwrap_or_else(|_| current_path.clone());
+            let path_key = normalized_path.to_string_lossy().to_string();
             if resolved_modules.contains_key(&path_key) {
                 continue;
             }
@@ -185,7 +186,7 @@ impl UltraBuildService {
                 }
 
                 let module_info = ModuleInfo {
-                    path: current_path.clone(),
+                    path: normalized_path.clone(),
                     content,
                     module_type,
                     dependencies: resolved_deps,
