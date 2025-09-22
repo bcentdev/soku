@@ -1,6 +1,6 @@
 use crate::core::{interfaces::*, models::*};
 use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo};
-use crate::infrastructure::NodeModuleResolver;
+use crate::infrastructure::{NodeModuleResolver, MinificationService};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
@@ -295,13 +295,25 @@ impl BuildService for UltraBuildService {
             .collect();
         self.ui.show_processing_phase(&js_module_names, "⚡ JS");
 
-        let js_content = if tree_shaking_stats.is_some() {
+        let mut js_content = if tree_shaking_stats.is_some() {
             // Use tree shaking bundling
             self.js_processor.bundle_modules_with_tree_shaking(&js_only_modules, tree_shaking_stats.as_ref()).await?
         } else {
             // Regular bundling
             self.js_processor.bundle_modules(&js_only_modules).await?
         };
+
+        // ⚡ MINIFICATION (if enabled)
+        if config.enable_minification {
+            let minification_service = MinificationService::new();
+            let original_size = js_content.len();
+            js_content = minification_service.minify_bundle(js_content, "bundle.js").await?;
+            let stats = minification_service.get_stats(
+                &format!("{{size:{}}}", original_size),
+                &js_content
+            );
+            tracing::info!("🗜️  {}", stats);
+        }
 
         // 🎨 CSS PROCESSING
         // Include both original CSS files and CSS modules found through imports

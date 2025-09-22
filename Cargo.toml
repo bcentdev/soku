@@ -23,6 +23,8 @@ oxc_parser = "0.39"
 oxc_ast = "0.39"
 oxc_span = "0.39"
 oxc_allocator = "0.39"
+oxc_minifier = "0.39"
+oxc_codegen = "0.39"
 
 # CSS processing with lightningcss
 lightningcss = "1.0.0-alpha.67"
