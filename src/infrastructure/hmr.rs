@@ -68,19 +68,19 @@ impl UltraHmrService {
         tracing::info!("🔥 HMR server started on ws://{}", addr);
 
         let clients = self.clients.clone();
-        let update_sender = self.update_sender.clone();
+        let _update_sender = self.update_sender.clone();
         let mut update_receiver = self.update_sender.subscribe();
 
         // Spawn update broadcaster
         let broadcaster_clients = clients.clone();
         tokio::spawn(async move {
             while let Ok(update) = update_receiver.recv().await {
-                let message = serde_json::to_string(&update).unwrap_or_default();
+                let _message = serde_json::to_string(&update).unwrap_or_default();
                 let clients_to_remove: Arc<DashMap<String, bool>> = Arc::new(DashMap::new());
 
                 // Send to all connected clients
                 for entry in broadcaster_clients.iter() {
-                    let client_id = entry.key().clone();
+                    let _client_id = entry.key().clone();
                     // In a real implementation, we'd store the WebSocket connection
                     // For now, we just track clients
                 }
@@ -294,7 +294,7 @@ impl UltraHmrService {
 
     /// Add dependency relationship for smart updates
     pub async fn add_dependency(&self, file: PathBuf, dependency: PathBuf) {
-        let mut graph = self.dependency_graph.write().await;
+        let graph = self.dependency_graph.write().await;
         graph.entry(file)
             .or_insert_with(HashSet::new)
             .insert(dependency);

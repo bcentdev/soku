@@ -7,6 +7,6 @@ pub mod hmr_client;
 
 pub use file_system::*;
 pub use processors::*;
-pub use ultra_file_system::*;
+// ultra_file_system available as module but not re-exported to avoid unused warnings
 pub use hmr::*;
 pub use hmr_client::*;

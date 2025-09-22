@@ -1,3 +1,5 @@
+#![allow(dead_code)] // Performance utilities - may not all be used yet
+
 use dashmap::DashMap;
 use std::sync::Arc;
 use std::collections::hash_map::DefaultHasher;

@@ -11,6 +11,7 @@ impl Logger {
             .init();
     }
 
+    #[allow(dead_code)] // Logging utility - may be used in future
     pub fn build_start(root: &str, outdir: &str) {
         info!("🔨 Ultra Bundler - Production Build");
         info!("═══════════════════════════════════════");
@@ -19,6 +20,7 @@ impl Logger {
         info!("🎯 Target: Sub-2s builds");
     }
 
+    #[allow(dead_code)] // Logging utility - may be used in future
     pub fn scanning_files() {
         info!("📁 Scanning project files...");
     }
@@ -31,6 +33,7 @@ impl Logger {
         info!("🌳 Initializing tree shaking analysis...");
     }
 
+    #[allow(dead_code)] // Logging utility - may be used in future
     pub fn tree_shaking_disabled() {
         info!("⚡ Tree shaking disabled - using fast build mode");
     }
@@ -47,15 +50,18 @@ impl Logger {
         debug!("🎨 Processing CSS: {}", name);
     }
 
+    #[allow(dead_code)] // Logging utility - may be used in future
     pub fn processing_typescript(name: &str) {
         debug!("⚡ Processing TypeScript: {}", name);
     }
 
+    #[allow(dead_code)] // Logging utility - may be used in future
     pub fn debug(message: &str) {
         debug!("{}", message);
     }
 
 
+    #[allow(dead_code)] // Logging utility - may be used in future
     pub fn build_complete(
         js_count: usize,
         css_count: usize,

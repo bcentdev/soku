@@ -7,4 +7,4 @@ pub mod enhanced_js_processor;
 pub use js_processor::*;
 pub use css_processor::*;
 pub use tree_shaker::*;
-pub use enhanced_js_processor::*;
+// enhanced_js_processor is available as module but not re-exported to avoid unused warnings

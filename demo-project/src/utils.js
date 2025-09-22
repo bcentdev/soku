@@ -82,3 +82,22 @@ export const utils = {
         return logEntry;
     }
 };
+
+// These exports are NOT used and should be tree-shaken
+export const unusedUtility = {
+    calculatePi() {
+        return Math.PI;
+    },
+
+    fibonacci(n) {
+        if (n <= 1) return n;
+        return this.fibonacci(n - 1) + this.fibonacci(n - 2);
+    }
+};
+
+export function unusedFunction() {
+    console.log('This function is never called and should be removed');
+    return 'unused';
+}
+
+export const UNUSED_CONSTANT = 'This constant is never imported';

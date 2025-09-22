@@ -5,7 +5,9 @@ pub struct BuildConfig {
     pub root: PathBuf,
     pub outdir: PathBuf,
     pub enable_tree_shaking: bool,
+    #[allow(dead_code)] // Future feature
     pub enable_minification: bool,
+    #[allow(dead_code)] // Future feature
     pub enable_source_maps: bool,
 }
 
@@ -26,7 +28,9 @@ pub struct ModuleInfo {
     pub path: PathBuf,
     pub content: String,
     pub module_type: ModuleType,
+    #[allow(dead_code)] // Used for advanced dependency analysis
     pub dependencies: Vec<String>,
+    #[allow(dead_code)] // Used for advanced export analysis
     pub exports: Vec<String>,
 }
 
@@ -55,13 +59,18 @@ impl ModuleType {
 
 #[derive(Debug, Default)]
 pub struct BuildResult {
+    #[allow(dead_code)] // Used for detailed reporting
     pub js_modules_processed: usize,
+    #[allow(dead_code)] // Used for detailed reporting
     pub css_files_processed: usize,
+    #[allow(dead_code)] // Used for detailed reporting
     pub tree_shaking_stats: Option<TreeShakingStats>,
+    #[allow(dead_code)] // Used for detailed reporting
     pub build_time: std::time::Duration,
     pub output_files: Vec<OutputFile>,
     pub success: bool,
     pub errors: Vec<String>,
+    #[allow(dead_code)] // Used for detailed reporting
     pub warnings: Vec<String>,
 }
 

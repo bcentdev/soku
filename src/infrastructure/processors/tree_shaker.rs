@@ -16,6 +16,7 @@ struct ModuleAnalysis {
 
 #[derive(Debug, Clone)]
 struct ExportInfo {
+    #[allow(dead_code)] // Future tree shaking enhancement
     name: String,
 }
 

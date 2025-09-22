@@ -12,18 +12,23 @@ pub enum UltraError {
     Build(String),
 
     #[error("Tree shaking error: {0}")]
+    #[allow(dead_code)] // Future error handling
     TreeShaking(String),
 
     #[error("CSS processing error: {0}")]
+    #[allow(dead_code)] // Future error handling
     CssProcessing(String),
 
     #[error("Configuration error: {0}")]
+    #[allow(dead_code)] // Future error handling
     Config(String),
 
     #[error("File not found: {0}")]
+    #[allow(dead_code)] // Future error handling
     FileNotFound(String),
 
     #[error("Invalid path: {0}")]
+    #[allow(dead_code)] // Future error handling
     InvalidPath(String),
 }
 

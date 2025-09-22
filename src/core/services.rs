@@ -2,7 +2,7 @@ use crate::core::{interfaces::*, models::*};
 use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// Main build service implementation
 pub struct UltraBuildService {

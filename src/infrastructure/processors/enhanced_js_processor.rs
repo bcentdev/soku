@@ -1,3 +1,5 @@
+#![allow(dead_code)] // Enhanced JS processor - advanced features, may not all be used yet
+
 use crate::core::{interfaces::JsProcessor, models::*};
 use crate::utils::{Result, UltraError, Logger, UltraCache};
 use oxc_allocator::Allocator;

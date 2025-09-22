@@ -1,11 +1,12 @@
+#![allow(dead_code)] // Advanced performance utilities - may not all be used yet
+
 use std::path::Path;
 use std::fs::File;
 use std::sync::Arc;
 use memmap2::{Mmap, MmapOptions};
 use blake3::Hasher;
 use bumpalo::Bump;
-use parking_lot::RwLock;
-use rayon::prelude::*;
+use parking_lot::Mutex;
 use dashmap::DashMap;
 use crate::utils::{Result, UltraError};
 
@@ -66,7 +67,7 @@ impl MmapFileReader {
     }
 }
 
-/// Arena allocator for fast bulk operations (thread-local for performance)
+// Arena allocator for fast bulk operations (thread-local for performance)
 thread_local! {
     static ARENA: Bump = Bump::new();
 }
