@@ -2,6 +2,7 @@
 import { createApp } from './src/app.js';
 import { utils } from './src/utils.js';
 import { createUser, UserManager } from './src/types.ts';
+import { Button, Counter } from './src/components.tsx';
 import './src/styles.css';
 
 console.log('🚀 Ultra Bundler Demo Starting...');

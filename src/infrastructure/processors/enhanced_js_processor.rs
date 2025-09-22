@@ -32,17 +32,30 @@ impl EnhancedJsProcessor {
                 .and_then(|s| s.to_str())
                 .unwrap_or("unknown")));
 
-        Logger::processing_typescript(
-            module.path.file_name()
-                .and_then(|s| s.to_str())
-                .unwrap_or("unknown")
-        );
+        let file_extension = module.path.extension()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
+
+        if file_extension == "tsx" {
+            Logger::processing_typescript("TSX/JSX component");
+        } else {
+            Logger::processing_typescript(
+                module.path.file_name()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown")
+            );
+        }
 
         // Parse with oxc for validation and analysis
         let allocator = Allocator::default();
-        let source_type = SourceType::from_path(&module.path)
+        let mut source_type = SourceType::from_path(&module.path)
             .unwrap_or_default()
             .with_typescript(true);
+
+        // Enable JSX for .tsx files
+        if file_extension == "tsx" || file_extension == "jsx" {
+            source_type = source_type.with_jsx(true);
+        }
 
         let parser = Parser::new(&allocator, &module.content, source_type);
         let result = parser.parse();
@@ -55,10 +68,98 @@ impl EnhancedJsProcessor {
             ));
         }
 
-        // Enhanced type stripping - more comprehensive than basic version
-        let processed = self.strip_typescript_types(&module.content);
+        // Enhanced type stripping with JSX support
+        let processed = if file_extension == "tsx" || file_extension == "jsx" {
+            self.process_jsx_content(&module.content)
+        } else {
+            self.strip_typescript_types(&module.content)
+        };
 
         Ok(processed)
+    }
+
+    /// Process JSX/TSX content by converting JSX to JavaScript calls
+    fn process_jsx_content(&self, content: &str) -> String {
+        // First strip TypeScript types
+        let type_stripped = self.strip_typescript_types(content);
+
+        // Then convert JSX to JavaScript
+        self.convert_jsx_to_js(&type_stripped)
+    }
+
+    /// Convert JSX syntax to JavaScript function calls
+    fn convert_jsx_to_js(&self, content: &str) -> String {
+        let mut result = content.to_string();
+
+        // Convert self-closing JSX tags: <Component prop="value" /> -> createElement('Component', {prop: "value"})
+        if let Ok(re) = regex::Regex::new(r"<([A-Z][a-zA-Z0-9]*)\s*([^>]*?)\s*/\s*>") {
+            result = re.replace_all(&result, |caps: &regex::Captures| {
+                let component = &caps[1];
+                let props = &caps[2];
+                if props.trim().is_empty() {
+                    format!("createElement('{}', null)", component)
+                } else {
+                    let props_obj = self.parse_jsx_props(props);
+                    format!("createElement('{}', {})", component, props_obj)
+                }
+            }).to_string();
+        }
+
+        // Convert opening JSX tags: <div className="test"> -> createElement('div', {className: "test"},
+        if let Ok(re) = regex::Regex::new(r"<([a-zA-Z][a-zA-Z0-9]*)\s*([^>]*?)>") {
+            result = re.replace_all(&result, |caps: &regex::Captures| {
+                let component = &caps[1];
+                let props = &caps[2];
+                if props.trim().is_empty() {
+                    format!("createElement('{}', null, ", component)
+                } else {
+                    let props_obj = self.parse_jsx_props(props);
+                    format!("createElement('{}', {}, ", component, props_obj)
+                }
+            }).to_string();
+        }
+
+        // Convert closing JSX tags: </div> -> )
+        if let Ok(re) = regex::Regex::new(r"</[a-zA-Z][a-zA-Z0-9]*>") {
+            result = re.replace_all(&result, ")").to_string();
+        }
+
+        // Convert JSX expressions: {variable} -> variable (remove braces)
+        if let Ok(re) = regex::Regex::new(r"\{([^}]+)\}") {
+            result = re.replace_all(&result, "$1").to_string();
+        }
+
+        result
+    }
+
+    /// Parse JSX props into JavaScript object notation
+    fn parse_jsx_props(&self, props: &str) -> String {
+        if props.trim().is_empty() {
+            return "null".to_string();
+        }
+
+        let mut prop_pairs = Vec::new();
+
+        // Simple regex to match prop="value" or prop={expression}
+        if let Ok(re) = regex::Regex::new(r#"([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})"#) {
+            for caps in re.captures_iter(props) {
+                let prop_name = &caps[1];
+                let value = if let Some(quoted) = caps.get(2).or(caps.get(3)) {
+                    format!("\"{}\"", quoted.as_str())
+                } else if let Some(expr) = caps.get(4) {
+                    expr.as_str().to_string()
+                } else {
+                    "true".to_string()
+                };
+                prop_pairs.push(format!("{}: {}", prop_name, value));
+            }
+        }
+
+        if prop_pairs.is_empty() {
+            "null".to_string()
+        } else {
+            format!("{{{}}}", prop_pairs.join(", "))
+        }
     }
 
     /// Advanced TypeScript type stripping with comprehensive support
