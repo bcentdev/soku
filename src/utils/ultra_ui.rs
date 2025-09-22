@@ -1,22 +1,13 @@
 use colored::*;
-use console::Term;
-use crossterm::{
-    style::{Color, Print, SetForegroundColor},
-    ExecutableCommand,
-};
-use std::io;
 use std::time::Instant;
 
 pub struct UltraUI {
-    term: Term,
     start_time: Instant,
 }
 
 impl UltraUI {
     pub fn new() -> Self {
-        let term = Term::stdout();
         Self {
-            term,
             start_time: Instant::now(),
         }
     }
@@ -62,16 +53,10 @@ impl UltraUI {
     }
 
 
-    fn clear_screen(&self) {
-        let _ = self.term.clear_screen();
-    }
 }
 
 #[derive(Clone)]
 pub struct CompletionStats {
-    pub js_count: usize,
-    pub css_count: usize,
-    pub tree_shaking_info: String,
     pub output_files: Vec<OutputFileInfo>,
 }
 

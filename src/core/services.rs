@@ -34,15 +34,6 @@ impl UltraBuildService {
     }
 
 
-    async fn scan_and_analyze(&self, config: &BuildConfig) -> Result<ProjectStructure> {
-        let _timer = Timer::start("File scanning");
-        Logger::scanning_files();
-
-        let structure = self.fs_service.scan_directory(&config.root).await?;
-        Logger::found_files(structure.js_modules.len(), structure.css_files.len());
-
-        Ok(structure)
-    }
 
     async fn scan_and_analyze_with_ui(&self, config: &BuildConfig) -> Result<ProjectStructure> {
         let structure = self.fs_service.scan_directory(&config.root).await?;
@@ -53,7 +44,7 @@ impl UltraBuildService {
         Ok(structure)
     }
 
-    async fn process_javascript_modules(
+    async fn _process_javascript_modules(
         &self,
         modules: &[ModuleInfo],
         config: &BuildConfig,
@@ -97,7 +88,7 @@ impl UltraBuildService {
         Ok((bundled_js, tree_shaking_stats))
     }
 
-    async fn process_css_files(&self, css_files: &[std::path::PathBuf]) -> Result<String> {
+    async fn _process_css_files(&self, css_files: &[std::path::PathBuf]) -> Result<String> {
         let _timer = Timer::start("CSS processing");
 
         let bundled_css = self.css_processor.bundle_css(css_files).await?;
@@ -349,16 +340,6 @@ impl BuildService for UltraBuildService {
 
         // 🎉 EPIC COMPLETION SHOWCASE!
         let completion_stats = CompletionStats {
-            js_count: js_only_modules.len(),
-            css_count: all_css_files.len(),
-            tree_shaking_info: if let Some(ref stats) = tree_shaking_stats {
-                format!("{}% reduction, {} exports removed",
-                    stats.reduction_percentage as u32,
-                    stats.removed_exports
-                )
-            } else {
-                "disabled (fast mode)".to_string()
-            },
             output_files: output_files.iter().map(|f| OutputFileInfo {
                 name: f.path.file_name().unwrap().to_str().unwrap().to_string(),
                 size: f.size,

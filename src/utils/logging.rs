@@ -1,5 +1,4 @@
 use tracing::{info, warn, error};
-use std::time::Instant;
 
 pub struct Logger;
 
@@ -81,24 +80,10 @@ impl Logger {
     }
 }
 
-pub struct Timer {
-    start: Instant,
-    name: String,
-}
+pub struct Timer;
 
 impl Timer {
-    pub fn start(name: &str) -> Self {
-        Self {
-            start: Instant::now(),
-            name: name.to_string(),
-        }
+    pub fn start(_name: &str) -> Self {
+        Self
     }
-
-    pub fn elapsed(&self) -> std::time::Duration {
-        self.start.elapsed()
-    }
-}
-
-impl Drop for Timer {
-    fn drop(&mut self) {}
 }

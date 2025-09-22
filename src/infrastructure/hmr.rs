@@ -1,14 +1,13 @@
 use crate::utils::{Result, UltraError};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::broadcast;
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use dashmap::DashMap;
-use std::collections::HashSet;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HmrUpdate {
@@ -31,18 +30,13 @@ pub enum HmrUpdateKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct HmrClient {
-    pub id: String,
-    pub connected_at: std::time::SystemTime,
-}
+pub struct HmrClient;
 
 /// Ultra-fast Hot Module Replacement system
 #[derive(Clone)]
 pub struct UltraHmrService {
     clients: Arc<DashMap<String, HmrClient>>,
     update_sender: broadcast::Sender<HmrUpdate>,
-    dependency_graph: Arc<RwLock<DashMap<PathBuf, HashSet<PathBuf>>>>,
-    watched_paths: Arc<RwLock<HashSet<PathBuf>>>,
     root_path: PathBuf,
 }
 
@@ -53,8 +47,6 @@ impl UltraHmrService {
         Self {
             clients: Arc::new(DashMap::new()),
             update_sender,
-            dependency_graph: Arc::new(RwLock::new(DashMap::new())),
-            watched_paths: Arc::new(RwLock::new(HashSet::new())),
             root_path,
         }
     }
@@ -117,10 +109,7 @@ impl UltraHmrService {
         let client_id = Uuid::new_v4().to_string();
 
         // Register client
-        clients.insert(client_id.clone(), HmrClient {
-            id: client_id.clone(),
-            connected_at: std::time::SystemTime::now(),
-        });
+        clients.insert(client_id.clone(), HmrClient);
 
         tracing::info!("🔌 HMR client connected: {}", client_id);
 
@@ -292,48 +281,8 @@ impl UltraHmrService {
         }
     }
 
-    /// Add dependency relationship for smart updates
-    pub async fn add_dependency(&self, file: PathBuf, dependency: PathBuf) {
-        let graph = self.dependency_graph.write().await;
-        graph.entry(file)
-            .or_insert_with(HashSet::new)
-            .insert(dependency);
-    }
-
-    /// Get HMR statistics
-    pub fn stats(&self) -> HmrStats {
-        HmrStats {
-            connected_clients: self.clients.len(),
-            watched_files: 0, // TODO: Implement
-        }
-    }
-
-    /// Trigger manual reload for all clients
-    pub fn trigger_full_reload(&self) -> Result<()> {
-        let update = HmrUpdate {
-            id: Uuid::new_v4().to_string(),
-            kind: HmrUpdateKind::FullReload,
-            path: PathBuf::from("__full_reload__"),
-            content: None,
-            dependencies: vec![],
-            timestamp: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-        };
-
-        self.update_sender.send(update)
-            .map_err(|e| UltraError::Build(format!("Failed to trigger reload: {}", e)))?;
-
-        Ok(())
-    }
 }
 
-#[derive(Debug, Clone)]
-pub struct HmrStats {
-    pub connected_clients: usize,
-    pub watched_files: usize,
-}
 
 #[cfg(test)]
 mod tests {

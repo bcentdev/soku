@@ -176,8 +176,6 @@ impl RegexTreeShaker {
 
         Ok(TreeShakingStats {
             total_modules: self.module_graph.len(),
-            total_exports,
-            used_exports,
             removed_exports,
             reduction_percentage: if total_exports > 0 {
                 (removed_exports as f64 / total_exports as f64) * 100.0

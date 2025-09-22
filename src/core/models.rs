@@ -84,8 +84,6 @@ pub struct OutputFile {
 #[derive(Debug, Clone)]
 pub struct TreeShakingStats {
     pub total_modules: usize,
-    pub total_exports: usize,
-    pub used_exports: usize,
     pub removed_exports: usize,
     pub reduction_percentage: f64,
 }
@@ -108,8 +106,3 @@ pub struct ProjectStructure {
     pub other_files: Vec<PathBuf>,
 }
 
-impl ProjectStructure {
-    pub fn total_files(&self) -> usize {
-        self.js_modules.len() + self.css_files.len() + self.html_files.len() + self.other_files.len()
-    }
-}
