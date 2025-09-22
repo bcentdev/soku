@@ -1,6 +1,7 @@
 // Ultra Bundler Demo Project
 import { createApp } from './src/app.js';
 import { utils } from './src/utils.js';
+import { createUser, UserManager } from './src/types.ts';
 import './src/styles.css';
 
 console.log('🚀 Ultra Bundler Demo Starting...');
@@ -20,6 +21,13 @@ const formattedData = utils.formatData({
 });
 
 console.log('📊 Performance Data:', formattedData);
+
+// Test TypeScript functionality
+const testUser = createUser('John Doe', 'john@example.com');
+console.log('🧑 Created user:', testUser);
+
+const userManager = new UserManager('https://api.example.com/users');
+console.log('👥 User manager initialized');
 
 // DOM manipulation
 document.addEventListener('DOMContentLoaded', () => {

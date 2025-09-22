@@ -61,72 +61,201 @@ impl EnhancedJsProcessor {
         Ok(processed)
     }
 
-    /// Simple but effective TypeScript type stripping
+    /// Advanced TypeScript type stripping with comprehensive support
     fn strip_typescript_types(&self, content: &str) -> String {
-        content
-            .lines()
-            .filter_map(|line| {
-                let trimmed = line.trim();
+        let mut processed_lines = Vec::new();
+        let mut in_multiline_interface = false;
+        let mut in_multiline_type = false;
+        let mut in_multiline_enum = false;
+        let mut brace_count = 0;
 
-                // Skip empty lines
-                if trimmed.is_empty() {
-                    return Some(line.to_string());
+        for line in content.lines() {
+            let trimmed = line.trim();
+
+            // Skip empty lines
+            if trimmed.is_empty() {
+                processed_lines.push(line.to_string());
+                continue;
+            }
+
+            // Handle multiline constructs
+            if in_multiline_interface || in_multiline_type || in_multiline_enum {
+                brace_count += trimmed.chars().filter(|&c| c == '{').count() as i32;
+                brace_count -= trimmed.chars().filter(|&c| c == '}').count() as i32;
+
+                if brace_count <= 0 {
+                    in_multiline_interface = false;
+                    in_multiline_type = false;
+                    in_multiline_enum = false;
+                    brace_count = 0;
                 }
+                continue; // Skip this line as it's part of a type definition
+            }
 
-                // Remove import/export statements for bundling
-                if trimmed.starts_with("import ") || trimmed.starts_with("export ") {
-                    return None;
+            // Remove import/export statements for bundling (handled by main processor)
+            if trimmed.starts_with("import ") ||
+               (trimmed.starts_with("export ") &&
+                (trimmed.contains("type ") || trimmed.contains("interface ") ||
+                 (trimmed.contains("enum ") && !trimmed.contains("const enum")))) {
+                continue;
+            }
+
+            // Handle interface declarations
+            if trimmed.starts_with("interface ") ||
+               (trimmed.starts_with("export ") && trimmed.contains("interface ")) {
+                if trimmed.contains('{') && !trimmed.ends_with('}') {
+                    in_multiline_interface = true;
+                    brace_count = trimmed.chars().filter(|&c| c == '{').count() as i32 -
+                                 trimmed.chars().filter(|&c| c == '}').count() as i32;
                 }
+                continue;
+            }
 
-                // Remove interface declarations
-                if trimmed.starts_with("interface ") {
-                    return None;
+            // Handle type aliases
+            if trimmed.starts_with("type ") ||
+               (trimmed.starts_with("export ") && trimmed.contains("type ") && trimmed.contains(" = ")) {
+                if trimmed.contains('{') && !trimmed.ends_with('}') {
+                    in_multiline_type = true;
+                    brace_count = trimmed.chars().filter(|&c| c == '{').count() as i32 -
+                                 trimmed.chars().filter(|&c| c == '}').count() as i32;
                 }
+                continue;
+            }
 
-                // Remove type declarations
-                if trimmed.starts_with("type ") && trimmed.contains(" = ") {
-                    return None;
+            // Handle enum declarations (but keep const enum)
+            if (trimmed.starts_with("enum ") && !trimmed.starts_with("const enum")) ||
+               (trimmed.starts_with("export ") && trimmed.contains("enum ") && !trimmed.contains("const enum")) {
+                if trimmed.contains('{') && !trimmed.ends_with('}') {
+                    in_multiline_enum = true;
+                    brace_count = trimmed.chars().filter(|&c| c == '{').count() as i32 -
+                                 trimmed.chars().filter(|&c| c == '}').count() as i32;
                 }
+                continue;
+            }
 
-                // Remove enum declarations (keep const enum)
-                if trimmed.starts_with("enum ") && !trimmed.starts_with("const enum") {
-                    return None;
+            // Process the line for type annotations
+            let mut processed = line.to_string();
+
+            // Handle export statements that should be preserved but cleaned
+            if trimmed.starts_with("export ") && !trimmed.contains("type ") && !trimmed.contains("interface ") {
+                processed = self.clean_export_statement(&processed);
+            } else {
+                // Clean regular code lines
+                processed = self.clean_typescript_annotations(&processed);
+            }
+
+            processed_lines.push(processed);
+        }
+
+        processed_lines.join("\n")
+    }
+
+    /// Clean TypeScript annotations from a single line of code
+    fn clean_typescript_annotations(&self, line: &str) -> String {
+        let mut result = line.to_string();
+
+        // Clean function declarations with types: function foo(x: number, y: string): boolean -> function foo(x, y)
+        if let Ok(re) = regex::Regex::new(r"function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(([^)]*)\)\s*:\s*[^{]+(\s*\{)") {
+            // Clean parameters inside the function
+            let params_cleaned = self.clean_function_parameters(&re.replace_all(&result, "function $1($2)$3").to_string());
+            result = params_cleaned;
+        }
+
+        // Clean arrow functions with types: (x: number, y: string): boolean => -> (x, y) =>
+        if let Ok(re) = regex::Regex::new(r"\(([^)]*)\)\s*:\s*[^=]+(\s*=>)") {
+            let params_cleaned = self.clean_function_parameters(&format!("({}){}", "$1", "$2"));
+            result = re.replace_all(&result, &params_cleaned).to_string();
+        }
+
+        // Clean variable declarations: let x: number = 5 -> let x = 5
+        if let Ok(re) = regex::Regex::new(r"(let|const|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[^=]+(\s*=)") {
+            result = re.replace_all(&result, "$1 $2$3").to_string();
+        }
+
+        // Clean function parameters: function foo(x: number, y: string) -> function foo(x, y)
+        result = self.clean_function_parameters(&result);
+
+        // Clean return types: ): number => -> ) =>
+        if let Ok(re) = regex::Regex::new(r"\)\s*:\s*[^{=>;]+(\s*[{=>;])") {
+            result = re.replace_all(&result, ")$1").to_string();
+        }
+
+        // Clean simple arrow function return types: (): number => -> () =>
+        if let Ok(re) = regex::Regex::new(r"\(\s*\)\s*:\s*[^=]+(\s*=>)") {
+            result = re.replace_all(&result, "()$1").to_string();
+        }
+
+        // Clean generic types: Array<string> -> Array, Promise<User[]> -> Promise
+        result = self.clean_generic_types(&result);
+
+        // Clean class property types: private name: string; -> private name;
+        if let Ok(re) = regex::Regex::new(r"(private|public|protected|readonly)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[^;=]+;") {
+            result = re.replace_all(&result, "$1 $2;").to_string();
+        }
+
+        // Clean as type assertions: value as string -> value
+        if let Ok(re) = regex::Regex::new(r"\s+as\s+[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]*") {
+            result = re.replace_all(&result, "").to_string();
+        }
+
+        // Clean method return types: method(): Type -> method()
+        if let Ok(re) = regex::Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(\s*\)\s*:\s*[^{;]+(\s*[{;])") {
+            result = re.replace_all(&result, "$1()$2").to_string();
+        }
+
+        result
+    }
+
+    /// Clean function parameters of TypeScript types
+    fn clean_function_parameters(&self, content: &str) -> String {
+        if let Ok(re) = regex::Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[^,\)]+") {
+            re.replace_all(content, "$1").to_string()
+        } else {
+            content.to_string()
+        }
+    }
+
+    /// Clean generic types recursively
+    fn clean_generic_types(&self, content: &str) -> String {
+        let mut result = content.to_string();
+        let mut iterations = 0;
+        const MAX_ITERATIONS: usize = 10; // Prevent infinite loops
+
+        while iterations < MAX_ITERATIONS {
+            if let Ok(re) = regex::Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)<[^<>]*>") {
+                let new_result = re.replace_all(&result, "$1").to_string();
+                if new_result == result {
+                    break; // No more changes
                 }
+                result = new_result;
+                iterations += 1;
+            } else {
+                break;
+            }
+        }
+        result
+    }
 
-                // For other lines, do simple type stripping
-                let mut processed = line.to_string();
+    /// Clean export statements while preserving JavaScript functionality
+    fn clean_export_statement(&self, line: &str) -> String {
+        let mut result = line.to_string();
 
-                // Simple regex-like replacements for common patterns
-                // Handle variable declarations: let x: number = 5 -> let x = 5
-                if let Some(colon_pos) = processed.find(": ") {
-                    if let Some(equals_pos) = processed[colon_pos..].find(" = ") {
-                        let before = &processed[..colon_pos];
-                        let after = &processed[colon_pos + equals_pos..];
-                        processed = format!("{}{}", before, after);
-                    }
-                }
+        // Handle export function with types: export function foo(x: number): string -> export function foo(x)
+        if result.contains("export function") {
+            result = self.clean_typescript_annotations(&result);
+        }
 
-                // Remove simple return type annotations: (): number -> ()
-                processed = processed.replace("(): number", "()");
-                processed = processed.replace("(): string", "()");
-                processed = processed.replace("(): void", "()");
-                processed = processed.replace("(): boolean", "()");
+        // Handle export const with types: export const x: number = 5 -> export const x = 5
+        if result.contains("export const") || result.contains("export let") || result.contains("export var") {
+            result = self.clean_typescript_annotations(&result);
+        }
 
-                // Remove generic types: Array<string> -> Array
-                while let Some(start) = processed.find('<') {
-                    if let Some(end) = processed[start..].find('>') {
-                        let before = &processed[..start];
-                        let after = &processed[start + end + 1..];
-                        processed = format!("{}{}", before, after);
-                    } else {
-                        break;
-                    }
-                }
+        // Handle export class with types
+        if result.contains("export class") {
+            result = self.clean_typescript_annotations(&result);
+        }
 
-                Some(processed)
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
+        result
     }
 
     /// Enhanced JavaScript processing with optimizations
