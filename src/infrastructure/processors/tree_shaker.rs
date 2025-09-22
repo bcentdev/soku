@@ -215,12 +215,6 @@ impl TreeShaker for RegexTreeShaker {
         let stats = self.shake_internal(entry_points)?;
 
         Logger::found_files(stats.total_modules, 0);
-        tracing::info!("🌳 Tree Shaking Results:");
-        tracing::info!("  📦 Modules analyzed: {}", stats.total_modules);
-        tracing::info!("  📤 Total exports: {}", stats.total_exports);
-        tracing::info!("  ✅ Used exports: {}", stats.used_exports);
-        tracing::info!("  🗑️  Removed exports: {}", stats.removed_exports);
-        tracing::info!("  📉 Code reduction: {:.1}%", stats.reduction_percentage);
 
         Ok(stats)
     }

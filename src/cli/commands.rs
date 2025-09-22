@@ -127,18 +127,7 @@ impl CliHandler {
         // Execute build
         let result = build_service.build(&config).await?;
 
-        if result.success {
-            tracing::info!("💾 Generated files:");
-            for output_file in &result.output_files {
-                tracing::info!(
-                    "  ✅ {} ({} bytes)",
-                    output_file.path.file_name()
-                        .and_then(|s| s.to_str())
-                        .unwrap_or("unknown"),
-                    output_file.size
-                );
-            }
-        } else {
+        if !result.success {
             for error in &result.errors {
                 Logger::error(error);
             }
@@ -304,7 +293,6 @@ impl CliHandler {
                 .map_err(|e| crate::utils::UltraError::Io(e))?;
         }
 
-        tracing::info!("🔧 Initial build completed with HMR client");
         Ok(())
     }
 }

@@ -1,4 +1,4 @@
-use tracing::{info, warn, error, debug};
+use tracing::{info, warn, error};
 use std::time::Instant;
 
 pub struct Logger;
@@ -6,8 +6,9 @@ pub struct Logger;
 impl Logger {
     pub fn init() {
         tracing_subscriber::fmt()
-            .with_env_filter("ultra=debug")
+            .with_env_filter("ultra=info")
             .with_target(false)
+            .without_time()
             .init();
     }
 
@@ -25,40 +26,24 @@ impl Logger {
         info!("📁 Scanning project files...");
     }
 
-    pub fn found_files(js_count: usize, css_count: usize) {
-        info!("📦 Found {} JS modules, {} CSS files", js_count, css_count);
-    }
+    pub fn found_files(_js_count: usize, _css_count: usize) {}
 
-    pub fn tree_shaking_enabled() {
-        info!("🌳 Initializing tree shaking analysis...");
-    }
+    pub fn tree_shaking_enabled() {}
 
-    #[allow(dead_code)] // Logging utility - may be used in future
-    pub fn tree_shaking_disabled() {
-        info!("⚡ Tree shaking disabled - using fast build mode");
-    }
+    #[allow(dead_code)]
+    pub fn tree_shaking_disabled() {}
 
-    pub fn analyzing_module(name: &str) {
-        debug!("🔍 Analyzing module: {}", name);
-    }
+    pub fn analyzing_module(_name: &str) {}
 
-    pub fn processing_file(name: &str, mode: &str) {
-        debug!("⚡ Processing: {} ({})", name, mode);
-    }
+    pub fn processing_file(_name: &str, _mode: &str) {}
 
-    pub fn processing_css(name: &str) {
-        debug!("🎨 Processing CSS: {}", name);
-    }
+    pub fn processing_css(_name: &str) {}
 
     #[allow(dead_code)] // Logging utility - may be used in future
-    pub fn processing_typescript(name: &str) {
-        debug!("⚡ Processing TypeScript: {}", name);
-    }
+    pub fn processing_typescript(_name: &str) {}
 
-    #[allow(dead_code)] // Logging utility - may be used in future
-    pub fn debug(message: &str) {
-        debug!("{}", message);
-    }
+    #[allow(dead_code)]
+    pub fn debug(_message: &str) {}
 
 
     #[allow(dead_code)] // Logging utility - may be used in future
@@ -103,7 +88,6 @@ pub struct Timer {
 
 impl Timer {
     pub fn start(name: &str) -> Self {
-        debug!("⏱️  Starting: {}", name);
         Self {
             start: Instant::now(),
             name: name.to_string(),
@@ -116,7 +100,5 @@ impl Timer {
 }
 
 impl Drop for Timer {
-    fn drop(&mut self) {
-        debug!("⏱️  Completed: {} in {:.2?}", self.name, self.elapsed());
-    }
+    fn drop(&mut self) {}
 }
