@@ -320,7 +320,14 @@ impl BuildService for UltraBuildService {
             .map(|m| m.path.file_name().unwrap().to_str().unwrap().to_string())
             .collect();
         self.ui.show_processing_phase(&js_module_names, "⚡ JS");
-        let js_content = self.js_processor.bundle_modules(&js_only_modules).await?;
+
+        let js_content = if tree_shaking_stats.is_some() {
+            // Use tree shaking bundling
+            self.js_processor.bundle_modules_with_tree_shaking(&js_only_modules, tree_shaking_stats.as_ref()).await?
+        } else {
+            // Regular bundling
+            self.js_processor.bundle_modules(&js_only_modules).await?
+        };
 
         // 🎨 CSS PROCESSING
         // Include both original CSS files and CSS modules found through imports

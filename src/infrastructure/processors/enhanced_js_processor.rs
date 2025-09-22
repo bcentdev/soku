@@ -237,6 +237,12 @@ impl JsProcessor for EnhancedJsProcessor {
         Ok(bundle)
     }
 
+    async fn bundle_modules_with_tree_shaking(&self, modules: &[ModuleInfo], _tree_shaking_stats: Option<&TreeShakingStats>) -> Result<String> {
+        // For now, delegate to regular bundling
+        // TODO: Implement tree shaking for enhanced processor
+        self.bundle_modules(modules).await
+    }
+
     fn supports_module_type(&self, module_type: &ModuleType) -> bool {
         matches!(module_type, ModuleType::JavaScript | ModuleType::TypeScript)
     }
