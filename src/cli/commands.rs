@@ -264,7 +264,7 @@ impl CliHandler {
         let css_processor = Arc::new(LightningCssProcessor::new(false));
 
         // Create build service
-        let build_service = UltraBuildService::new(
+        let mut build_service = UltraBuildService::new(
             fs_service,
             js_processor,
             css_processor,

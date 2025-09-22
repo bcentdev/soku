@@ -38,5 +38,5 @@ pub trait TreeShaker: Send + Sync {
 /// Build service interface
 #[async_trait]
 pub trait BuildService: Send + Sync {
-    async fn build(&self, config: &BuildConfig) -> Result<BuildResult>;
+    async fn build(&mut self, config: &BuildConfig) -> Result<BuildResult>;
 }

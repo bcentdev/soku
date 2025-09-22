@@ -1,5 +1,6 @@
 use crate::core::{interfaces::*, models::*};
 use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo};
+use crate::infrastructure::NodeModuleResolver;
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
@@ -11,6 +12,7 @@ pub struct UltraBuildService {
     css_processor: Arc<dyn CssProcessor>,
     tree_shaker: Option<Arc<dyn TreeShaker>>,
     ui: UltraUI,
+    node_resolver: NodeModuleResolver,
 }
 
 impl UltraBuildService {
@@ -25,6 +27,7 @@ impl UltraBuildService {
             css_processor,
             tree_shaker: None,
             ui: UltraUI::new(),
+            node_resolver: NodeModuleResolver::new(),
         }
     }
 
@@ -127,7 +130,7 @@ impl UltraBuildService {
     }
 
     async fn resolve_all_dependencies(
-        &self,
+        &mut self,
         entry_files: &[PathBuf],
         root_dir: &Path,
     ) -> Result<Vec<ModuleInfo>> {
@@ -197,33 +200,13 @@ impl UltraBuildService {
     }
 
     async fn resolve_import_path(
-        &self,
+        &mut self,
         current_file: &Path,
         import_path: &str,
-        _root_dir: &Path,
+        root_dir: &Path,
     ) -> Option<PathBuf> {
-        // Handle relative imports
-        if import_path.starts_with("./") || import_path.starts_with("../") {
-            let current_dir = current_file.parent()?;
-            let resolved = current_dir.join(import_path);
-
-            // Check if the file exists as-is first (with original extension)
-            if resolved.exists() {
-                return Some(resolved);
-            }
-
-            // Try different extensions for JS/TS files only if no extension provided
-            if !import_path.contains('.') {
-                for ext in &[".js", ".ts", ".jsx", ".tsx"] {
-                    let full_path = resolved.with_extension(&ext[1..]);
-                    if full_path.exists() {
-                        return Some(full_path);
-                    }
-                }
-            }
-        }
-
-        None
+        // Use the node resolver for all imports
+        self.node_resolver.resolve(import_path, current_file, root_dir).await
     }
 
     fn extract_css_dependencies(&self, content: &str) -> Vec<String> {
@@ -252,7 +235,7 @@ impl UltraBuildService {
 
 #[async_trait::async_trait]
 impl BuildService for UltraBuildService {
-    async fn build(&self, config: &BuildConfig) -> Result<BuildResult> {
+    async fn build(&mut self, config: &BuildConfig) -> Result<BuildResult> {
         // 🚀 EPIC BANNER!
         self.ui.show_epic_banner();
 
