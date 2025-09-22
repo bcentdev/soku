@@ -108,12 +108,8 @@ impl CliHandler {
 
         // Create services
         let fs_service = Arc::new(TokioFileSystemService);
-        // Use enhanced processor for TypeScript stripping when minification is enabled
-        let js_processor: Arc<dyn JsProcessor> = if enable_minification {
-            Arc::new(EnhancedJsProcessor::new())
-        } else {
-            Arc::new(OxcJsProcessor::new())
-        };
+        // Always use enhanced processor for TypeScript stripping
+        let js_processor: Arc<dyn JsProcessor> = Arc::new(EnhancedJsProcessor::new());
         let css_processor = Arc::new(LightningCssProcessor::new(enable_minification));
 
         // Create build service

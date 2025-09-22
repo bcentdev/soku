@@ -5,6 +5,9 @@ import { createUser, UserManager } from './src/types.ts';
 import { Button, Counter } from './src/components.tsx';
 import './src/styles.css';
 
+// Test npm package resolution
+import { doubled, saveData } from './test-npm.js';
+
 console.log('🚀 Ultra Bundler Demo Starting...');
 
 // Initialize the application
