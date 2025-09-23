@@ -179,15 +179,23 @@ impl OxcJsProcessor {
         let source_type = SourceType::from_path(&module.path)
             .unwrap_or_default();
 
+        Logger::debug(&format!("Parsing file: {}", module.path.display()));
+
         let parser = Parser::new(&allocator, &module.content, source_type);
         let result = parser.parse();
 
         if !result.errors.is_empty() {
-            Logger::warn(&format!(
-                "Parser warnings in {}: {} issues",
+            // Use println for immediate output during debugging
+            println!("❌ Parse errors in {}: {} issues", module.path.display(), result.errors.len());
+            for error in &result.errors {
+                println!("  - {}", error);
+            }
+            Logger::error(&format!(
+                "Parse errors in {}: {} issues",
                 module.path.display(),
                 result.errors.len()
             ));
+            return Err(UltraError::Build(format!("Parse error in {}: {}", module.path.display(), result.errors[0])));
         }
 
         // Process the module content while preserving functionality
@@ -197,13 +205,102 @@ impl OxcJsProcessor {
     }
 
     fn transform_module_content(&self, content: &str) -> String {
-        self.transform_module_content_with_tree_shaking(content, None)
+        // Strip TypeScript syntax first, then transform
+        let stripped = self.strip_typescript_syntax(content);
+        self.transform_module_content_with_tree_shaking(&stripped, None)
+    }
+
+    fn strip_typescript_syntax(&self, content: &str) -> String {
+        let mut result = String::new();
+        let mut in_interface = false;
+        let mut in_type_alias = false;
+        let mut brace_depth = 0;
+
+        for line in content.lines() {
+            let trimmed = line.trim();
+
+            // Skip interface declarations
+            if trimmed.starts_with("interface ") || trimmed.starts_with("export interface ") {
+                in_interface = true;
+                brace_depth = 0;
+                result.push_str(&format!("// {}\n", line));
+                if trimmed.contains('{') {
+                    brace_depth += trimmed.matches('{').count();
+                }
+                if trimmed.contains('}') {
+                    brace_depth -= trimmed.matches('}').count();
+                    if brace_depth == 0 {
+                        in_interface = false;
+                    }
+                }
+                continue;
+            }
+
+            // Skip type aliases
+            if trimmed.starts_with("type ") || trimmed.starts_with("export type ") {
+                in_type_alias = true;
+                result.push_str(&format!("// {}\n", line));
+                if !trimmed.contains(';') && !trimmed.contains('=') {
+                    continue;
+                }
+                in_type_alias = false;
+                continue;
+            }
+
+            // Skip enum declarations (but keep const enums)
+            if trimmed.starts_with("enum ") || trimmed.starts_with("export enum ") {
+                result.push_str(&format!("// {}\n", line));
+                continue;
+            }
+
+            // Handle interface/type continuation
+            if in_interface {
+                result.push_str(&format!("// {}\n", line));
+                if trimmed.contains('{') {
+                    brace_depth += trimmed.matches('{').count();
+                }
+                if trimmed.contains('}') {
+                    brace_depth -= trimmed.matches('}').count();
+                    if brace_depth == 0 {
+                        in_interface = false;
+                    }
+                }
+                continue;
+            }
+
+            if in_type_alias {
+                result.push_str(&format!("// {}\n", line));
+                if trimmed.ends_with(';') {
+                    in_type_alias = false;
+                }
+                continue;
+            }
+
+            // For now, just pass through the line without modifications
+            // The minifier is failing on TypeScript syntax, but our regex-based removal
+            // is too aggressive and breaking valid JavaScript
+            let mut processed_line = line.to_string();
+
+            // Only remove the most obvious TypeScript-only syntax
+            // Remove 'private', 'public', 'protected', 'readonly' keywords safely
+            processed_line = processed_line.replace("private ", "");
+            processed_line = processed_line.replace("public ", "");
+            processed_line = processed_line.replace("protected ", "");
+            processed_line = processed_line.replace("readonly ", "");
+
+            result.push_str(&processed_line);
+            result.push('\n');
+        }
+
+        result
     }
 
     fn transform_module_content_with_tree_shaking(&self, content: &str, used_exports: Option<&std::collections::HashSet<String>>) -> String {
+        // Strip TypeScript syntax first
+        let stripped = self.strip_typescript_syntax(content);
         let mut processed_lines = Vec::new();
 
-        for line in content.lines() {
+        for line in stripped.lines() {
             let trimmed = line.trim();
 
             if trimmed.starts_with("import ") {
