@@ -302,15 +302,30 @@ impl OxcJsProcessor {
             let stripped = self.strip_typescript_syntax(&module.content);
             println!("📝 Original content (first 200 chars): {}", &module.content.chars().take(200).collect::<String>());
             println!("🧹 Stripped content (first 200 chars): {}", &stripped.chars().take(200).collect::<String>());
-            stripped
+            // Preprocess modern JS features for better parser compatibility
+            self.preprocess_modern_js_features(&stripped)
         } else {
-            module.content.clone()
+            // Also preprocess JS files for modern features
+            self.preprocess_modern_js_features(&module.content)
         };
 
-        // Parse with oxc for validation (now with cleaned JavaScript)
+        // Parse with oxc for validation (properly configured for TypeScript/JSX)
         let allocator = Allocator::default();
-        let source_type = SourceType::from_path(&module.path)
-            .unwrap_or_default();
+        let source_type = if module.path.extension()
+            .and_then(|s| s.to_str())
+            .map(|ext| ext == "ts" || ext == "tsx")
+            .unwrap_or(false)
+        {
+            // TypeScript/TSX files - force module parsing for modern features
+            SourceType::default()
+                .with_typescript(true)
+                .with_jsx(true)
+                .with_module(true)
+        } else {
+            // JavaScript files - ensure module parsing for ES2020+ features
+            SourceType::default()
+                .with_module(true)
+        };
 
         let parser = Parser::new(&allocator, &content_to_parse, source_type);
         let result = parser.parse();
@@ -380,7 +395,8 @@ impl OxcJsProcessor {
         let allocator = Allocator::default();
         let source_type = SourceType::default()
             .with_typescript(true)
-            .with_jsx(true); // Support both TS and TSX
+            .with_jsx(true)
+            .with_module(true); // Support modern JS features including optional chaining
 
         println!("🔧 Using AST transformation for TypeScript stripping");
 
@@ -418,6 +434,25 @@ impl OxcJsProcessor {
         let codegen_result = codegen.build(&program);
 
         Ok(codegen_result.code)
+    }
+
+    /// Preprocess modern JavaScript features for better parser compatibility
+    fn preprocess_modern_js_features(&self, content: &str) -> String {
+        use regex::Regex;
+
+        let mut result = content.to_string();
+
+        // Transform optional chaining calls: foo?.() → foo && foo()
+        if let Ok(optional_call_regex) = Regex::new(r"(\w+)\?\.\(([^)]*)\)") {
+            result = optional_call_regex.replace_all(&result, "$1 && $1($2)").to_string();
+        }
+
+        // Transform optional chaining property access: foo?.bar → foo && foo.bar
+        if let Ok(optional_prop_regex) = Regex::new(r"(\w+)\?\.(\w+)") {
+            result = optional_prop_regex.replace_all(&result, "$1 && $1.$2").to_string();
+        }
+
+        result
     }
 
     fn strip_typescript_syntax_enhanced(&self, content: &str) -> String {
