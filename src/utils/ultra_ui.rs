@@ -14,7 +14,7 @@ impl UltraUI {
 
     pub fn show_epic_banner(&self) {
         // Simple, clean output like Vite
-        println!("\n  {} {}", "ULTRA".bright_cyan().bold(), "v0.1.0".bright_white());
+        println!("\n  {} {}", "ULTRA".bright_cyan().bold(), "v0.3.0".bright_white());
         println!();
     }
 

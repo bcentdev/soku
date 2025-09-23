@@ -218,7 +218,7 @@ impl CliHandler {
     }
 
     async fn handle_info_command(&self) -> Result<()> {
-        tracing::info!("🦀 Ultra Bundler v0.1.0");
+        tracing::info!("🦀 Ultra Bundler v0.3.0");
         tracing::info!("══════════════════════════════════════");
         tracing::info!("⚡ The fastest bundler for modern web development");
         tracing::info!("");
