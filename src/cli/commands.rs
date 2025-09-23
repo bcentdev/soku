@@ -104,6 +104,8 @@ impl CliHandler {
             enable_tree_shaking,
             enable_minification,
             enable_source_maps,
+            enable_code_splitting: false, // Disabled for now
+            max_chunk_size: Some(250_000), // 250KB default
         };
 
         // Create services
@@ -257,6 +259,8 @@ impl CliHandler {
             enable_tree_shaking: false, // Disabled for faster dev builds
             enable_minification: false, // Disabled for dev
             enable_source_maps: true,   // Enabled for debugging
+            enable_code_splitting: false, // Disabled for dev
+            max_chunk_size: Some(250_000), // 250KB default
         };
 
         // Create services

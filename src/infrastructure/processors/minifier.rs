@@ -5,6 +5,8 @@ use oxc_minifier::{Minifier, MinifierOptions, CompressOptions, MangleOptions};
 use oxc_parser::Parser;
 use oxc_span::SourceType;
 use std::sync::Arc;
+use std::io::Write;
+use flate2::{Compression, write::GzEncoder};
 
 /// Ultra-fast JavaScript minification using oxc
 pub struct OxcMinifier {
@@ -149,14 +151,65 @@ impl MinificationService {
         .map_err(|e| UltraError::Build(format!("Minification task failed: {}", e)))?
     }
 
-    /// Get minification statistics
+    /// Get minification statistics with compression analysis
     pub fn get_stats(&self, original: &str, minified: &str) -> MinificationStats {
+        let gzip_original = self.gzip_compress(original.as_bytes()).unwrap_or_default();
+        let gzip_minified = self.gzip_compress(minified.as_bytes()).unwrap_or_default();
+
         MinificationStats {
             original_size: original.len(),
             minified_size: minified.len(),
             reduction_percentage: self.minifier.calculate_reduction(original, minified),
             saved_bytes: original.len().saturating_sub(minified.len()),
+            gzip_original_size: gzip_original.len(),
+            gzip_minified_size: gzip_minified.len(),
+            gzip_reduction_percentage: self.calculate_gzip_reduction(&gzip_original, &gzip_minified),
         }
+    }
+
+    /// Compress content with gzip for analysis
+    pub fn gzip_compress(&self, content: &[u8]) -> Result<Vec<u8>> {
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
+        encoder.write_all(content)
+            .map_err(|e| UltraError::Build(format!("Gzip compression failed: {}", e)))?;
+
+        encoder.finish()
+            .map_err(|e| UltraError::Build(format!("Gzip finish failed: {}", e)))
+    }
+
+    /// Advanced minification with optimal settings for production
+    pub async fn minify_with_advanced_optimization(&self, bundle: String, filename: &str) -> Result<AdvancedMinificationResult> {
+        let minifier = self.minifier.clone();
+        let filename = filename.to_string();
+
+        // Run advanced minification in a blocking task
+        tokio::task::spawn_blocking(move || {
+            // First pass: standard minification
+            let standard_minified = minifier.minify(&bundle, &filename)?;
+
+            // For now, use the standard minified result
+            // TODO: Implement advanced aggressive compression when oxc API is stable
+            let final_minified = standard_minified;
+
+            Ok(AdvancedMinificationResult {
+                code: final_minified.clone(),
+                original_size: bundle.len(),
+                minified_size: final_minified.len(),
+                compression_ratio: (bundle.len() as f64 - final_minified.len() as f64) / bundle.len() as f64 * 100.0,
+            })
+        })
+        .await
+        .map_err(|e| UltraError::Build(format!("Advanced minification task failed: {}", e)))?
+    }
+
+    /// Calculate gzip compression reduction
+    fn calculate_gzip_reduction(&self, original_gzip: &[u8], minified_gzip: &[u8]) -> f64 {
+        if original_gzip.is_empty() { return 0.0; }
+
+        let original_size = original_gzip.len() as f64;
+        let minified_size = minified_gzip.len() as f64;
+
+        ((original_size - minified_size) / original_size) * 100.0
     }
 }
 
@@ -172,17 +225,31 @@ pub struct MinificationStats {
     pub minified_size: usize,
     pub reduction_percentage: f64,
     pub saved_bytes: usize,
+    pub gzip_original_size: usize,
+    pub gzip_minified_size: usize,
+    pub gzip_reduction_percentage: f64,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdvancedMinificationResult {
+    pub code: String,
+    pub original_size: usize,
+    pub minified_size: usize,
+    pub compression_ratio: f64,
 }
 
 impl std::fmt::Display for MinificationStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Minification: {:.1}% reduction ({} → {} bytes, saved {})",
+            "Minification: {:.1}% reduction ({} → {} bytes, saved {}), Gzip: {:.1}% ({} → {} bytes)",
             self.reduction_percentage,
             self.original_size,
             self.minified_size,
-            self.saved_bytes
+            self.saved_bytes,
+            self.gzip_reduction_percentage,
+            self.gzip_original_size,
+            self.gzip_minified_size
         )
     }
 }

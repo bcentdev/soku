@@ -16,6 +16,10 @@ pub struct BuildConfig {
     pub enable_minification: bool,
     #[allow(dead_code)] // Future feature
     pub enable_source_maps: bool,
+    #[allow(dead_code)] // Smart bundling feature
+    pub enable_code_splitting: bool,
+    #[allow(dead_code)] // Maximum chunk size in bytes
+    pub max_chunk_size: Option<usize>,
 }
 
 impl Default for BuildConfig {
@@ -26,6 +30,8 @@ impl Default for BuildConfig {
             enable_tree_shaking: true,
             enable_minification: true,
             enable_source_maps: false,
+            enable_code_splitting: false, // Disabled by default for now
+            max_chunk_size: Some(250_000), // 250KB default
         }
     }
 }
@@ -41,7 +47,7 @@ pub struct ModuleInfo {
     pub exports: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum ModuleType {
     JavaScript,
     TypeScript,
