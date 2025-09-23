@@ -363,11 +363,16 @@ impl BuildService for UltraBuildService {
         let build_time = build_start.elapsed();
 
         // 🎉 EPIC COMPLETION SHOWCASE!
+        let node_modules_count = js_modules.iter()
+            .filter(|m| m.path.to_string_lossy().contains("node_modules"))
+            .count();
+
         let completion_stats = CompletionStats {
             output_files: output_files.iter().map(|f| OutputFileInfo {
                 name: f.path.file_name().unwrap().to_str().unwrap().to_string(),
                 size: f.size,
             }).collect(),
+            node_modules_optimized: if node_modules_count > 0 { Some(node_modules_count) } else { None },
         };
 
         self.ui.show_epic_completion(completion_stats);

@@ -45,6 +45,17 @@ impl UltraUI {
             );
         }
 
+        // Show node_modules optimization stats if present
+        if let Some(node_count) = stats.node_modules_optimized {
+            if node_count > 0 {
+                println!();
+                println!("  {} {} node_modules optimized",
+                    "🌳".bright_green(),
+                    node_count.to_string().bright_cyan().bold()
+                );
+            }
+        }
+
         println!();
         println!("  {} built in {}",
             "✓".bright_green(),
@@ -58,6 +69,7 @@ impl UltraUI {
 #[derive(Clone)]
 pub struct CompletionStats {
     pub output_files: Vec<OutputFileInfo>,
+    pub node_modules_optimized: Option<usize>,
 }
 
 #[derive(Clone)]

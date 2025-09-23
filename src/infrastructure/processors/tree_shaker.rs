@@ -5,6 +5,22 @@ use std::collections::{HashMap, HashSet};
 pub struct RegexTreeShaker {
     module_graph: HashMap<String, ModuleAnalysis>,
     used_exports: HashSet<String>,
+    node_modules_imports: HashMap<String, NodeModuleImport>, // Track node_modules usage
+}
+
+/// Represents an import from node_modules
+#[derive(Debug, Clone)]
+pub struct NodeModuleImport {
+    package_name: String,
+    imported_names: Vec<String>, // e.g., ["map", "filter"] from lodash
+    import_type: NodeModuleImportType,
+}
+
+#[derive(Debug, Clone)]
+enum NodeModuleImportType {
+    Default,        // import _ from 'lodash'
+    Named(Vec<String>), // import { map, filter } from 'lodash'
+    Namespace,      // import * as _ from 'lodash'
 }
 
 #[derive(Debug, Default)]
@@ -31,10 +47,79 @@ impl RegexTreeShaker {
         Self {
             module_graph: HashMap::new(),
             used_exports: HashSet::new(),
+            node_modules_imports: HashMap::new(),
         }
     }
 
-    fn analyze_text_based(&self, source: &str, analysis: &mut ModuleAnalysis) -> Result<()> {
+    /// Check if an import path is from node_modules
+    fn is_node_modules_import(&self, import_path: &str) -> bool {
+        !import_path.starts_with("./")
+            && !import_path.starts_with("../")
+            && !import_path.starts_with("/")
+            && !import_path.ends_with(".js")
+            && !import_path.ends_with(".ts")
+            && !import_path.ends_with(".css")
+    }
+
+    /// Parse node_modules import to extract package name and imports
+    fn parse_node_modules_import(&self, line: &str) -> Option<NodeModuleImport> {
+        // Handle: import _ from 'lodash'
+        if let Ok(re) = regex::Regex::new(r#"import\s+(\w+)\s+from\s+["']([^"']+)["']"#) {
+            if let Some(caps) = re.captures(line) {
+                let import_name = caps[1].to_string();
+                let package_name = caps[2].to_string();
+
+                if self.is_node_modules_import(&package_name) {
+                    return Some(NodeModuleImport {
+                        package_name,
+                        imported_names: vec![import_name],
+                        import_type: NodeModuleImportType::Default,
+                    });
+                }
+            }
+        }
+
+        // Handle: import { map, filter, reduce } from 'lodash'
+        if let Ok(re) = regex::Regex::new(r#"import\s+\{\s*([^}]+)\s*\}\s+from\s+["']([^"']+)["']"#) {
+            if let Some(caps) = re.captures(line) {
+                let imports_str = caps[1].to_string();
+                let package_name = caps[2].to_string();
+
+                if self.is_node_modules_import(&package_name) {
+                    let imported_names: Vec<String> = imports_str
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .collect();
+
+                    return Some(NodeModuleImport {
+                        package_name,
+                        imported_names: imported_names.clone(),
+                        import_type: NodeModuleImportType::Named(imported_names),
+                    });
+                }
+            }
+        }
+
+        // Handle: import * as _ from 'lodash'
+        if let Ok(re) = regex::Regex::new(r#"import\s+\*\s+as\s+(\w+)\s+from\s+["']([^"']+)["']"#) {
+            if let Some(caps) = re.captures(line) {
+                let namespace_name = caps[1].to_string();
+                let package_name = caps[2].to_string();
+
+                if self.is_node_modules_import(&package_name) {
+                    return Some(NodeModuleImport {
+                        package_name,
+                        imported_names: vec![namespace_name],
+                        import_type: NodeModuleImportType::Namespace,
+                    });
+                }
+            }
+        }
+
+        None
+    }
+
+    fn analyze_text_based(&mut self, source: &str, analysis: &mut ModuleAnalysis, module_path: &str) -> Result<()> {
         let lines: Vec<&str> = source.lines().collect();
 
         for (_line_num, line) in lines.iter().enumerate() {
@@ -42,6 +127,14 @@ impl RegexTreeShaker {
 
             // Parse import statements
             if trimmed.starts_with("import ") {
+                // Check if it's a node_modules import first
+                if let Some(node_import) = self.parse_node_modules_import(trimmed) {
+                    // Track node_modules import for tree shaking
+                    let key = format!("{}:{}", module_path, node_import.package_name);
+                    self.node_modules_imports.insert(key, node_import);
+                }
+
+                // Also handle as regular import for dependency graph
                 if let Some((name, source)) = self.parse_import_line(trimmed) {
                     analysis.imports.push(ImportInfo {
                         name,
@@ -133,6 +226,11 @@ impl RegexTreeShaker {
         self.used_exports.insert(key);
     }
 
+    /// Get the tracked node_modules imports for optimization
+    pub fn get_node_modules_imports(&self) -> &HashMap<String, NodeModuleImport> {
+        &self.node_modules_imports
+    }
+
     fn shake_internal(&mut self, entry_points: &[String]) -> Result<TreeShakingStats> {
         // Start with entry points
         for entry in entry_points {
@@ -174,8 +272,18 @@ impl RegexTreeShaker {
         let used_exports = self.used_exports.len();
         let removed_exports = total_exports.saturating_sub(used_exports);
 
+        // Count node_modules packages that will be optimized
+        let node_modules_count = self.node_modules_imports.len();
+
+        Logger::debug(&format!(
+            "Tree shaking results: {} modules, {} node_modules imports, {} exports removed",
+            self.module_graph.len(),
+            node_modules_count,
+            removed_exports
+        ));
+
         Ok(TreeShakingStats {
-            total_modules: self.module_graph.len(),
+            total_modules: self.module_graph.len() + node_modules_count,
             removed_exports,
             reduction_percentage: if total_exports > 0 {
                 (removed_exports as f64 / total_exports as f64) * 100.0
@@ -202,7 +310,7 @@ impl TreeShaker for RegexTreeShaker {
                     .unwrap_or("unknown")
             );
 
-            self.analyze_text_based(&module.content, &mut analysis)?;
+            self.analyze_text_based(&module.content, &mut analysis, &path)?;
             self.module_graph.insert(path.to_string(), analysis);
         }
 

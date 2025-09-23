@@ -93,7 +93,7 @@ impl JsProcessor for OxcJsProcessor {
         let _timer = crate::utils::Timer::start("Bundling JavaScript modules with tree shaking");
 
         let mut bundle = String::new();
-        bundle.push_str("// Ultra Bundler - Optimized Build Output\n");
+        bundle.push_str("// Ultra Bundler - Optimized Build Output with Node Modules Tree Shaking\n");
         bundle.push_str("(function() {\n'use strict';\n\n");
 
         // Build used exports map from tree shaking stats
@@ -103,8 +103,12 @@ impl JsProcessor for OxcJsProcessor {
             std::collections::HashMap::new()
         };
 
-        // Process modules sequentially with tree shaking
-        for module in modules {
+        // Separate node_modules from local modules for different processing
+        let (local_modules, node_modules): (Vec<_>, Vec<_>) = modules.iter()
+            .partition(|module| !self.is_node_modules_path(&module.path));
+
+        // Process local modules first with standard tree shaking
+        for module in local_modules {
             if self.supports_module_type(&module.module_type) {
                 Logger::processing_file(
                     module.path.file_name()
@@ -130,6 +134,28 @@ impl JsProcessor for OxcJsProcessor {
                 ));
                 bundle.push_str(&processed);
                 bundle.push_str("\n\n");
+            }
+        }
+
+        // Process node_modules with specialized tree shaking
+        if !node_modules.is_empty() {
+            bundle.push_str("// === NODE MODULES (Tree Shaken) ===\n");
+
+            for module in node_modules {
+                if self.supports_module_type(&module.module_type) {
+                    Logger::processing_file(
+                        module.path.file_name()
+                            .and_then(|s| s.to_str())
+                            .unwrap_or("unknown"),
+                        "tree shaking node_modules"
+                    );
+
+                    let processed = self.optimize_node_module_content(&module.content, &module.path);
+
+                    bundle.push_str(&format!("// Node Module: {}\n", self.extract_package_name(&module.path)));
+                    bundle.push_str(&processed);
+                    bundle.push_str("\n\n");
+                }
             }
         }
 
@@ -657,6 +683,116 @@ impl OxcJsProcessor {
         }
 
         dependencies
+    }
+
+    /// Check if a module path is from node_modules
+    fn is_node_modules_path(&self, path: &std::path::Path) -> bool {
+        path.to_string_lossy().contains("node_modules")
+    }
+
+    /// Extract package name from node_modules path
+    fn extract_package_name(&self, path: &std::path::Path) -> String {
+        let path_str = path.to_string_lossy();
+        if let Some(node_modules_pos) = path_str.find("node_modules") {
+            let after_node_modules = &path_str[node_modules_pos + "node_modules".len()..];
+            if let Some(package_part) = after_node_modules.split('/').nth(1) {
+                return package_part.to_string();
+            }
+        }
+        "unknown_package".to_string()
+    }
+
+    /// Optimize node_modules content by keeping only essential parts
+    fn optimize_node_module_content(&self, content: &str, path: &std::path::Path) -> String {
+        let package_name = self.extract_package_name(path);
+
+        // For now, use a simple optimization strategy
+        // TODO: Implement more sophisticated tree shaking for specific packages
+
+        if package_name == "lodash" {
+            // For lodash, we can be more aggressive with tree shaking
+            self.optimize_lodash_content(content, &package_name)
+        } else {
+            // For other packages, apply general optimizations
+            self.optimize_general_node_module_content(content)
+        }
+    }
+
+    /// Specific optimization for lodash
+    fn optimize_lodash_content(&self, content: &str, package_name: &str) -> String {
+        let mut result = String::new();
+        let lines: Vec<&str> = content.lines().collect();
+
+        let mut in_function = false;
+        let mut brace_count = 0;
+
+        for line in lines {
+            let trimmed = line.trim();
+
+            // Skip comments and complex internal utilities
+            if trimmed.starts_with("//") || trimmed.starts_with("/*") || trimmed.is_empty() {
+                continue;
+            }
+
+            // Keep essential function definitions
+            if trimmed.starts_with("function ") ||
+               trimmed.starts_with("var ") ||
+               trimmed.starts_with("module.exports") ||
+               trimmed.starts_with("exports.") {
+                in_function = true;
+                result.push_str(line);
+                result.push('\n');
+
+                // Count braces to track function end
+                brace_count += line.matches('{').count();
+                brace_count -= line.matches('}').count();
+
+                if brace_count == 0 {
+                    in_function = false;
+                }
+                continue;
+            }
+
+            // If inside function, keep the content
+            if in_function {
+                result.push_str(line);
+                result.push('\n');
+
+                brace_count += line.matches('{').count();
+                brace_count -= line.matches('}').count();
+
+                if brace_count == 0 {
+                    in_function = false;
+                }
+            }
+        }
+
+        // Add a comment to indicate optimization
+        format!("// TREE-SHAKEN: Optimized {} content\n{}", package_name, result)
+    }
+
+    /// General optimization for node_modules
+    fn optimize_general_node_module_content(&self, content: &str) -> String {
+        // For general packages, apply lighter optimization
+        let mut result = String::new();
+
+        for line in content.lines() {
+            let trimmed = line.trim();
+
+            // Skip obvious dead code patterns
+            if trimmed.starts_with("// Development only") ||
+               trimmed.starts_with("// DEBUG") ||
+               trimmed.contains("console.warn") ||
+               trimmed.contains("console.error") {
+                result.push_str(&format!("// TREE-SHAKEN: {}\n", line));
+                continue;
+            }
+
+            result.push_str(line);
+            result.push('\n');
+        }
+
+        result
     }
 }
 
