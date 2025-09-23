@@ -5,6 +5,7 @@ use oxc_parser::Parser;
 use oxc_span::SourceType;
 use oxc_codegen::Codegen;
 use oxc_transformer::{TransformOptions, Transformer};
+use oxc_semantic::SemanticBuilder;
 use sourcemap::SourceMapBuilder;
 use std::path::Path;
 use std::sync::Arc;
@@ -369,17 +370,29 @@ impl OxcJsProcessor {
             return Err(UltraError::Build(error_msg));
         }
 
-        // Transform the AST to remove TypeScript constructs
-        let transformer_options = TransformOptions::default();
+        // Transform TypeScript to JavaScript using oxc 0.90 Transformer
+        use oxc_transformer::TypeScriptOptions;
         let source_path = Path::new(""); // Placeholder path
 
-        let _transformer = Transformer::new(&allocator, source_path, &transformer_options);
-        // For now, skip transformation and generate JS directly from TypeScript AST
-        // TODO: Implement proper TypeScript transformation
+        // Build semantic information (scoping) needed for transformation
+        let semantic_builder = SemanticBuilder::new();
+        let mut program = parse_result.program;
+        let semantic_result = semantic_builder.build(&program);
 
-        // Generate JavaScript code from the transformed AST
+        // Configure TypeScript transformation options
+        let transform_options = TransformOptions {
+            typescript: TypeScriptOptions::default(),
+            ..Default::default()
+        };
+
+        // Create and run transformer
+        let transformer = Transformer::new(&allocator, source_path, &transform_options);
+        let semantic = semantic_result.semantic;
+        let _transform_result = transformer.build_with_scoping(semantic.into_scoping(), &mut program);
+
+        // Generate JavaScript code from transformed AST
         let codegen = Codegen::new();
-        let codegen_result = codegen.build(&parse_result.program);
+        let codegen_result = codegen.build(&program);
 
         Ok(codegen_result.code)
     }

@@ -325,3 +325,4 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 **Types**: `feat`, `fix`, `refactor`, `perf`, `chore`, `docs`
 
 This architecture ensures Ultra Bundler remains the fastest bundler while maintaining code quality and extensibility.
+- siempre que implementes un cambio, debes de hacer limpiar los warnings de la build y hacer commit

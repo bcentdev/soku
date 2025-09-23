@@ -41,6 +41,10 @@ impl EnhancedJsProcessor {
 
         if file_extension == "tsx" {
             Logger::processing_typescript("TSX/JSX component (AST-based)");
+            // For TSX files, we need both TypeScript stripping AND JSX transformation
+            let processed = self.process_jsx_content(&module.content)?;
+            Logger::debug(&format!("JSX processed output:\n{}", processed));
+            Ok(processed)
         } else {
             Logger::processing_typescript(&format!(
                 "TypeScript {} (AST-based)",
@@ -48,12 +52,10 @@ impl EnhancedJsProcessor {
                     .and_then(|s| s.to_str())
                     .unwrap_or("unknown")
             ));
+            // For regular TS files, just strip TypeScript types
+            let processed = self.ast_typescript_transform(&module.content)?;
+            Ok(processed)
         }
-
-        // Use AST-based TypeScript transformation
-        let processed = self.ast_typescript_transform(&module.content)?;
-
-        Ok(processed)
     }
 
     /// Process JSX/TSX content using AST-based transformation
@@ -123,26 +125,179 @@ impl EnhancedJsProcessor {
         result
     }
 
-    /// Convert JSX syntax to JavaScript function calls (fallback regex approach)
+    /// Convert JSX syntax to JavaScript function calls (improved regex approach)
     fn convert_jsx_to_js(&self, content: &str) -> String {
+        Logger::debug(&format!("JSX input content:\n{}", content));
         let mut result = content.to_string();
 
-        // Convert return statements with JSX to return null
-        if let Ok(re) = regex::Regex::new(r"return\s*\([^;]*<[^;]*\);") {
-            result = re.replace_all(&result, "return null;").to_string();
+        // First strip TypeScript types
+        result = self.strip_typescript_types(&result);
+        Logger::debug(&format!("After TypeScript stripping:\n{}", result));
+
+        // Transform simple lowercase elements: <div>text</div> (single line)
+        if let Ok(re) = regex::Regex::new(r#"<([a-z][a-zA-Z0-9]*)\s*([^>]*?)>\s*([^<>]*?)\s*</\1>"#) {
+            let callback = |caps: &regex::Captures| {
+                let element = &caps[1];
+                let props = caps.get(2).map_or("", |m| m.as_str()).trim();
+                let children = caps.get(3).map_or("", |m| m.as_str()).trim();
+
+                let props_obj = if props.is_empty() {
+                    "null".to_string()
+                } else {
+                    self.parse_jsx_props_simple(props)
+                };
+
+                let children_str = if children.is_empty() {
+                    ""
+                } else {
+                    &format!(", \"{}\"", children)
+                };
+
+                let replacement = format!("React.createElement(\"{}\", {}{children_str})", element, props_obj);
+                Logger::debug(&format!("JSX transform: {} -> {}", caps.get(0).unwrap().as_str(), replacement));
+                replacement
+            };
+            result = re.replace_all(&result, callback).to_string();
         }
 
-        // Convert standalone JSX to null
-        if let Ok(re) = regex::Regex::new(r"<[^>]*>[^<]*</[^>]*>") {
-            result = re.replace_all(&result, "null").to_string();
+        // Transform self-closing lowercase elements: <input type="text" />
+        if let Ok(re) = regex::RegexBuilder::new(r#"<([a-z][a-zA-Z0-9]*)\s*([^/>]*?)\s*/\s*>"#)
+            .dot_matches_new_line(true)
+            .build() {
+            let callback = |caps: &regex::Captures| {
+                let element = &caps[1];
+                let props = caps.get(2).map_or("", |m| m.as_str()).trim();
+
+                let props_obj = if props.is_empty() {
+                    "null".to_string()
+                } else {
+                    self.parse_jsx_props_simple(props)
+                };
+
+                format!("React.createElement(\"{}\", {})", element, props_obj)
+            };
+            result = re.replace_all(&result, callback).to_string();
         }
 
-        // Handle self-closing JSX tags
-        if let Ok(re) = regex::Regex::new(r"<[^>]*/>") {
-            result = re.replace_all(&result, "null").to_string();
+        // Transform self-closing component tags: <Component prop={value} />
+        if let Ok(re) = regex::RegexBuilder::new(r#"<([A-Z][a-zA-Z0-9.]*)\s*([^/>]*?)\s*/\s*>"#)
+            .dot_matches_new_line(true)
+            .build() {
+            let callback = |caps: &regex::Captures| {
+                let component = &caps[1];
+                let props = caps.get(2).map_or("", |m| m.as_str()).trim();
+
+                let props_obj = if props.is_empty() {
+                    "null".to_string()
+                } else {
+                    self.parse_jsx_props_simple(props)
+                };
+
+                format!("React.createElement({}, {})", component, props_obj)
+            };
+            result = re.replace_all(&result, callback).to_string();
         }
 
+        // Transform simple component elements: <Component>content</Component> (single line)
+        if let Ok(re) = regex::Regex::new(r#"<([A-Z][a-zA-Z0-9.]*)\s*([^>]*?)>\s*([^<>]*?)\s*</\1>"#) {
+            let callback = |caps: &regex::Captures| {
+                let component = &caps[1];
+                let props = caps.get(2).map_or("", |m| m.as_str()).trim();
+                let children = caps.get(3).map_or("", |m| m.as_str()).trim();
+
+                let props_obj = if props.is_empty() {
+                    "null".to_string()
+                } else {
+                    self.parse_jsx_props_simple(props)
+                };
+
+                let children_str = if children.is_empty() {
+                    ""
+                } else {
+                    &format!(", {}", children)
+                };
+
+                format!("React.createElement({}, {}{children_str})", component, props_obj)
+            };
+            result = re.replace_all(&result, callback).to_string();
+        }
+
+        Logger::debug(&format!("Final JSX output:\n{}", result));
         result
+    }
+
+    /// Simplified JSX props parsing for initial implementation
+    fn parse_jsx_props_simple(&self, props: &str) -> String {
+        if props.trim().is_empty() {
+            return "null".to_string();
+        }
+
+        // For now, return a simple object with the props as-is
+        // This needs improvement for production use
+        let cleaned_props = props
+            .replace("={", ": ")
+            .replace("}", "")
+            .replace("=\"", ": \"")
+            .replace("\"", "\"");
+
+        format!("{{{}}}", cleaned_props)
+    }
+
+    /// Enhanced JSX props parsing
+    fn parse_jsx_props_enhanced(&self, props: &str) -> String {
+        if props.trim().is_empty() {
+            return "null".to_string();
+        }
+
+        let mut prop_pairs = Vec::new();
+
+        // Handle various prop patterns
+        // Pattern 1: prop="string value"
+        if let Ok(re) = regex::Regex::new(r#"([a-zA-Z][a-zA-Z0-9]*)\s*=\s*"([^"]*)""#) {
+            for caps in re.captures_iter(props) {
+                let prop_name = &caps[1];
+                let value = &caps[2];
+                prop_pairs.push(format!("{}: \"{}\"", prop_name, value));
+            }
+        }
+
+        // Pattern 2: prop='string value'
+        if let Ok(re) = regex::Regex::new(r#"([a-zA-Z][a-zA-Z0-9]*)\s*=\s*'([^']*)'"#) {
+            for caps in re.captures_iter(props) {
+                let prop_name = &caps[1];
+                let value = &caps[2];
+                if !prop_pairs.iter().any(|p| p.starts_with(&format!("{}:", prop_name))) {
+                    prop_pairs.push(format!("{}: \"{}\"", prop_name, value));
+                }
+            }
+        }
+
+        // Pattern 3: prop={expression}
+        if let Ok(re) = regex::Regex::new(r#"([a-zA-Z][a-zA-Z0-9]*)\s*=\s*\{([^}]*)\}"#) {
+            for caps in re.captures_iter(props) {
+                let prop_name = &caps[1];
+                let expression = &caps[2];
+                if !prop_pairs.iter().any(|p| p.starts_with(&format!("{}:", prop_name))) {
+                    prop_pairs.push(format!("{}: {}", prop_name, expression));
+                }
+            }
+        }
+
+        // Pattern 4: boolean props (just the name)
+        if let Ok(re) = regex::Regex::new(r#"\b([a-zA-Z][a-zA-Z0-9]*)\b(?!\s*=)"#) {
+            for caps in re.captures_iter(props) {
+                let prop_name = &caps[1];
+                if !prop_pairs.iter().any(|p| p.starts_with(&format!("{}:", prop_name))) {
+                    prop_pairs.push(format!("{}: true", prop_name));
+                }
+            }
+        }
+
+        if prop_pairs.is_empty() {
+            "null".to_string()
+        } else {
+            format!("{{{}}}", prop_pairs.join(", "))
+        }
     }
 
     /// AST-based TypeScript transformation using oxc parser
@@ -302,17 +457,22 @@ impl EnhancedJsProcessor {
             result = re.replace_all(&result, ")$1").to_string();
         }
 
-        // Add missing braces for arrow functions
-        if let Ok(re) = regex::Regex::new(r"\)\s*=>\s*$") {
-            result = re.replace_all(&result, ") => {").to_string();
-        }
-        if let Ok(re) = regex::Regex::new(r"\{\s*$\s*;\s*$") {
-            result = re.replace_all(&result, "};\n").to_string();
-        }
+        // Add missing braces for arrow functions - DISABLED due to syntax errors
+        // if let Ok(re) = regex::Regex::new(r"\)\s*=>\s*$") {
+        //     result = re.replace_all(&result, ") => {").to_string();
+        // }
+        // if let Ok(re) = regex::Regex::new(r"\{\s*$\s*;\s*$") {
+        //     result = re.replace_all(&result, "};\n").to_string();
+        // }
 
         // Remove generic type parameters
         if let Ok(re) = regex::Regex::new(r"<[^<>]*>") {
             result = re.replace_all(&result, "").to_string();
+        }
+
+        // Remove TypeScript non-null assertion operator
+        if let Ok(re) = regex::Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*!") {
+            result = re.replace_all(&result, "$1").to_string();
         }
 
         // Remove access modifiers

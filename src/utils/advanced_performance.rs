@@ -1,9 +1,7 @@
 use std::path::Path;
 use std::fs::File;
-use std::sync::Arc;
 use memmap2::{Mmap, MmapOptions};
 use blake3::Hasher;
-use bumpalo::Bump;
 use dashmap::DashMap;
 use crate::utils::{Result, UltraError};
 
@@ -18,9 +16,6 @@ impl ContentHash {
         ContentHash(hasher.finalize().into())
     }
 
-    pub fn as_bytes(&self) -> &[u8] {
-        &self.0
-    }
 }
 
 /// Memory-mapped file reader for zero-copy performance
@@ -65,74 +60,6 @@ impl MmapFileReader {
 }
 
 // Arena allocator for fast bulk operations (thread-local for performance)
-thread_local! {
-    static ARENA: Bump = Bump::new();
-}
-
-pub struct UltraArena {
-    // Use simple counters for stats instead of direct arena access
-    allocations: Arc<parking_lot::Mutex<ArenaStats>>,
-}
-
-impl UltraArena {
-    pub fn new() -> Self {
-        Self {
-            allocations: Arc::new(parking_lot::Mutex::new(ArenaStats {
-                ast_bytes: 0,
-                string_bytes: 0,
-                temp_bytes: 0,
-            })),
-        }
-    }
-
-    /// Allocate a string efficiently (returns owned string for simplicity)
-    pub fn alloc_str(&self, s: &str) -> String {
-        let mut stats = self.allocations.lock();
-        stats.string_bytes += s.len();
-        s.to_string()
-    }
-
-    /// Allocate a slice efficiently (returns owned vec for simplicity)
-    pub fn alloc_slice<T: Clone>(&self, slice: &[T]) -> Vec<T> {
-        let mut stats = self.allocations.lock();
-        stats.temp_bytes += std::mem::size_of::<T>() * slice.len();
-        slice.to_vec()
-    }
-
-    /// Reset arena counters
-    pub fn reset(&self) {
-        let mut stats = self.allocations.lock();
-        *stats = ArenaStats {
-            ast_bytes: 0,
-            string_bytes: 0,
-            temp_bytes: 0,
-        };
-    }
-
-    /// Get memory usage statistics
-    pub fn memory_usage(&self) -> ArenaStats {
-        self.allocations.lock().clone()
-    }
-}
-
-impl Default for UltraArena {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ArenaStats {
-    pub ast_bytes: usize,
-    pub string_bytes: usize,
-    pub temp_bytes: usize,
-}
-
-impl ArenaStats {
-    pub fn total_bytes(&self) -> usize {
-        self.ast_bytes + self.string_bytes + self.temp_bytes
-    }
-}
 
 /// Incremental compilation cache with content-addressable storage
 pub struct IncrementalCache {
@@ -245,25 +172,6 @@ pub mod parallel_files {
             .collect()
     }
 
-    /// Batch process files with optimal chunk sizes
-    pub fn batch_process_files<F, R>(paths: &[PathBuf], processor: F) -> Vec<Result<R>>
-    where
-        F: Fn(&[PathBuf]) -> Vec<Result<R>> + Send + Sync,
-        R: Send,
-    {
-        let chunk_size = optimal_chunk_size(paths.len());
-
-        paths
-            .par_chunks(chunk_size)
-            .flat_map(processor)
-            .collect()
-    }
-
-    /// Calculate optimal chunk size based on available CPU cores
-    fn optimal_chunk_size(total_items: usize) -> usize {
-        let cpu_count = num_cpus::get();
-        (total_items / (cpu_count * 2)).max(1).min(100)
-    }
 }
 
 /// Optimized string processing (simplified SIMD for compatibility)
@@ -289,31 +197,6 @@ pub mod simd_strings {
         haystack.contains(needle)
     }
 
-    /// Fast whitespace trimming
-    pub fn fast_trim(s: &str) -> &str {
-        // Use standard library trim (already highly optimized)
-        s.trim()
-    }
-
-    /// Fast prefix check
-    pub fn fast_starts_with(haystack: &str, needle: &str) -> bool {
-        if needle.len() > haystack.len() {
-            return false;
-        }
-
-        // Optimized prefix check
-        &haystack.as_bytes()[..needle.len()] == needle.as_bytes()
-    }
-
-    /// Fast suffix check
-    pub fn fast_ends_with(haystack: &str, needle: &str) -> bool {
-        if needle.len() > haystack.len() {
-            return false;
-        }
-
-        let start = haystack.len() - needle.len();
-        &haystack.as_bytes()[start..] == needle.as_bytes()
-    }
 }
 
 #[cfg(test)]
@@ -347,23 +230,6 @@ mod tests {
         assert_ne!(hash1, hash3);
     }
 
-    #[test]
-    fn test_ultra_arena() {
-        let arena = UltraArena::new();
-
-        let s1 = arena.alloc_str("Hello");
-        let s2 = arena.alloc_str("World");
-
-        assert_eq!(s1, "Hello");
-        assert_eq!(s2, "World");
-
-        let stats = arena.memory_usage();
-        assert!(stats.total_bytes() > 0);
-
-        arena.reset();
-        let stats_after_reset = arena.memory_usage();
-        assert_eq!(stats_after_reset.total_bytes(), 0);
-    }
 
     #[test]
     fn test_incremental_cache() {
@@ -398,24 +264,4 @@ mod tests {
         assert!(!fast_string_contains("short", "longer_than_haystack"));
     }
 
-    #[test]
-    fn test_fast_trim() {
-        use simd_strings::*;
-
-        assert_eq!(fast_trim("  Hello  "), "Hello");
-        assert_eq!(fast_trim("\t\nWorld\r\n"), "World");
-        assert_eq!(fast_trim("NoWhitespace"), "NoWhitespace");
-        assert_eq!(fast_trim("   "), "");
-        assert_eq!(fast_trim(""), "");
-    }
-
-    #[test]
-    fn test_fast_prefix_suffix() {
-        use simd_strings::*;
-
-        assert!(fast_starts_with("hello world", "hello"));
-        assert!(!fast_starts_with("hello world", "world"));
-        assert!(fast_ends_with("hello world", "world"));
-        assert!(!fast_ends_with("hello world", "hello"));
-    }
 }

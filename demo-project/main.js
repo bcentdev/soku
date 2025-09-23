@@ -1,4 +1,4 @@
-// Simple test without node modules
+// Simple test
 console.log('Hello Ultra Bundler!');
 
 function greet(name) {

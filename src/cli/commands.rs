@@ -1,5 +1,5 @@
 use crate::core::{models::*, services::*, interfaces::*};
-use crate::infrastructure::{TokioFileSystemService, OxcJsProcessor, EnhancedJsProcessor, LightningCssProcessor, RegexTreeShaker, UltraHmrService, generate_hmr_client_code};
+use crate::infrastructure::{TokioFileSystemService, OxcJsProcessor, LightningCssProcessor, RegexTreeShaker, UltraHmrService, generate_hmr_client_code};
 use crate::utils::{Result, Logger};
 use clap::{Parser, Subcommand};
 use std::sync::Arc;
@@ -108,8 +108,8 @@ impl CliHandler {
 
         // Create services
         let fs_service = Arc::new(TokioFileSystemService);
-        // Use enhanced processor with AST-based TypeScript transformation
-        let js_processor: Arc<dyn JsProcessor> = Arc::new(EnhancedJsProcessor::new());
+        // Use basic processor for now until enhanced processor is fully fixed
+        let js_processor: Arc<dyn JsProcessor> = Arc::new(OxcJsProcessor::new());
         let css_processor = Arc::new(LightningCssProcessor::new(enable_minification));
 
         // Create build service

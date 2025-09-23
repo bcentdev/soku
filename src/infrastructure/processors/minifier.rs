@@ -1,7 +1,7 @@
 use crate::utils::{Result, UltraError};
 use oxc_allocator::Allocator;
 use oxc_codegen::{Codegen, CodegenOptions};
-use oxc_minifier::{Minifier, MinifierOptions, CompressOptions};
+use oxc_minifier::{Minifier, MinifierOptions, CompressOptions, MangleOptions};
 use oxc_parser::Parser;
 use oxc_span::SourceType;
 use std::sync::Arc;
@@ -15,8 +15,8 @@ impl OxcMinifier {
     pub fn new() -> Self {
         Self {
             options: MinifierOptions {
-                mangle: true,
-                compress: CompressOptions::default(),
+                mangle: Some(MangleOptions::default()),
+                compress: Some(CompressOptions::default()),
             },
         }
     }
@@ -39,10 +39,10 @@ impl OxcMinifier {
             return Err(UltraError::Build(errors.join("\n")));
         }
 
-        // Minify the AST
+        // Minify the AST with oxc 0.90 API
         let mut program = parse_result.program;
         let minifier = Minifier::new(self.options.clone());
-        minifier.build(&allocator, &mut program);
+        let _minifier_result = minifier.minify(&allocator, &mut program);
 
         // Generate minified code
         let codegen_options = CodegenOptions {
@@ -82,15 +82,15 @@ impl OxcMinifier {
         }
 
         // Create custom minifier options
-        let options = MinifierOptions {
-            mangle,
-            compress: if compress { CompressOptions::default() } else { CompressOptions::all_false() },
+        let minifier_options = MinifierOptions {
+            mangle: if mangle { Some(MangleOptions::default()) } else { None },
+            compress: if compress { Some(CompressOptions::default()) } else { None },
         };
 
-        // Minify the AST
+        // Minify the AST with oxc 0.90 API
         let mut program = parse_result.program;
-        let minifier = Minifier::new(options);
-        minifier.build(&allocator, &mut program);
+        let minifier = Minifier::new(minifier_options);
+        let _minifier_result = minifier.minify(&allocator, &mut program);
 
         // Generate minified code
         let codegen_options = CodegenOptions {

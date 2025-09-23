@@ -18,20 +18,21 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # CLI
 clap = { version = "4.0", features = ["derive"] }
 
-# JS/TS parsing with oxc
-oxc_parser = "0.39"
-oxc_ast = "0.39"
-oxc_span = "0.39"
-oxc_allocator = "0.39"
-oxc_minifier = "0.39"
-oxc_codegen = "0.39"
-oxc_transformer = "0.39"
+# JS/TS parsing with oxc - Latest available version
+oxc_parser = "0.90.0"
+oxc_ast = "0.90.0"
+oxc_span = "0.90.0"
+oxc_allocator = "0.90.0"
+oxc_minifier = "0.90.0"
+oxc_codegen = "0.90.0"
+oxc_transformer = "0.90.0"
+oxc_semantic = "0.90.0"
 
-# CSS processing with lightningcss
+# CSS processing with lightningcss - Keep alpha version
 lightningcss = "1.0.0-alpha.67"
 
-# Regex for parsing
-regex = "1.10"
+# Regex for parsing - Updated
+regex = "1.11"
 
 # Async traits
 async-trait = "0.1"

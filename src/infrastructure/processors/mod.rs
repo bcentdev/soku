@@ -9,4 +9,5 @@ pub use js_processor::*;
 pub use css_processor::*;
 pub use tree_shaker::*;
 pub use minifier::*;
-pub use enhanced_js_processor::*;
+// Enhanced JS processor currently unused - using OxcJsProcessor for now
+// pub use enhanced_js_processor::*;

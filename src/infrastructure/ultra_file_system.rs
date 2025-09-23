@@ -1,4 +1,3 @@
-#![allow(dead_code)] // Ultra file system - advanced features, may not all be used yet
 
 use crate::core::{interfaces::FileSystemService, models::*};
 use crate::utils::{Result, UltraError, MmapFileReader, IncrementalCache, ContentHash};
