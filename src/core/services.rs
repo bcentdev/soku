@@ -151,6 +151,7 @@ impl UltraBuildService {
             }
 
             // Read and process the file
+            Logger::debug(&format!("Processing module: {}", current_path.display()));
             if let Ok(content) = self.fs_service.read_file(&current_path).await {
                 let module_type = ModuleType::from_extension(
                     current_path.extension()
@@ -179,9 +180,13 @@ impl UltraBuildService {
                 // Resolve dependency paths
                 let mut resolved_deps = Vec::new();
                 for dep in &dependencies {
+                    Logger::debug(&format!("Resolving import '{}' from {}", dep, current_path.display()));
                     if let Some(resolved_path) = self.resolve_import_path(&current_path, dep, root_dir).await {
+                        Logger::debug(&format!("Resolved to: {}", resolved_path.display()));
                         resolved_deps.push(dep.clone());
                         to_process.push(resolved_path);
+                    } else {
+                        Logger::debug(&format!("Failed to resolve import: {}", dep));
                     }
                 }
 
