@@ -729,7 +729,7 @@ impl OxcJsProcessor {
         for line in content.lines() {
             let trimmed = line.trim();
 
-            // Handle different import patterns
+            // Handle ES6 import patterns
             if trimmed.starts_with("import ") {
                 if let Some(from_index) = trimmed.rfind(" from ") {
                     let import_path = &trimmed[from_index + 6..];
@@ -748,6 +748,16 @@ impl OxcJsProcessor {
 
                         // Handle all import paths
                         dependencies.push(import_path.to_string());
+                    }
+                }
+            }
+
+            // Handle CommonJS require() patterns
+            if let Ok(require_regex) = regex::Regex::new(r#"require\s*\(\s*['"]([^'"]+)['"]\s*\)"#) {
+                for captures in require_regex.captures_iter(trimmed) {
+                    let require_path = &captures[1];
+                    if !require_path.is_empty() {
+                        dependencies.push(require_path.to_string());
                     }
                 }
             }
@@ -844,10 +854,17 @@ impl OxcJsProcessor {
 
     /// General optimization for node_modules
     fn optimize_general_node_module_content(&self, content: &str) -> String {
-        // For general packages, apply lighter optimization
-        let mut result = String::new();
+        // Convert CommonJS to ES6 if needed
+        let mut result = if self.is_commonjs_module(content) {
+            self.convert_commonjs_to_es6(content)
+        } else {
+            content.to_string()
+        };
 
-        for line in content.lines() {
+        // For general packages, apply lighter optimization
+        let mut optimized = String::new();
+
+        for line in result.lines() {
             let trimmed = line.trim();
 
             // Skip obvious dead code patterns
@@ -855,15 +872,45 @@ impl OxcJsProcessor {
                trimmed.starts_with("// DEBUG") ||
                trimmed.contains("console.warn") ||
                trimmed.contains("console.error") {
-                result.push_str(&format!("// TREE-SHAKEN: {}\n", line));
+                optimized.push_str(&format!("// TREE-SHAKEN: {}\n", line));
                 continue;
             }
 
-            result.push_str(line);
-            result.push('\n');
+            optimized.push_str(line);
+            optimized.push('\n');
         }
 
-        result
+        optimized
+    }
+
+    /// Convert CommonJS module.exports and exports to ES6 export statements
+    fn convert_commonjs_to_es6(&self, content: &str) -> String {
+        let mut converted = content.to_string();
+
+        // Convert module.exports = ... to export default ...
+        if let Ok(module_exports_regex) = regex::Regex::new(r"module\.exports\s*=\s*(.+);?") {
+            converted = module_exports_regex.replace_all(&converted, "export default $1;").to_string();
+        }
+
+        // Convert exports.name = ... to export const name = ...
+        if let Ok(exports_regex) = regex::Regex::new(r"exports\.(\w+)\s*=\s*(.+);?") {
+            converted = exports_regex.replace_all(&converted, "export const $1 = $2;").to_string();
+        }
+
+        // Convert require() calls to import statements (basic conversion)
+        // Note: This is a simplified conversion - full CommonJS support would need more sophisticated handling
+        if let Ok(require_regex) = regex::Regex::new(r#"(?:const|let|var)\s+(\w+)\s*=\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)"#) {
+            converted = require_regex.replace_all(&converted, "import $1 from '$2'").to_string();
+        }
+
+        converted
+    }
+
+    /// Check if content uses CommonJS patterns
+    fn is_commonjs_module(&self, content: &str) -> bool {
+        content.contains("module.exports") ||
+        content.contains("exports.") ||
+        content.contains("require(")
     }
 }
 

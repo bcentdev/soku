@@ -1,5 +1,5 @@
-// Simple test entry point
+// Simple test without node_modules
 import { greet } from './simple-test.js';
 
-console.log('Hello Ultra Bundler!');
+console.log('Testing Ultra Bundler!');
 console.log(greet('World'));
