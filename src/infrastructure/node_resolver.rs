@@ -81,6 +81,7 @@ impl NodeModuleResolver {
         // Parse package name and subpath
         let (pkg_name, subpath) = self.parse_package_specifier(package_name);
 
+
         // Walk up directory tree looking for node_modules
         let mut current_dir = from_file.parent()?;
 
