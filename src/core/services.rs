@@ -1,5 +1,5 @@
 use crate::core::{interfaces::*, models::*};
-use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo};
+use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, UltraProfiler};
 use crate::infrastructure::{NodeModuleResolver, MinificationService};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
@@ -13,6 +13,7 @@ pub struct UltraBuildService {
     tree_shaker: Option<Arc<dyn TreeShaker>>,
     ui: UltraUI,
     node_resolver: NodeModuleResolver,
+    profiler: Arc<UltraProfiler>,
 }
 
 impl UltraBuildService {
@@ -28,6 +29,7 @@ impl UltraBuildService {
             tree_shaker: None,
             ui: UltraUI::new(),
             node_resolver: NodeModuleResolver::new(),
+            profiler: Arc::new(UltraProfiler::new()),
         }
     }
 
@@ -263,17 +265,25 @@ impl BuildService for UltraBuildService {
         self.ui.show_epic_banner();
 
         let build_start = std::time::Instant::now();
+        self.profiler.start_timer("total_build");
 
         // Create output directory
+        self.profiler.start_timer("fs_setup");
         self.fs_service.create_directory(&config.outdir).await?;
+        self.profiler.end_timer("fs_setup");
 
         // 🔍 FILE DISCOVERY
+        self.profiler.start_timer("file_discovery");
         let structure = self.scan_and_analyze_with_ui(config).await?;
+        self.profiler.end_timer("file_discovery");
 
         // Convert paths to ModuleInfo and resolve dependencies
+        self.profiler.start_timer("dependency_resolution");
         let js_modules = self.resolve_all_dependencies(&structure.js_modules, &config.root).await?;
+        self.profiler.end_timer("dependency_resolution");
 
         // 🌳 TREE SHAKING (if enabled)
+        self.profiler.start_timer("tree_shaking");
         let tree_shaking_stats = if config.enable_tree_shaking {
             if let Some(_) = self.tree_shaker {
                 self.ui.show_tree_shaking_analysis(js_modules.len());
@@ -300,6 +310,7 @@ impl BuildService for UltraBuildService {
         } else {
             None
         };
+        self.profiler.end_timer("tree_shaking");
 
         // Separate JS modules from CSS modules
         let js_only_modules: Vec<ModuleInfo> = js_modules.iter()
@@ -313,6 +324,7 @@ impl BuildService for UltraBuildService {
             .collect();
 
         // ⚡ JAVASCRIPT PROCESSING
+        self.profiler.start_timer("js_processing");
         let js_module_names: Vec<String> = js_only_modules.iter()
             .map(|m| m.path.file_name().unwrap().to_str().unwrap().to_string())
             .collect();
@@ -340,6 +352,7 @@ impl BuildService for UltraBuildService {
             let stats = minification_service.get_stats(&original_content, &js_content);
             tracing::info!("🗜️  {}", stats);
         }
+        self.profiler.end_timer("js_processing");
 
         // 🎨 CSS PROCESSING
         // Include both original CSS files and CSS modules found through imports
@@ -352,10 +365,14 @@ impl BuildService for UltraBuildService {
             .map(|p| p.file_name().unwrap().to_str().unwrap().to_string())
             .collect();
         self.ui.show_processing_phase(&css_names, "🎨 CSS");
+        self.profiler.start_timer("css_processing");
         let css_content = self.css_processor.bundle_css(&all_css_files).await?;
+        self.profiler.end_timer("css_processing");
 
         // 💾 WRITE FILES
+        self.profiler.start_timer("file_writing");
         let output_files = self.write_output_files(config, &js_content, &css_content, source_map).await?;
+        self.profiler.end_timer("file_writing");
 
         let build_time = build_start.elapsed();
 
@@ -374,6 +391,14 @@ impl BuildService for UltraBuildService {
         };
 
         self.ui.show_epic_completion(completion_stats);
+
+        // End total timing and report bottlenecks
+        self.profiler.end_timer("total_build");
+
+        // Report performance bottlenecks in debug mode
+        if std::env::var("RUST_LOG").unwrap_or_default().contains("debug") {
+            self.profiler.report_bottlenecks();
+        }
 
         Ok(BuildResult {
             js_modules_processed: js_only_modules.len(),

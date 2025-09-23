@@ -855,7 +855,7 @@ impl OxcJsProcessor {
     /// General optimization for node_modules
     fn optimize_general_node_module_content(&self, content: &str) -> String {
         // Convert CommonJS to ES6 if needed
-        let mut result = if self.is_commonjs_module(content) {
+        let result = if self.is_commonjs_module(content) {
             self.convert_commonjs_to_es6(content)
         } else {
             content.to_string()
