@@ -103,19 +103,36 @@ impl UltraBuildService {
         config: &BuildConfig,
         js_content: &str,
         css_content: &str,
+        source_map: Option<String>,
     ) -> Result<Vec<OutputFile>> {
         let _timer = Timer::start("Writing output files");
 
         let mut output_files = Vec::new();
 
-        // Write JavaScript bundle
+        // Write JavaScript bundle (with source map reference if enabled)
         let js_path = config.outdir.join("bundle.js");
-        self.fs_service.write_file(&js_path, js_content).await?;
+        let js_with_source_map = if source_map.is_some() {
+            format!("{}\n//# sourceMappingURL=bundle.js.map", js_content)
+        } else {
+            js_content.to_string()
+        };
+        self.fs_service.write_file(&js_path, &js_with_source_map).await?;
         output_files.push(OutputFile {
             path: js_path,
-            content: js_content.to_string(),
-            size: js_content.len(),
+            content: js_with_source_map.clone(),
+            size: js_with_source_map.len(),
         });
+
+        // Write source map file if provided
+        if let Some(source_map_content) = source_map {
+            let source_map_path = config.outdir.join("bundle.js.map");
+            self.fs_service.write_file(&source_map_path, &source_map_content).await?;
+            output_files.push(OutputFile {
+                path: source_map_path,
+                content: source_map_content.clone(),
+                size: source_map_content.len(),
+            });
+        }
 
         // Write CSS bundle
         let css_path = config.outdir.join("bundle.css");
@@ -301,12 +318,18 @@ impl BuildService for UltraBuildService {
             .collect();
         self.ui.show_processing_phase(&js_module_names, "⚡ JS");
 
-        let mut js_content = if tree_shaking_stats.is_some() {
+        let (mut js_content, source_map) = if config.enable_source_maps {
+            // Use source maps bundling
+            let bundle_output = self.js_processor.bundle_modules_with_source_maps(&js_only_modules, config).await?;
+            (bundle_output.code, bundle_output.source_map)
+        } else if tree_shaking_stats.is_some() {
             // Use tree shaking bundling
-            self.js_processor.bundle_modules_with_tree_shaking(&js_only_modules, tree_shaking_stats.as_ref()).await?
+            let js_content = self.js_processor.bundle_modules_with_tree_shaking(&js_only_modules, tree_shaking_stats.as_ref()).await?;
+            (js_content, None)
         } else {
             // Regular bundling
-            self.js_processor.bundle_modules(&js_only_modules).await?
+            let js_content = self.js_processor.bundle_modules(&js_only_modules).await?;
+            (js_content, None)
         };
 
         // ⚡ MINIFICATION (if enabled)
@@ -335,7 +358,7 @@ impl BuildService for UltraBuildService {
         let css_content = self.css_processor.bundle_css(&all_css_files).await?;
 
         // 💾 WRITE FILES
-        let output_files = self.write_output_files(config, &js_content, &css_content).await?;
+        let output_files = self.write_output_files(config, &js_content, &css_content, source_map).await?;
 
         let build_time = build_start.elapsed();
 

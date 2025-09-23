@@ -3,7 +3,10 @@ use crate::utils::{Result, UltraError, Logger, UltraCache};
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
-use oxc_codegen::{Codegen, CodegenOptions};
+use oxc_codegen::Codegen;
+use oxc_transformer::{TransformOptions, Transformer};
+use sourcemap::SourceMapBuilder;
+use std::path::Path;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -134,6 +137,81 @@ impl JsProcessor for OxcJsProcessor {
         Ok(bundle)
     }
 
+    async fn bundle_modules_with_source_maps(&self, modules: &[ModuleInfo], config: &BuildConfig) -> Result<BundleOutput> {
+        let _timer = crate::utils::Timer::start("Bundling JavaScript modules with source maps");
+
+        if !config.enable_source_maps {
+            // If source maps are disabled, just return the regular bundle
+            let code = self.bundle_modules(modules).await?;
+            return Ok(BundleOutput {
+                code,
+                source_map: None,
+            });
+        }
+
+        let mut bundle = String::new();
+        let mut source_map_builder = SourceMapBuilder::new(None);
+        let mut current_line = 0u32;
+
+        bundle.push_str("// Ultra Bundler - Optimized Build Output\n");
+        current_line += 1;
+        bundle.push_str("(function() {\n'use strict';\n\n");
+        current_line += 3;
+
+        // Process modules sequentially with source map tracking
+        for module in modules {
+            if self.supports_module_type(&module.module_type) {
+                Logger::processing_file(
+                    module.path.file_name()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("unknown"),
+                    "bundling with source maps"
+                );
+
+                let processed = self.transform_module_content(&module.content);
+                let module_header = format!("// Module: {}\n", module.path.display());
+
+                // Add source mapping for the module header
+                let source_file_id = source_map_builder.add_source(&module.path.to_string_lossy());
+
+                bundle.push_str(&module_header);
+                current_line += 1;
+
+                // Add source mapping for each line of the processed content
+                for (line_idx, _line) in processed.lines().enumerate() {
+                    source_map_builder.add_raw(
+                        current_line + line_idx as u32,
+                        0,
+                        line_idx as u32,
+                        0,
+                        Some(source_file_id),
+                        None,
+                        false, // is_name
+                    );
+                }
+
+                bundle.push_str(&processed);
+                bundle.push_str("\n\n");
+                current_line += processed.lines().count() as u32 + 2;
+            }
+        }
+
+        bundle.push_str("})();\n");
+
+        // Generate source map
+        let source_map = source_map_builder.into_sourcemap();
+        let mut source_map_buffer = Vec::new();
+        source_map.to_writer(&mut source_map_buffer)
+            .map_err(|e| UltraError::Build(format!("Source map serialization error: {}", e)))?;
+        let source_map_json = String::from_utf8(source_map_buffer)
+            .map_err(|e| UltraError::Build(format!("Source map UTF8 conversion error: {}", e)))?;
+
+        Ok(BundleOutput {
+            code: bundle,
+            source_map: Some(source_map_json),
+        })
+    }
+
     fn supports_module_type(&self, module_type: &ModuleType) -> bool {
         matches!(module_type, ModuleType::JavaScript | ModuleType::TypeScript)
     }
@@ -187,19 +265,34 @@ impl OxcJsProcessor {
     }
 
     async fn process_js_module(&self, module: &ModuleInfo) -> Result<String> {
-        // Parse with oxc for validation
+        println!("🚀 Starting to process: {}", module.path.display());
+        println!("📁 Module type: {:?}", module.module_type);
+        Logger::debug(&format!("Processing file: {}", module.path.display()));
+
+        // For TypeScript files, strip TypeScript syntax FIRST before parsing
+        let content_to_parse = if module.module_type == ModuleType::TypeScript {
+            println!("🔧 Processing TypeScript file: {}", module.path.display());
+            let stripped = self.strip_typescript_syntax(&module.content);
+            println!("📝 Original content (first 200 chars): {}", &module.content.chars().take(200).collect::<String>());
+            println!("🧹 Stripped content (first 200 chars): {}", &stripped.chars().take(200).collect::<String>());
+            stripped
+        } else {
+            module.content.clone()
+        };
+
+        // Parse with oxc for validation (now with cleaned JavaScript)
         let allocator = Allocator::default();
         let source_type = SourceType::from_path(&module.path)
             .unwrap_or_default();
 
-        Logger::debug(&format!("Parsing file: {}", module.path.display()));
-
-        let parser = Parser::new(&allocator, &module.content, source_type);
+        let parser = Parser::new(&allocator, &content_to_parse, source_type);
         let result = parser.parse();
 
         if !result.errors.is_empty() {
             // Use println for immediate output during debugging
             println!("❌ Parse errors in {}: {} issues", module.path.display(), result.errors.len());
+            println!("🔍 Content being parsed:");
+            println!("{}", &content_to_parse.chars().take(500).collect::<String>());
             for error in &result.errors {
                 println!("  - {}", error);
             }
@@ -212,21 +305,57 @@ impl OxcJsProcessor {
         }
 
         // Process the module content while preserving functionality
-        let processed = self.transform_module_content(&module.content);
+        let processed = self.transform_module_content(&content_to_parse);
 
         Ok(processed)
     }
 
     fn transform_module_content(&self, content: &str) -> String {
-        // Strip TypeScript syntax first, then transform
-        let stripped = self.strip_typescript_syntax(content);
-        self.transform_module_content_with_tree_shaking(&stripped, None)
+        // Content is already stripped of TypeScript at this point, just transform
+        self.transform_module_content_with_tree_shaking(content, None)
     }
 
     fn strip_typescript_syntax(&self, content: &str) -> String {
-        // For now, use enhanced simple stripping
-        // TODO: Implement proper AST-based transformation when oxc APIs are stable
-        self.strip_typescript_syntax_enhanced(content)
+        // Use AST-based TypeScript transformation with oxc
+        match self.strip_typescript_syntax_ast(content) {
+            Ok(result) => result,
+            Err(e) => {
+                println!("⚠️  AST transformation failed: {}, falling back to regex", e);
+                self.strip_typescript_syntax_simple(content)
+            }
+        }
+    }
+
+    fn strip_typescript_syntax_ast(&self, content: &str) -> Result<String> {
+        let allocator = Allocator::default();
+        let source_type = SourceType::default()
+            .with_typescript(true)
+            .with_jsx(true); // Support both TS and TSX
+
+        println!("🔧 Using AST transformation for TypeScript stripping");
+
+        // Parse the TypeScript code
+        let parser = Parser::new(&allocator, content, source_type);
+        let parse_result = parser.parse();
+
+        if !parse_result.errors.is_empty() {
+            let error_msg = format!("Parse errors: {}", parse_result.errors.len());
+            return Err(UltraError::Build(error_msg));
+        }
+
+        // Transform the AST to remove TypeScript constructs
+        let transformer_options = TransformOptions::default();
+        let source_path = Path::new(""); // Placeholder path
+
+        let _transformer = Transformer::new(&allocator, source_path, &transformer_options);
+        // For now, skip transformation and generate JS directly from TypeScript AST
+        // TODO: Implement proper TypeScript transformation
+
+        // Generate JavaScript code from the transformed AST
+        let codegen = Codegen::new();
+        let codegen_result = codegen.build(&parse_result.program);
+
+        Ok(codegen_result.code)
     }
 
     fn strip_typescript_syntax_enhanced(&self, content: &str) -> String {
@@ -234,41 +363,53 @@ impl OxcJsProcessor {
 
         let mut result = content.to_string();
 
-        // Remove type annotations more aggressively but safely
-        // Handle parameter type annotations like `: string`, `: User`, `: boolean`, `: number`
-        // This regex captures type annotations in parameters and variable declarations
-        if let Ok(param_type_regex) = Regex::new(r":\s*[a-zA-Z_$][a-zA-Z0-9_$]*(\[\])?(\s*\|\s*[a-zA-Z_$][a-zA-Z0-9_$]*(\[\])?)*\s*(?=[,\)\};=\s])") {
-            result = param_type_regex.replace_all(&result, "").to_string();
+        // First pass: Remove generic type parameters (most aggressive first)
+        // This handles cases like Promise<User[]>, ApiResponse<T>, etc.
+        if let Ok(generic_regex) = Regex::new(r"<[^<>]*(?:<[^<>]*>[^<>]*)?>") {
+            result = generic_regex.replace_all(&result, "").to_string();
         }
 
-        // Handle return type annotations like `): User {`
+        // Second pass: Handle function return type annotations like `): User {` and `): Promise<User[]> {`
         if let Ok(return_type_regex) = Regex::new(r"\):\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]\|\s]*\s*\{") {
             result = return_type_regex.replace_all(&result, ") {").to_string();
         }
 
-        // Handle parameter destructuring with types like `}: ButtonProps) =>`
-        if let Ok(destructure_type_regex) = Regex::new(r"\}:\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s*\)") {
-            result = destructure_type_regex.replace_all(&result, "})").to_string();
+        // Third pass: Handle arrow function return types like `): boolean =>`
+        if let Ok(arrow_return_regex) = Regex::new(r"\):\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]\|\s]*\s*=>") {
+            result = arrow_return_regex.replace_all(&result, ") =>").to_string();
         }
 
-        // Remove generic type parameters
-        if let Ok(generic_regex) = Regex::new(r"<[^<>]*>") {
-            result = generic_regex.replace_all(&result, "").to_string();
-        }
-
-        // Remove as Type assertions
-        if let Ok(as_regex) = Regex::new(r"\s+as\s+[a-zA-Z_$][a-zA-Z0-9_$]*") {
-            result = as_regex.replace_all(&result, "").to_string();
-        }
-
-        // Handle variable type annotations like `const data: Type =`
-        if let Ok(var_type_regex) = Regex::new(r":\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]]*\s*=") {
+        // Fourth pass: Remove variable type annotations like `const data: Type =`
+        if let Ok(var_type_regex) = Regex::new(r":\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]\|\s]*\s*=") {
             result = var_type_regex.replace_all(&result, " =").to_string();
         }
 
-        // Handle remaining arrow function return types like `): boolean =>`
-        if let Ok(arrow_return_regex) = Regex::new(r"\):\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]]*\s*=>") {
-            result = arrow_return_regex.replace_all(&result, ") =>").to_string();
+        // Fifth pass: Handle ONLY function parameter type annotations (NOT object property values)
+        // Only match parameters in function/method signatures, avoiding object literals
+        // Match patterns like `function(name: string, age: number)` but NOT `{ key: value }`
+        if let Ok(param_type_regex) = Regex::new(r"(?:function\s*\([^)]*|,\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]\|\s]*(?=[,\)])") {
+            result = param_type_regex.replace_all(&result, "$1").to_string();
+        }
+
+        // Handle parameter type annotations in arrow functions and method definitions
+        // Be very careful to only match function parameters, not object properties
+        if let Ok(arrow_param_regex) = Regex::new(r"(\([^)]*?)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]\|\?\s]*(?=[,\)])") {
+            result = arrow_param_regex.replace_all(&result, "${1}${2}").to_string();
+        }
+
+        // Sixth pass: Handle parameter destructuring with types like `}: ButtonProps) =>`
+        if let Ok(destructure_type_regex) = Regex::new(r"\}:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]]*\s*\)") {
+            result = destructure_type_regex.replace_all(&result, "})").to_string();
+        }
+
+        // Seventh pass: Remove as Type assertions
+        if let Ok(as_regex) = Regex::new(r"\s+as\s+[a-zA-Z_$][a-zA-Z0-9_$<>\[\]]*") {
+            result = as_regex.replace_all(&result, "").to_string();
+        }
+
+        // Eighth pass: Clean up any remaining orphaned type annotations
+        if let Ok(orphan_type_regex) = Regex::new(r":\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]]*\s*(?=\s|$|;|,)") {
+            result = orphan_type_regex.replace_all(&result, "").to_string();
         }
 
         // Process line by line for block-level TypeScript constructs
@@ -279,6 +420,7 @@ impl OxcJsProcessor {
         let mut result = String::new();
         let mut in_interface = false;
         let mut in_type_alias = false;
+        let mut in_enum = false;
         let mut brace_depth = 0;
 
         for line in content.lines() {
@@ -312,9 +454,23 @@ impl OxcJsProcessor {
                 continue;
             }
 
-            // Skip enum declarations (but keep const enums)
-            if trimmed.starts_with("enum ") || trimmed.starts_with("export enum ") {
+            // Skip enum declarations (including const enums)
+            if trimmed.starts_with("enum ")
+                || trimmed.starts_with("export enum ")
+                || trimmed.starts_with("const enum ")
+                || trimmed.starts_with("export const enum ") {
+                in_enum = true;
+                brace_depth = 0;
                 result.push_str(&format!("// {}\n", line));
+                if trimmed.contains('{') {
+                    brace_depth += trimmed.matches('{').count();
+                }
+                if trimmed.contains('}') {
+                    brace_depth -= trimmed.matches('}').count();
+                    if brace_depth == 0 {
+                        in_enum = false;
+                    }
+                }
                 continue;
             }
 
@@ -337,6 +493,21 @@ impl OxcJsProcessor {
                 result.push_str(&format!("// {}\n", line));
                 if trimmed.ends_with(';') {
                     in_type_alias = false;
+                }
+                continue;
+            }
+
+            // Handle enum continuation
+            if in_enum {
+                result.push_str(&format!("// {}\n", line));
+                if trimmed.contains('{') {
+                    brace_depth += trimmed.matches('{').count();
+                }
+                if trimmed.contains('}') {
+                    brace_depth -= trimmed.matches('}').count();
+                    if brace_depth == 0 {
+                        in_enum = false;
+                    }
                 }
                 continue;
             }

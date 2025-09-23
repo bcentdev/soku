@@ -1,5 +1,12 @@
 use std::path::PathBuf;
 
+/// Bundle output with optional source map
+#[derive(Debug, Clone)]
+pub struct BundleOutput {
+    pub code: String,
+    pub source_map: Option<String>,
+}
+
 #[derive(Debug, Clone)]
 pub struct BuildConfig {
     pub root: PathBuf,

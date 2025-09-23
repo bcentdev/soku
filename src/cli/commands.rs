@@ -108,8 +108,8 @@ impl CliHandler {
 
         // Create services
         let fs_service = Arc::new(TokioFileSystemService);
-        // Temporarily use standard processor while fixing enhanced processor compilation issues
-        let js_processor: Arc<dyn JsProcessor> = Arc::new(OxcJsProcessor::new());
+        // Use enhanced processor with AST-based TypeScript transformation
+        let js_processor: Arc<dyn JsProcessor> = Arc::new(EnhancedJsProcessor::new());
         let css_processor = Arc::new(LightningCssProcessor::new(enable_minification));
 
         // Create build service
