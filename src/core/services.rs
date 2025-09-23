@@ -335,12 +335,9 @@ impl BuildService for UltraBuildService {
         // ⚡ MINIFICATION (if enabled)
         if config.enable_minification {
             let minification_service = MinificationService::new();
-            let original_size = js_content.len();
+            let original_content = js_content.clone();
             js_content = minification_service.minify_bundle(js_content, "bundle.js").await?;
-            let stats = minification_service.get_stats(
-                &format!("{{size:{}}}", original_size),
-                &js_content
-            );
+            let stats = minification_service.get_stats(&original_content, &js_content);
             tracing::info!("🗜️  {}", stats);
         }
 
@@ -373,6 +370,7 @@ impl BuildService for UltraBuildService {
                 size: f.size,
             }).collect(),
             node_modules_optimized: if node_modules_count > 0 { Some(node_modules_count) } else { None },
+            timing_breakdown: None, // TODO: Implement detailed timing collection
         };
 
         self.ui.show_epic_completion(completion_stats);

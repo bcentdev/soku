@@ -316,19 +316,42 @@ impl OxcJsProcessor {
         let result = parser.parse();
 
         if !result.errors.is_empty() {
-            // Use println for immediate output during debugging
-            println!("❌ Parse errors in {}: {} issues", module.path.display(), result.errors.len());
-            println!("🔍 Content being parsed:");
-            println!("{}", &content_to_parse.chars().take(500).collect::<String>());
-            for error in &result.errors {
-                println!("  - {}", error);
+            let first_error = &result.errors[0];
+            let file_lines: Vec<&str> = content_to_parse.lines().collect();
+
+            // Extract line number from error if available
+            let error_location = format!("{}", first_error);
+
+            println!("❌ Parse error in {}", module.path.display());
+            println!("🔍 Error: {}", first_error);
+
+            // Try to show context around the error
+            if let Some(line_match) = error_location.split(':').nth(1) {
+                if let Ok(line_num) = line_match.parse::<usize>() {
+                    if line_num > 0 && line_num <= file_lines.len() {
+                        let line_idx = line_num - 1;
+                        println!("📍 At line {}: {}", line_num, file_lines[line_idx]);
+
+                        // Show context lines
+                        let start = line_idx.saturating_sub(2);
+                        let end = (line_idx + 3).min(file_lines.len());
+
+                        println!("📝 Context:");
+                        for (i, line) in file_lines[start..end].iter().enumerate() {
+                            let current_line = start + i + 1;
+                            let marker = if current_line == line_num { ">" } else { " " };
+                            println!("  {:2}{} {}: {}", current_line, marker, current_line, line);
+                        }
+                    }
+                }
             }
+
             Logger::error(&format!(
-                "Parse errors in {}: {} issues",
+                "Parse error in {}: {}",
                 module.path.display(),
-                result.errors.len()
+                first_error
             ));
-            return Err(UltraError::Build(format!("Parse error in {}: {}", module.path.display(), result.errors[0])));
+            return Err(UltraError::Build(format!("Parse error: {}", first_error)));
         }
 
         // Process the module content while preserving functionality

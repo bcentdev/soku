@@ -1,8 +1,5 @@
-// Simple test
+// Simple test entry point
+import { greet } from './simple-test.js';
+
 console.log('Hello Ultra Bundler!');
-
-function greet(name) {
-    return `Hello, ${name}!`;
-}
-
 console.log(greet('World'));

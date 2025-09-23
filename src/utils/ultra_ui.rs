@@ -61,21 +61,60 @@ impl UltraUI {
             "✓".bright_green(),
             format!("{:.0}ms", build_time.as_secs_f64() * 1000.0).bright_white().bold()
         );
+
+        // Show detailed timing breakdown if available
+        if let Some(timing) = &stats.timing_breakdown {
+            self.show_timing_breakdown(timing);
+        }
     }
 
+    pub fn show_timing_breakdown(&self, timing: &TimingBreakdown) {
+        println!();
+        println!("  {} Timing breakdown:",
+            "⏱️".bright_yellow()
+        );
 
+        let phases = [
+            ("File scanning", timing.file_scan_ms),
+            ("JS processing", timing.js_processing_ms),
+            ("CSS processing", timing.css_processing_ms),
+            ("Tree shaking", timing.tree_shaking_ms),
+            ("Minification", timing.minification_ms),
+            ("Output writing", timing.output_write_ms),
+        ];
+
+        for (phase, time_ms) in phases {
+            if time_ms > 0 {
+                println!("    {} {}ms",
+                    format!("{}:", phase).bright_blue(),
+                    time_ms.to_string().bright_white()
+                );
+            }
+        }
+    }
 }
 
 #[derive(Clone)]
 pub struct CompletionStats {
     pub output_files: Vec<OutputFileInfo>,
     pub node_modules_optimized: Option<usize>,
+    pub timing_breakdown: Option<TimingBreakdown>,
 }
 
 #[derive(Clone)]
 pub struct OutputFileInfo {
     pub name: String,
     pub size: usize,
+}
+
+#[derive(Clone, Debug)]
+pub struct TimingBreakdown {
+    pub file_scan_ms: u64,
+    pub js_processing_ms: u64,
+    pub css_processing_ms: u64,
+    pub tree_shaking_ms: u64,
+    pub minification_ms: u64,
+    pub output_write_ms: u64,
 }
 
 impl Default for UltraUI {
