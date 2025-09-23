@@ -1,0 +1,24 @@
+// Test file to check current node modules support
+
+// This should work (relative imports)
+// import { greet } from './simple-only.ts';
+
+// These should fail currently (node modules)
+import lodash from 'lodash';
+import { debounce } from 'lodash/debounce';
+import React from 'react';
+
+console.log('Testing node modules import...');
+
+// Test lodash if it's available
+if (typeof lodash !== 'undefined') {
+    console.log('Lodash loaded successfully');
+    console.log(lodash.version);
+} else {
+    console.log('Lodash not available');
+}
+
+// Test local function
+// console.log(greet('Node Modules'));
+
+export { lodash };

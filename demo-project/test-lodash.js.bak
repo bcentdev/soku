@@ -1,0 +1,11 @@
+// Simple test for lodash import
+import _ from 'lodash';
+
+console.log('Testing lodash import');
+console.log('Lodash version:', _.VERSION);
+
+const numbers = [1, 2, 3, 4, 5];
+const doubled = _.map(numbers, n => n * 2);
+console.log('Doubled:', doubled);
+
+export default doubled;

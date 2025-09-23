@@ -640,10 +640,8 @@ impl OxcJsProcessor {
                     let clean_path = import_path.trim_matches(|c| c == '"' || c == '\'' || c == ';');
 
                     if !clean_path.is_empty() {
-                        // Only handle relative imports for now
-                        if clean_path.starts_with("./") || clean_path.starts_with("../") {
-                            dependencies.push(clean_path.to_string());
-                        }
+                        // Handle both relative imports and node_modules imports
+                        dependencies.push(clean_path.to_string());
                     }
                 } else {
                     // Handle CSS/asset imports like: import './styles.css'
@@ -651,9 +649,8 @@ impl OxcJsProcessor {
                     if let Some(captures) = import_regex.captures(trimmed) {
                         let import_path = &captures[1];
 
-                        if import_path.starts_with("./") || import_path.starts_with("../") {
-                            dependencies.push(import_path.to_string());
-                        }
+                        // Handle all import paths
+                        dependencies.push(import_path.to_string());
                     }
                 }
             }
