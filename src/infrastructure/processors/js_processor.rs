@@ -438,6 +438,11 @@ impl OxcJsProcessor {
 
     /// Preprocess modern JavaScript features for better parser compatibility
     fn preprocess_modern_js_features(&self, content: &str) -> String {
+        // FIXME: Temporarily disabled as regex transformations are causing parse errors
+        // Need proper AST-based transformations instead of regex replacements
+        content.to_string()
+
+        /* Commented out problematic regex transformations
         use regex::Regex;
 
         let mut result = content.to_string();
@@ -453,8 +458,10 @@ impl OxcJsProcessor {
         }
 
         result
+        */
     }
 
+    #[allow(dead_code)]
     fn strip_typescript_syntax_enhanced(&self, content: &str) -> String {
         use regex::Regex;
 

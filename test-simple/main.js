@@ -1,1 +1,3 @@
-console.log('Hello from test-simple!');
+console.log('Hello Ultra Bundler!');
+const message = 'Simple test';
+console.log(message);

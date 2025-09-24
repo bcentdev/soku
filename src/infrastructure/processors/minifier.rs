@@ -60,6 +60,7 @@ impl OxcMinifier {
     }
 
     /// Minify with custom options
+    #[allow(dead_code)]
     pub fn minify_with_options(
         &self,
         source_code: &str,
@@ -178,6 +179,7 @@ impl MinificationService {
     }
 
     /// Advanced minification with optimal settings for production
+    #[allow(dead_code)]
     pub async fn minify_with_advanced_optimization(&self, bundle: String, filename: &str) -> Result<AdvancedMinificationResult> {
         let minifier = self.minifier.clone();
         let filename = filename.to_string();
@@ -231,6 +233,7 @@ pub struct MinificationStats {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct AdvancedMinificationResult {
     pub code: String,
     pub original_size: usize,

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use regex::Regex;
 use crate::core::models::{ModuleInfo, TreeShakingStats};
-use crate::utils::{Result, UltraError};
+use crate::utils::Result;
 use async_trait::async_trait;
 
 /// Advanced AST-based tree shaker for precise dead code elimination
@@ -124,7 +124,7 @@ impl AstTreeShaker {
 
         // Pattern 2: import name from '...'
         let default_import_regex = Regex::new(r#"import\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s+from\s*['"]([^'"]+)['"]"#)?;
-        for cap in default_import_regex.captures_iter(content) {
+        for _cap in default_import_regex.captures_iter(content) {
             imports.insert("default".to_string());
         }
 
@@ -154,7 +154,7 @@ impl AstTreeShaker {
         }
 
         // Phase 2: Count actual usage across modules
-        for (module_path, imports) in &self.imports {
+        for (_module_path, imports) in &self.imports {
             for import in imports {
                 if let Some(count) = self.usage_counts.get_mut(import) {
                     *count += 1;
@@ -237,13 +237,13 @@ impl AstTreeShaker {
         let module_path = module.path.to_string_lossy().to_string();
 
         if let Some(dead_code_list) = self.dead_code.get(&module_path) {
-            let mut lines: Vec<&str> = module.content.lines().collect();
+            let lines: Vec<&str> = module.content.lines().collect();
             let mut result = String::new();
-            let mut dead_symbols: HashSet<String> = dead_code_list.iter()
+            let dead_symbols: HashSet<String> = dead_code_list.iter()
                 .map(|d| d.symbol_name.clone())
                 .collect();
 
-            for (line_num, line) in lines.iter().enumerate() {
+            for (_line_num, line) in lines.iter().enumerate() {
                 let line_content = line.trim();
 
                 // Skip lines that export dead symbols

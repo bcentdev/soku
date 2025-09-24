@@ -1,5 +1,5 @@
-// Simple test without node_modules
-import { greet } from './simple-test.js';
+// Very simple test
+console.log('Hello Ultra Bundler!');
 
-console.log('Testing Ultra Bundler!');
-console.log(greet('World'));
+const message = 'Testing tree shaking';
+console.log(message);

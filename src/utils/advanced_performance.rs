@@ -7,6 +7,7 @@ use crate::utils::{Result, UltraError};
 
 /// Content hash for incremental compilation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 pub struct ContentHash([u8; 32]);
 
 impl ContentHash {
@@ -19,6 +20,7 @@ impl ContentHash {
 }
 
 /// Memory-mapped file reader for zero-copy performance
+#[allow(dead_code)]
 pub struct MmapFileReader {
     _file: File,
     mmap: Mmap,
@@ -62,6 +64,7 @@ impl MmapFileReader {
 // Arena allocator for fast bulk operations (thread-local for performance)
 
 /// Incremental compilation cache with content-addressable storage
+#[allow(dead_code)]
 pub struct IncrementalCache {
     content_cache: DashMap<ContentHash, String>,
     dependency_graph: DashMap<String, Vec<String>>,
@@ -145,6 +148,7 @@ impl Default for IncrementalCache {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct IncrementalCacheStats {
     pub content_entries: usize,
     pub dependency_entries: usize,

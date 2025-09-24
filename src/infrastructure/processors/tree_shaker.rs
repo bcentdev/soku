@@ -10,15 +10,20 @@ pub struct RegexTreeShaker {
 
 /// Represents an import from node_modules
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct NodeModuleImport {
     package_name: String,
+    #[allow(dead_code)]
     imported_names: Vec<String>, // e.g., ["map", "filter"] from lodash
+    #[allow(dead_code)]
     import_type: NodeModuleImportType,
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 enum NodeModuleImportType {
     Default,        // import _ from 'lodash'
+    #[allow(dead_code)]
     Named(Vec<String>), // import { map, filter } from 'lodash'
     Namespace,      // import * as _ from 'lodash'
 }

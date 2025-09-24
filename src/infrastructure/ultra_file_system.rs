@@ -7,12 +7,14 @@ use std::sync::Arc;
 use dashmap::DashMap;
 
 /// Ultra-performance file system service with memory mapping and caching
+#[allow(dead_code)]
 pub struct UltraFileSystemService {
     incremental_cache: Arc<IncrementalCache>,
     file_metadata: Arc<DashMap<PathBuf, FileMetadata>>,
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct FileMetadata {
     content_hash: ContentHash,
     last_modified: std::time::SystemTime,
@@ -191,6 +193,7 @@ impl UltraFileSystemService {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 enum FileType {
     JavaScript,
     TypeScript,
@@ -200,6 +203,7 @@ enum FileType {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct UltraFileSystemStats {
     pub cached_files: usize,
     pub memory_usage_bytes: usize,

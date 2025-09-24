@@ -274,6 +274,7 @@ impl NodeModuleResolver {
     }
 
     /// Check if a path is a node_modules import
+    #[allow(dead_code)]
     pub fn is_node_module(import_path: &str) -> bool {
         !import_path.starts_with("./")
             && !import_path.starts_with("../")
@@ -281,6 +282,7 @@ impl NodeModuleResolver {
     }
 
     /// Get list of installed packages from node_modules
+    #[allow(dead_code)]
     pub async fn get_installed_packages(project_root: &Path) -> Result<Vec<String>> {
         let node_modules = project_root.join("node_modules");
 

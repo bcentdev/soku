@@ -1,9 +1,10 @@
-use crate::core::models::{ModuleInfo, ModuleType};
-use crate::utils::{Result, UltraError};
+// Code splitting functionality - currently unused but kept for future implementation
+// use crate::core::models::{ModuleInfo, ModuleType};
+// use crate::utils::{Result, UltraError};
 use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
 
 /// Smart code splitter for creating optimized bundle chunks
+#[allow(dead_code)]
 pub struct CodeSplitter {
     /// Map of chunk name to modules
     chunks: HashMap<String, Vec<ModuleInfo>>,
@@ -14,6 +15,7 @@ pub struct CodeSplitter {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct CodeSplitConfig {
     /// Maximum size for a chunk in bytes
     pub max_chunk_size: usize,
@@ -40,6 +42,7 @@ impl Default for CodeSplitConfig {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ChunkInfo {
     pub name: String,
     pub modules: Vec<ModuleInfo>,
@@ -49,6 +52,7 @@ pub struct ChunkInfo {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum ChunkType {
     Entry,       // Main entry point
     Vendor,      // Third-party dependencies

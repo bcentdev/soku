@@ -92,15 +92,19 @@ pub struct ProfilerStats {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct BottleneckInfo {
     pub name: String,
     pub total_time: Duration,
+    #[allow(dead_code)]
     pub average_time: Duration,
+    #[allow(dead_code)]
     pub max_time: Duration,
     pub call_count: usize,
 }
 
 /// RAII timer for automatic timing
+#[allow(dead_code)]
 pub struct ScopedTimer<'a> {
     profiler: &'a UltraProfiler,
     name: String,

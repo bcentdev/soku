@@ -1,6 +1,6 @@
 use crate::core::{interfaces::*, models::*};
 use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, UltraProfiler, UltraCache, performance::parallel};
-use crate::infrastructure::{NodeModuleResolver, MinificationService, CodeSplitter, CodeSplitConfig, ChunkInfo};
+use crate::infrastructure::{NodeModuleResolver, MinificationService};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
@@ -209,7 +209,7 @@ impl UltraBuildService {
                     .map(|dep| {
                         let dep_clone = dep.clone();
                         let current_path_clone = current_path.clone();
-                        let root_dir_clone = root_dir.to_path_buf();
+                        let _root_dir_clone = root_dir.to_path_buf();
                         async move {
                             Logger::debug(&format!("Resolving import '{}' from {}", dep_clone, current_path_clone.display()));
                             // Note: We would resolve in parallel here, but the node resolver currently needs &mut self
@@ -523,7 +523,7 @@ impl BuildService for UltraBuildService {
 
                 // Filter successful reads and bundle
                 let valid_files: Vec<_> = file_contents.into_iter().flatten().collect();
-                let combined_css = valid_files.iter()
+                let _combined_css = valid_files.iter()
                     .map(|(_, content)| content.as_str())
                     .collect::<Vec<_>>()
                     .join("\n\n/* Next CSS file */\n\n");
