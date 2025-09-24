@@ -78,6 +78,10 @@ impl Logger {
     pub fn warn(msg: &str) {
         warn!("⚠️  {}", msg);
     }
+
+    pub fn info(msg: &str) {
+        info!("{}", msg);
+    }
 }
 
 pub struct Timer;

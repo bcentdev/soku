@@ -154,7 +154,7 @@ impl UltraFileSystemService {
 
     fn should_skip_directory(&self, path: &Path) -> bool {
         if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            matches!(name, "node_modules" | ".git" | "target" | "dist" | ".next" | "build")
+            matches!(name, "node_modules" | ".git" | "target" | "dist" | ".next" | "build" | ".ultra-cache")
         } else {
             false
         }

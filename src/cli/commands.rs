@@ -1,5 +1,5 @@
 use crate::core::{models::*, services::*, interfaces::*};
-use crate::infrastructure::{TokioFileSystemService, OxcJsProcessor, LightningCssProcessor, RegexTreeShaker, UltraHmrService, generate_hmr_client_code};
+use crate::infrastructure::{TokioFileSystemService, UltraFileSystemService, OxcJsProcessor, EnhancedJsProcessor, LightningCssProcessor, RegexTreeShaker, UltraHmrService, generate_hmr_client_code};
 use crate::utils::{Result, Logger};
 use clap::{Parser, Subcommand};
 use std::sync::Arc;
@@ -41,6 +41,9 @@ pub enum Commands {
         /// Enable source maps
         #[arg(long)]
         source_maps: bool,
+        /// Enable ultra performance mode (advanced caching, SIMD, parallel processing)
+        #[arg(long)]
+        ultra_mode: bool,
     },
     /// Preview production build
     Preview {
@@ -77,9 +80,10 @@ impl CliHandler {
                 outdir,
                 no_tree_shaking,
                 no_minify,
-                source_maps
+                source_maps,
+                ultra_mode
             } => {
-                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps).await
+                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, ultra_mode).await
             }
             Commands::Preview { dir, port } => {
                 self.handle_preview_command(&dir, port).await
@@ -97,6 +101,7 @@ impl CliHandler {
         enable_tree_shaking: bool,
         enable_minification: bool,
         enable_source_maps: bool,
+        ultra_mode: bool,
     ) -> Result<()> {
         let config = BuildConfig {
             root: PathBuf::from(root),
@@ -108,11 +113,25 @@ impl CliHandler {
             max_chunk_size: Some(250_000), // 250KB default
         };
 
-        // Create services
-        let fs_service = Arc::new(TokioFileSystemService);
-        // Use basic processor for now until enhanced processor is fully fixed
-        let js_processor: Arc<dyn JsProcessor> = Arc::new(OxcJsProcessor::new());
+        // Create services - use ultra mode for advanced performance
+        let fs_service: Arc<dyn FileSystemService> = if ultra_mode {
+            Logger::info("🚀 Ultra Mode: Using advanced file system with memory mapping and parallel processing");
+            Arc::new(UltraFileSystemService::new())
+        } else {
+            Arc::new(TokioFileSystemService)
+        };
+
+        let js_processor: Arc<dyn JsProcessor> = if ultra_mode {
+            Logger::info("⚡ Ultra Mode: Using enhanced JS processor with advanced caching");
+            Arc::new(EnhancedJsProcessor::new())
+        } else {
+            Arc::new(OxcJsProcessor::new())
+        };
         let css_processor = Arc::new(LightningCssProcessor::new(enable_minification));
+
+        if ultra_mode {
+            Logger::info("🔥 Ultra Mode: SIMD optimizations and advanced caching enabled");
+        }
 
         // Create build service
         let mut build_service = UltraBuildService::new(
