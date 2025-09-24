@@ -438,27 +438,10 @@ impl OxcJsProcessor {
 
     /// Preprocess modern JavaScript features for better parser compatibility
     fn preprocess_modern_js_features(&self, content: &str) -> String {
-        // FIXME: Temporarily disabled as regex transformations are causing parse errors
-        // Need proper AST-based transformations instead of regex replacements
+        // For now, return content as-is since modern browsers support optional chaining
+        // If transformation is needed for older browsers, it should be done via Babel
+        // or proper AST transformation, not regex replacements
         content.to_string()
-
-        /* Commented out problematic regex transformations
-        use regex::Regex;
-
-        let mut result = content.to_string();
-
-        // Transform optional chaining calls: foo?.() → foo && foo()
-        if let Ok(optional_call_regex) = Regex::new(r"(\w+)\?\.\(([^)]*)\)") {
-            result = optional_call_regex.replace_all(&result, "$1 && $1($2)").to_string();
-        }
-
-        // Transform optional chaining property access: foo?.bar → foo && foo.bar
-        if let Ok(optional_prop_regex) = Regex::new(r"(\w+)\?\.(\w+)") {
-            result = optional_prop_regex.replace_all(&result, "$1 && $1.$2").to_string();
-        }
-
-        result
-        */
     }
 
     #[allow(dead_code)]

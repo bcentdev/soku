@@ -1,6 +1,6 @@
 // Code splitting functionality - currently unused but kept for future implementation
-// use crate::core::models::{ModuleInfo, ModuleType};
-// use crate::utils::{Result, UltraError};
+use crate::core::models::ModuleInfo;
+use crate::utils::Result;
 use std::collections::{HashMap, HashSet};
 
 /// Smart code splitter for creating optimized bundle chunks
