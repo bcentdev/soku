@@ -3,7 +3,7 @@ use crate::infrastructure::{TokioFileSystemService, UltraFileSystemService, OxcJ
 use crate::utils::{Result, Logger};
 use clap::{Parser, Subcommand};
 use std::sync::Arc;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(name = "ultra")]
@@ -41,9 +41,12 @@ pub enum Commands {
         /// Enable source maps
         #[arg(long)]
         source_maps: bool,
-        /// Enable ultra performance mode (advanced caching, SIMD, parallel processing)
+        /// Force ultra performance mode (advanced caching, SIMD, parallel processing)
         #[arg(long)]
         ultra_mode: bool,
+        /// Force normal mode (disable auto-ultra detection)
+        #[arg(long)]
+        normal_mode: bool,
     },
     /// Preview production build
     Preview {
@@ -81,9 +84,10 @@ impl CliHandler {
                 no_tree_shaking,
                 no_minify,
                 source_maps,
-                ultra_mode
+                ultra_mode,
+                normal_mode
             } => {
-                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, ultra_mode).await
+                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, ultra_mode, normal_mode).await
             }
             Commands::Preview { dir, port } => {
                 self.handle_preview_command(&dir, port).await
@@ -101,7 +105,8 @@ impl CliHandler {
         enable_tree_shaking: bool,
         enable_minification: bool,
         enable_source_maps: bool,
-        ultra_mode: bool,
+        force_ultra_mode: bool,
+        force_normal_mode: bool,
     ) -> Result<()> {
         let config = BuildConfig {
             root: PathBuf::from(root),
@@ -113,15 +118,46 @@ impl CliHandler {
             max_chunk_size: Some(250_000), // 250KB default
         };
 
-        // Create services - use ultra mode for advanced performance
-        let fs_service: Arc<dyn FileSystemService> = if ultra_mode {
+        // Analyze project to determine optimal mode
+        let project_root = PathBuf::from(root);
+        let should_use_ultra_mode = if force_ultra_mode {
+            Logger::info("🔧 Ultra Mode: Forced by --ultra-mode flag");
+            true
+        } else if force_normal_mode {
+            Logger::info("🔧 Normal Mode: Forced by --normal-mode flag");
+            false
+        } else {
+            // Auto-detect based on project characteristics
+            let analysis = self.analyze_project(&project_root).await?;
+            let auto_ultra = analysis.should_use_ultra_mode();
+
+            if auto_ultra {
+                Logger::info(&format!(
+                    "🧠 Auto-Ultra: Detected {} files, {} TypeScript, {}KB total - Using Ultra Mode",
+                    analysis.total_files,
+                    analysis.typescript_files,
+                    analysis.total_size_kb
+                ));
+            } else {
+                Logger::info(&format!(
+                    "🏃 Auto-Normal: Small project ({} files, {}KB) - Using Normal Mode for minimal overhead",
+                    analysis.total_files,
+                    analysis.total_size_kb
+                ));
+            }
+
+            auto_ultra
+        };
+
+        // Create services based on determined mode
+        let fs_service: Arc<dyn FileSystemService> = if should_use_ultra_mode {
             Logger::info("🚀 Ultra Mode: Using advanced file system with memory mapping and parallel processing");
             Arc::new(UltraFileSystemService::new())
         } else {
             Arc::new(TokioFileSystemService)
         };
 
-        let js_processor: Arc<dyn JsProcessor> = if ultra_mode {
+        let js_processor: Arc<dyn JsProcessor> = if should_use_ultra_mode {
             Logger::info("⚡ Ultra Mode: Using enhanced JS processor with advanced caching");
             Arc::new(EnhancedJsProcessor::new())
         } else {
@@ -129,7 +165,7 @@ impl CliHandler {
         };
         let css_processor = Arc::new(LightningCssProcessor::new(enable_minification));
 
-        if ultra_mode {
+        if should_use_ultra_mode {
             Logger::info("🔥 Ultra Mode: SIMD optimizations and advanced caching enabled");
         }
 
@@ -318,6 +354,93 @@ impl CliHandler {
         }
 
         Ok(())
+    }
+
+    /// Analyze project characteristics to determine optimal build mode
+    async fn analyze_project(&self, project_root: &Path) -> Result<ProjectAnalysis> {
+        let mut analysis = ProjectAnalysis::default();
+
+        // Recursively scan all directories for accurate project analysis
+        let all_files = self.scan_directory_recursive(project_root).await?;
+
+        analysis.total_files = all_files.len();
+
+        // Analyze each file
+        for file_path in &all_files {
+            if let Some(extension) = file_path.extension().and_then(|e| e.to_str()) {
+                if matches!(extension, "ts" | "tsx") {
+                    analysis.typescript_files += 1;
+                }
+            }
+
+            // Quick size estimation
+            if let Ok(metadata) = tokio::fs::metadata(file_path).await {
+                analysis.total_size_kb += (metadata.len() / 1024) as usize;
+            }
+        }
+
+        Ok(analysis)
+    }
+
+    /// Recursively scan directory for all relevant files
+    fn scan_directory_recursive<'a>(&'a self, dir: &'a Path) -> std::pin::Pin<std::boxed::Box<dyn std::future::Future<Output = Result<Vec<PathBuf>>> + 'a>> {
+        Box::pin(async move {
+            let mut files = Vec::new();
+            let mut entries = tokio::fs::read_dir(dir).await
+                .map_err(|e| crate::utils::UltraError::Io(e))?;
+
+            while let Some(entry) = entries.next_entry().await
+                .map_err(|e| crate::utils::UltraError::Io(e))? {
+
+                let path = entry.path();
+
+                if path.is_dir() {
+                    // Skip common directories to avoid
+                    if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                        if matches!(name, "node_modules" | ".git" | "target" | "dist" | ".next" | "build" | ".ultra-cache") {
+                            continue;
+                        }
+                    }
+
+                    // Recursively scan subdirectory
+                    let mut sub_files = self.scan_directory_recursive(&path).await?;
+                    files.append(&mut sub_files);
+                } else {
+                    // Check if it's a relevant file type
+                    if let Some(extension) = path.extension().and_then(|e| e.to_str()) {
+                        if matches!(extension, "js" | "jsx" | "ts" | "tsx" | "css") {
+                            files.push(path);
+                        }
+                    }
+                }
+            }
+
+            Ok(files)
+        })
+    }
+}
+
+/// Analysis of project characteristics for mode detection
+#[derive(Default, Debug)]
+struct ProjectAnalysis {
+    total_files: usize,
+    typescript_files: usize,
+    total_size_kb: usize,
+}
+
+impl ProjectAnalysis {
+    /// Determine if Ultra Mode would be beneficial for this project
+    fn should_use_ultra_mode(&self) -> bool {
+        // Ultra Mode is beneficial when:
+        // 1. Many files (>= 8 files) - parallel processing helps
+        // 2. TypeScript files present - enhanced processor is better
+        // 3. Large total size (>= 50KB) - memory mapping and caching help
+        // 4. Complex projects - advanced optimizations worth the overhead
+
+        self.total_files >= 8 ||
+        self.typescript_files > 0 ||
+        self.total_size_kb >= 50 ||
+        (self.total_files >= 5 && self.total_size_kb >= 25)
     }
 }
 
