@@ -298,7 +298,7 @@ impl Default for AstTreeShaker {
 
 /// Analysis result for a single module
 #[derive(Debug)]
-struct ModuleAnalysis {
+pub struct ModuleAnalysis {
     pub module_path: String,
     pub exports: HashSet<String>,
     pub imports: HashSet<String>,
