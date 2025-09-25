@@ -1,23 +1,11 @@
-// Clean test project
-import { utils } from './utils.js';
-import { components } from './components.js';
-import './styles.css';
+// Simple test with lodash
+import { map, filter } from 'lodash';
 
-console.log('🚀 Clean Ultra Build Test');
+const numbers = [1, 2, 3, 4, 5];
+const doubled = map(numbers, x => x * 2);
+const evens = filter(numbers, x => x % 2 === 0);
 
-// Initialize utilities
-utils.init();
+console.log('Doubled:', doubled);
+console.log('Evens:', evens);
 
-// Render components
-components.render();
-
-// Test functionality
-const result = utils.processData({
-    name: 'Ultra Bundler',
-    version: '0.3.0',
-    features: ['Fast', 'TypeScript', 'Tree Shaking']
-});
-
-console.log('Processed data:', result);
-
-export { utils, components };
+export { doubled, evens };

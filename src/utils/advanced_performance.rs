@@ -35,7 +35,7 @@ impl MmapFileReader {
         let mmap = unsafe {
             MmapOptions::new()
                 .map(&file)
-                .map_err(|e| UltraError::Build(format!("Memory mapping failed: {}", e)))?
+                .map_err(|e| UltraError::build(format!("Memory mapping failed: {}", e)))?
         };
 
         Ok(Self {
@@ -47,7 +47,7 @@ impl MmapFileReader {
     /// Get the content as a string slice (zero-copy)
     pub fn as_str(&self) -> Result<&str> {
         std::str::from_utf8(&self.mmap)
-            .map_err(|e| UltraError::Build(format!("Invalid UTF-8 in file: {}", e)))
+            .map_err(|e| UltraError::build(format!("Invalid UTF-8 in file: {}", e)))
     }
 
     /// Get the raw bytes

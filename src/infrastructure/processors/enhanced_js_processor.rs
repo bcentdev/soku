@@ -1,9 +1,10 @@
 #![allow(dead_code)] // Enhanced JS processor - advanced features, may not all be used yet
 
 use crate::core::{interfaces::JsProcessor, models::*};
-use crate::utils::{Result, UltraError, Logger, UltraCache};
+use crate::utils::{Result, UltraError, Logger, UltraCache, ErrorContext};
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
+use oxc_diagnostics::OxcDiagnostic;
 use oxc_span::SourceType;
 use oxc_ast::ast;
 use std::sync::Arc;
@@ -20,6 +21,20 @@ impl EnhancedJsProcessor {
         Self {
             cache: Arc::new(UltraCache::new()),
         }
+    }
+
+    /// Extract detailed error information from oxc parse errors
+    fn create_parse_error_context(&self, _errors: &[OxcDiagnostic], content: &str, file_path: &Path) -> ErrorContext {
+        // For now, create a simple context with just the file path
+        // TODO: Extract line/column information when oxc API is more stable
+
+        // Extract a small snippet of the content for context
+        let lines: Vec<&str> = content.lines().take(5).collect();
+        let code_snippet = lines.join("\n");
+
+        ErrorContext::new()
+            .with_file(file_path.to_path_buf())
+            .with_snippet(code_snippet)
     }
 
     pub fn with_persistent_cache(cache_dir: &Path) -> Self {
@@ -42,7 +57,7 @@ impl EnhancedJsProcessor {
         if file_extension == "tsx" {
             Logger::processing_typescript("TSX/JSX component (AST-based)");
             // For TSX files, we need both TypeScript stripping AND JSX transformation
-            let processed = self.process_jsx_content(&module.content)?;
+            let processed = self.process_jsx_content(&module.content, &module.path)?;
             Logger::debug(&format!("JSX processed output:\n{}", processed));
             Ok(processed)
         } else {
@@ -53,13 +68,13 @@ impl EnhancedJsProcessor {
                     .unwrap_or("unknown")
             ));
             // For regular TS files, just strip TypeScript types
-            let processed = self.ast_typescript_transform(&module.content)?;
+            let processed = self.ast_typescript_transform(&module.content, &module.path)?;
             Ok(processed)
         }
     }
 
     /// Process JSX/TSX content using AST-based transformation
-    fn process_jsx_content(&self, content: &str) -> Result<String> {
+    fn process_jsx_content(&self, content: &str, file_path: &Path) -> Result<String> {
         let allocator = Allocator::default();
         let source_type = SourceType::default().with_typescript(true).with_jsx(true); // Support TSX files
 
@@ -67,10 +82,19 @@ impl EnhancedJsProcessor {
         let result = parser.parse();
 
         if !result.errors.is_empty() {
-            Logger::warn(&format!(
-                "JSX parse errors: {} issues - falling back to regex",
-                result.errors.len()
-            ));
+            // Create detailed error context with file location
+            let error_context = self.create_parse_error_context(&result.errors, content, file_path);
+            let first_error = &result.errors[0];
+
+            // Log detailed error information
+            let detailed_error = UltraError::parse_with_context(
+                format!("JSX/TSX parsing failed: {}", first_error),
+                error_context
+            );
+
+            Logger::warn(&detailed_error.format_detailed());
+            Logger::warn("Falling back to regex-based approach for JSX processing");
+
             // Fall back to regex-based approach
             let type_stripped = self.strip_typescript_types(content);
             return Ok(self.convert_jsx_to_js(&type_stripped));
@@ -301,7 +325,7 @@ impl EnhancedJsProcessor {
     }
 
     /// AST-based TypeScript transformation using oxc parser
-    fn ast_typescript_transform(&self, content: &str) -> Result<String> {
+    fn ast_typescript_transform(&self, content: &str, file_path: &Path) -> Result<String> {
         let allocator = Allocator::default();
         let source_type = SourceType::default().with_typescript(true);
 
@@ -309,15 +333,21 @@ impl EnhancedJsProcessor {
         let result = parser.parse();
 
         if !result.errors.is_empty() {
-            Logger::warn(&format!(
-                "TypeScript parse errors: {} issues - falling back to regex",
-                result.errors.len()
-            ));
-            for error in &result.errors {
-                Logger::debug(&format!("Parse error: {:?}", error));
-            }
-            // Fall back to regex-based approach if AST parsing fails
-            return Ok(self.strip_typescript_types(content));
+            // Create detailed error context with file location
+            let error_context = self.create_parse_error_context(&result.errors, content, file_path);
+            let first_error = &result.errors[0];
+
+            // Log detailed error information
+            let detailed_error = UltraError::parse_with_context(
+                format!("TypeScript parsing failed: {}", first_error),
+                error_context
+            );
+
+            Logger::warn(&detailed_error.format_detailed());
+            Logger::warn("Falling back to regex-based approach for TypeScript processing");
+
+            // Fall back to fast regex-based approach if AST parsing fails
+            return Ok(self.fast_typescript_strip(content));
         }
 
         // For now, use a simple approach to extract JavaScript from AST
@@ -333,9 +363,9 @@ impl EnhancedJsProcessor {
         // For initial implementation, perform selective stripping based on AST validation
         // This ensures we only transform syntactically valid TypeScript
 
-        // Use the existing regex-based approach which is more robust
+        // Use the fast regex-based approach which is more robust
         // TODO: Implement proper AST-based transformation later
-        let result = self.strip_typescript_types(original_content);
+        let result = self.fast_typescript_strip(original_content);
         result
     }
 
@@ -369,46 +399,54 @@ impl EnhancedJsProcessor {
         }
     }
 
-    /// Advanced TypeScript type stripping with comprehensive support
-    fn strip_typescript_types(&self, content: &str) -> String {
-        let mut result = content.to_string();
+    /// Fast TypeScript type stripping for fallback scenarios
+    fn fast_typescript_strip(&self, content: &str) -> String {
+        let mut lines = Vec::new();
 
-        // Remove complete interface declarations
-        if let Ok(re) = regex::Regex::new(r"(?m)^\s*interface\s+[^{]+\{[^}]*\}\s*$") {
-            result = re.replace_all(&result, "").to_string();
-        }
-        if let Ok(re) = regex::Regex::new(r"(?m)^\s*export\s+interface\s+[^{]+\{[^}]*\}\s*$") {
-            result = re.replace_all(&result, "").to_string();
-        }
+        for line in content.lines() {
+            let trimmed = line.trim();
 
-        // Remove type definitions
-        if let Ok(re) = regex::Regex::new(r"(?m)^\s*type\s+[^=]+=[^;]+;\s*$") {
-            result = re.replace_all(&result, "").to_string();
-        }
-        if let Ok(re) = regex::Regex::new(r"(?m)^\s*export\s+type\s+[^=]+=[^;]+;\s*$") {
-            result = re.replace_all(&result, "").to_string();
-        }
+            // Skip TypeScript-only declarations completely
+            if trimmed.starts_with("interface ") ||
+               trimmed.starts_with("export interface ") ||
+               trimmed.starts_with("type ") ||
+               trimmed.starts_with("export type ") ||
+               trimmed.starts_with("enum ") ||
+               trimmed.starts_with("export enum ") ||
+               trimmed.starts_with("const enum ") ||
+               trimmed.starts_with("export const enum ") ||
+               trimmed.starts_with("import ") {
+                continue;
+            }
 
-        // Remove enum declarations (but keep const enum)
-        if let Ok(re) = regex::Regex::new(r"(?m)^\s*enum\s+[^{]+\{[^}]*\}\s*$") {
-            result = re.replace_all(&result, "").to_string();
-        }
-        if let Ok(re) = regex::Regex::new(r"(?m)^\s*export\s+enum\s+[^{]+\{[^}]*\}\s*$") {
-            result = re.replace_all(&result, "").to_string();
-        }
+            // Skip lines that are only closing braces (from skipped declarations)
+            if trimmed == "}" || trimmed == "};" {
+                continue;
+            }
 
-        // Remove import statements (bundler will handle)
-        if let Ok(re) = regex::Regex::new(r"(?m)^\s*import\s+[^;]+;\s*$") {
-            result = re.replace_all(&result, "").to_string();
-        }
+            // Basic type annotation cleaning for function parameters
+            let mut cleaned = line.to_string();
 
-        // Process line by line for type annotations
-        let lines: Vec<String> = result
-            .lines()
-            .map(|line| self.clean_typescript_annotations(line))
-            .collect();
+            // Remove simple type annotations: name: Type -> name
+            if let Ok(re) = regex::Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]*([,)=])") {
+                cleaned = re.replace_all(&cleaned, "$1$2").to_string();
+            }
+
+            // Remove function return types: ): Type => -> ) =>
+            if let Ok(re) = regex::Regex::new(r"\)\s*:\s*[^=]+\s*(=>)") {
+                cleaned = re.replace_all(&cleaned, ")$1").to_string();
+            }
+
+            lines.push(cleaned);
+        }
 
         lines.join("\n")
+    }
+
+    /// Advanced TypeScript type stripping with comprehensive support
+    fn strip_typescript_types(&self, content: &str) -> String {
+        // Use the fast approach by default to avoid performance issues
+        self.fast_typescript_strip(content)
     }
 
     /// Clean TypeScript annotations from a single line of code
@@ -604,11 +642,17 @@ impl EnhancedJsProcessor {
         let result = parser.parse();
 
         if !result.errors.is_empty() {
-            Logger::warn(&format!(
-                "JavaScript parse warnings in {}: {} issues",
-                module.path.display(),
-                result.errors.len()
-            ));
+            // Create detailed error context with file location
+            let error_context = self.create_parse_error_context(&result.errors, &module.content, &module.path);
+            let first_error = &result.errors[0];
+
+            // Log detailed error information
+            let detailed_error = UltraError::parse_with_context(
+                format!("JavaScript parsing warning: {}", first_error),
+                error_context
+            );
+
+            Logger::warn(&detailed_error.format_detailed());
         }
 
         // Simple processing: remove import/export statements for bundling
@@ -648,7 +692,7 @@ impl JsProcessor for EnhancedJsProcessor {
             ModuleType::JavaScript => {
                 self.process_javascript(module).await
             }
-            _ => Err(UltraError::Build(format!(
+            _ => Err(UltraError::build(format!(
                 "Unsupported module type for enhanced processor: {:?}",
                 module.module_type
             ))),

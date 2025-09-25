@@ -55,7 +55,7 @@ impl UltraHmrService {
     pub async fn start_server(&self, port: u16) -> Result<()> {
         let addr = format!("127.0.0.1:{}", port);
         let listener = tokio::net::TcpListener::bind(&addr).await
-            .map_err(|e| UltraError::Build(format!("HMR server bind failed: {}", e)))?;
+            .map_err(|e| UltraError::build(format!("HMR server bind failed: {}", e)))?;
 
         tracing::info!("🔥 HMR server started on ws://{}", addr);
 
@@ -103,7 +103,7 @@ impl UltraHmrService {
         clients: Arc<DashMap<String, HmrClient>>,
     ) -> Result<()> {
         let ws_stream = accept_async(stream).await
-            .map_err(|e| UltraError::Build(format!("WebSocket handshake failed: {}", e)))?;
+            .map_err(|e| UltraError::build(format!("WebSocket handshake failed: {}", e)))?;
 
         let (mut ws_sender, mut ws_receiver) = ws_stream.split();
         let client_id = Uuid::new_v4().to_string();
@@ -165,11 +165,11 @@ impl UltraHmrService {
                 }
             },
             Config::default(),
-        ).map_err(|e| UltraError::Build(format!("File watcher setup failed: {}", e)))?;
+        ).map_err(|e| UltraError::build(format!("File watcher setup failed: {}", e)))?;
 
         // Watch the root directory
         watcher.watch(&root_path, RecursiveMode::Recursive)
-            .map_err(|e| UltraError::Build(format!("Watch setup failed: {}", e)))?;
+            .map_err(|e| UltraError::build(format!("Watch setup failed: {}", e)))?;
 
         tracing::info!("👁️  File watcher started for: {}", root_path.display());
 

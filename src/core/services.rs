@@ -195,7 +195,7 @@ impl UltraBuildService {
                             let js_processor = crate::infrastructure::OxcJsProcessor::new();
                             js_processor.extract_dependencies(&content_clone)
                         }).await
-                        .map_err(|e| crate::utils::UltraError::Build(format!("Dependency extraction failed: {}", e)))?
+                        .map_err(|e| crate::utils::UltraError::build(format!("Dependency extraction failed: {}", e)))?
                     }
                     ModuleType::Css => {
                         // Extract CSS imports (@import statements)

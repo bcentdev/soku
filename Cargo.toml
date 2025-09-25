@@ -27,6 +27,7 @@ oxc_minifier = "0.90.0"
 oxc_codegen = "0.90.0"
 oxc_transformer = "0.90.0"
 oxc_semantic = "0.90.0"
+oxc_diagnostics = "0.90.0"
 
 # CSS processing with lightningcss - Keep alpha version
 lightningcss = "1.0.0-alpha.67"

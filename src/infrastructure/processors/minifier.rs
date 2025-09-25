@@ -38,7 +38,7 @@ impl OxcMinifier {
                 .iter()
                 .map(|e| format!("Parse error: {}", e))
                 .collect();
-            return Err(UltraError::Build(errors.join("\n")));
+            return Err(UltraError::build(errors.join("\n")));
         }
 
         // Minify the AST with oxc 0.90 API
@@ -81,7 +81,7 @@ impl OxcMinifier {
                 .iter()
                 .map(|e| format!("Parse error: {}", e))
                 .collect();
-            return Err(UltraError::Build(errors.join("\n")));
+            return Err(UltraError::build(errors.join("\n")));
         }
 
         // Create custom minifier options
@@ -149,7 +149,7 @@ impl MinificationService {
             minifier.minify(&bundle, &filename)
         })
         .await
-        .map_err(|e| UltraError::Build(format!("Minification task failed: {}", e)))?
+        .map_err(|e| UltraError::build(format!("Minification task failed: {}", e)))?
     }
 
     /// Get minification statistics with compression analysis
@@ -172,10 +172,10 @@ impl MinificationService {
     pub fn gzip_compress(&self, content: &[u8]) -> Result<Vec<u8>> {
         let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
         encoder.write_all(content)
-            .map_err(|e| UltraError::Build(format!("Gzip compression failed: {}", e)))?;
+            .map_err(|e| UltraError::build(format!("Gzip compression failed: {}", e)))?;
 
         encoder.finish()
-            .map_err(|e| UltraError::Build(format!("Gzip finish failed: {}", e)))
+            .map_err(|e| UltraError::build(format!("Gzip finish failed: {}", e)))
     }
 
     /// Advanced minification with optimal settings for production
@@ -201,7 +201,7 @@ impl MinificationService {
             })
         })
         .await
-        .map_err(|e| UltraError::Build(format!("Advanced minification task failed: {}", e)))?
+        .map_err(|e| UltraError::build(format!("Advanced minification task failed: {}", e)))?
     }
 
     /// Calculate gzip compression reduction

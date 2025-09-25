@@ -1,7 +1,8 @@
 use crate::core::{interfaces::JsProcessor, models::*};
-use crate::utils::{Result, UltraError, Logger, UltraCache};
+use crate::utils::{Result, UltraError, ErrorContext, Logger, UltraCache};
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
+use oxc_diagnostics::OxcDiagnostic;
 use oxc_span::SourceType;
 use oxc_codegen::Codegen;
 use oxc_transformer::{TransformOptions, Transformer};
@@ -33,7 +34,7 @@ impl JsProcessor for OxcJsProcessor {
             ModuleType::JavaScript | ModuleType::TypeScript => {
                 self.process_js_module(module).await
             }
-            _ => Err(UltraError::Build(format!(
+            _ => Err(UltraError::build(format!(
                 "Unsupported module type: {:?}",
                 module.module_type
             ))),
@@ -41,7 +42,7 @@ impl JsProcessor for OxcJsProcessor {
 
         // Cache the result
         if let Ok(ref processed) = result {
-            self.cache.cache_js(&path_str, &module.content, processed.clone());
+            self.cache.cache_js(&path_str, &module.content, processed.to_string());
         }
 
         result
@@ -229,9 +230,9 @@ impl JsProcessor for OxcJsProcessor {
         let source_map = source_map_builder.into_sourcemap();
         let mut source_map_buffer = Vec::new();
         source_map.to_writer(&mut source_map_buffer)
-            .map_err(|e| UltraError::Build(format!("Source map serialization error: {}", e)))?;
+            .map_err(|e| UltraError::build(format!("Source map serialization error: {}", e)))?;
         let source_map_json = String::from_utf8(source_map_buffer)
-            .map_err(|e| UltraError::Build(format!("Source map UTF8 conversion error: {}", e)))?;
+            .map_err(|e| UltraError::build(format!("Source map UTF8 conversion error: {}", e)))?;
 
         Ok(BundleOutput {
             code: bundle,
@@ -250,6 +251,20 @@ impl OxcJsProcessor {
         Self {
             cache: Arc::new(crate::utils::UltraCache::new()),
         }
+    }
+
+    /// Extract detailed error information from oxc parse errors
+    fn create_parse_error_context(&self, _errors: &[OxcDiagnostic], content: &str, file_path: &Path) -> ErrorContext {
+        // For now, create a simple context with just the file path
+        // TODO: Extract line/column information when oxc API is more stable
+
+        // Extract a small snippet of the content for context
+        let lines: Vec<&str> = content.lines().take(5).collect();
+        let code_snippet = lines.join("\n");
+
+        ErrorContext::new()
+            .with_file(file_path.to_path_buf())
+            .with_snippet(code_snippet)
     }
 
     async fn build_used_exports_map(&self, _stats: &TreeShakingStats, modules: &[ModuleInfo]) -> std::collections::HashMap<String, std::collections::HashSet<String>> {
@@ -299,7 +314,7 @@ impl OxcJsProcessor {
         // For TypeScript files, strip TypeScript syntax FIRST before parsing
         let content_to_parse = if module.module_type == ModuleType::TypeScript {
             println!("🔧 Processing TypeScript file: {}", module.path.display());
-            let stripped = self.strip_typescript_syntax(&module.content);
+            let stripped = self.strip_typescript_syntax(&module.content, &module.path);
             println!("📝 Original content (first 200 chars): {}", &module.content.chars().take(200).collect::<String>());
             println!("🧹 Stripped content (first 200 chars): {}", &stripped.chars().take(200).collect::<String>());
             // Preprocess modern JS features for better parser compatibility
@@ -331,42 +346,18 @@ impl OxcJsProcessor {
         let result = parser.parse();
 
         if !result.errors.is_empty() {
+            // Create detailed error context with file location
+            let error_context = self.create_parse_error_context(&result.errors, &content_to_parse, &module.path);
             let first_error = &result.errors[0];
-            let file_lines: Vec<&str> = content_to_parse.lines().collect();
 
-            // Extract line number from error if available
-            let error_location = format!("{}", first_error);
+            // Create detailed error
+            let detailed_error = UltraError::parse_with_context(
+                format!("JavaScript parsing failed: {}", first_error),
+                error_context
+            );
 
-            println!("❌ Parse error in {}", module.path.display());
-            println!("🔍 Error: {}", first_error);
-
-            // Try to show context around the error
-            if let Some(line_match) = error_location.split(':').nth(1) {
-                if let Ok(line_num) = line_match.parse::<usize>() {
-                    if line_num > 0 && line_num <= file_lines.len() {
-                        let line_idx = line_num - 1;
-                        println!("📍 At line {}: {}", line_num, file_lines[line_idx]);
-
-                        // Show context lines
-                        let start = line_idx.saturating_sub(2);
-                        let end = (line_idx + 3).min(file_lines.len());
-
-                        println!("📝 Context:");
-                        for (i, line) in file_lines[start..end].iter().enumerate() {
-                            let current_line = start + i + 1;
-                            let marker = if current_line == line_num { ">" } else { " " };
-                            println!("  {:2}{} {}: {}", current_line, marker, current_line, line);
-                        }
-                    }
-                }
-            }
-
-            Logger::error(&format!(
-                "Parse error in {}: {}",
-                module.path.display(),
-                first_error
-            ));
-            return Err(UltraError::Build(format!("Parse error: {}", first_error)));
+            Logger::error(&detailed_error.format_detailed());
+            return Err(detailed_error);
         }
 
         // Process the module content while preserving functionality
@@ -380,9 +371,9 @@ impl OxcJsProcessor {
         self.transform_module_content_with_tree_shaking(content, None)
     }
 
-    fn strip_typescript_syntax(&self, content: &str) -> String {
+    fn strip_typescript_syntax(&self, content: &str, file_path: &Path) -> String {
         // Use AST-based TypeScript transformation with oxc
-        match self.strip_typescript_syntax_ast(content) {
+        match self.strip_typescript_syntax_ast(content, file_path) {
             Ok(result) => result,
             Err(e) => {
                 println!("⚠️  AST transformation failed: {}, falling back to regex", e);
@@ -391,7 +382,7 @@ impl OxcJsProcessor {
         }
     }
 
-    fn strip_typescript_syntax_ast(&self, content: &str) -> Result<String> {
+    fn strip_typescript_syntax_ast(&self, content: &str, file_path: &Path) -> Result<String> {
         let allocator = Allocator::default();
         let source_type = SourceType::default()
             .with_typescript(true)
@@ -405,8 +396,18 @@ impl OxcJsProcessor {
         let parse_result = parser.parse();
 
         if !parse_result.errors.is_empty() {
-            let error_msg = format!("Parse errors: {}", parse_result.errors.len());
-            return Err(UltraError::Build(error_msg));
+            // Create detailed error context with file location
+            let error_context = self.create_parse_error_context(&parse_result.errors, content, file_path);
+            let first_error = &parse_result.errors[0];
+
+            // Create detailed error
+            let detailed_error = UltraError::parse_with_context(
+                format!("TypeScript AST parsing failed: {}", first_error),
+                error_context
+            );
+
+            Logger::warn(&detailed_error.format_detailed());
+            return Err(detailed_error);
         }
 
         // Transform TypeScript to JavaScript using oxc 0.90 Transformer
@@ -615,7 +616,7 @@ impl OxcJsProcessor {
 
     fn transform_module_content_with_tree_shaking(&self, content: &str, used_exports: Option<&std::collections::HashSet<String>>) -> String {
         // Strip TypeScript syntax first
-        let stripped = self.strip_typescript_syntax(content);
+        let stripped = self.strip_typescript_syntax(content, Path::new("<unknown>"));
         let mut processed_lines = Vec::new();
 
         for line in stripped.lines() {
