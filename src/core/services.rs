@@ -1,6 +1,6 @@
 use crate::core::{interfaces::*, models::*};
 use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, UltraProfiler, UltraCache, performance::parallel};
-use crate::infrastructure::{NodeModuleResolver, MinificationService};
+use crate::infrastructure::{NodeModuleResolver, MinificationService, CodeSplitter, CodeSplitConfig};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
@@ -370,6 +370,136 @@ impl UltraBuildService {
 
         format!("css_bundle_{:x}", hasher.finish())
     }
+
+    /// Build with code splitting enabled
+    async fn build_with_code_splitting(
+        &mut self,
+        config: &BuildConfig,
+        js_modules: &[ModuleInfo],
+        structure: &ProjectStructure,
+        tree_shaking_stats: Option<&TreeShakingStats>,
+    ) -> Result<BuildResult> {
+        let build_start = std::time::Instant::now();
+        self.profiler.start_timer("code_splitting");
+
+        // Configure code splitter
+        let split_config = CodeSplitConfig {
+            max_chunk_size: config.max_chunk_size.unwrap_or(250_000),
+            min_modules_per_chunk: 2,
+            create_vendor_chunks: true,
+            split_by_routes: true,
+            common_dependency_threshold: 2,
+        };
+
+        // Identify entry points
+        let entry_points: Vec<String> = structure.js_modules
+            .iter()
+            .filter(|p| {
+                let name = p.file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_lowercase();
+                name.contains("main") || name.contains("index")
+            })
+            .map(|p| p.to_string_lossy().to_string())
+            .collect();
+
+        // Analyze and split modules into chunks
+        let mut splitter = CodeSplitter::new(split_config);
+        let chunks = splitter.analyze_and_split(js_modules, &entry_points)?;
+
+        Logger::info(&format!("📦 Code splitting: Created {} chunks", chunks.len()));
+
+        self.profiler.end_timer("code_splitting");
+
+        // Process each chunk
+        self.profiler.start_timer("chunk_processing");
+        let mut output_files_for_ui = Vec::new();
+        let mut output_files_for_result = Vec::new();
+
+        for chunk in &chunks {
+            Logger::info(&format!("  ├─ {} ({} modules, {:.1}KB)",
+                chunk.name,
+                chunk.modules.len(),
+                chunk.size_bytes as f64 / 1024.0
+            ));
+
+            // Process chunk modules
+            let chunk_content = if tree_shaking_stats.is_some() {
+                self.js_processor.bundle_modules_with_tree_shaking(&chunk.modules, tree_shaking_stats).await?
+            } else {
+                self.js_processor.bundle_modules(&chunk.modules).await?
+            };
+
+            // Minify if enabled
+            let final_content = if config.enable_minification {
+                let minifier = MinificationService::new();
+                minifier.minify_bundle(chunk_content, &format!("{}.js", chunk.name)).await?
+            } else {
+                chunk_content
+            };
+
+            // Write chunk file
+            let chunk_name = format!("{}.js", chunk.name);
+            let chunk_path = config.outdir.join(&chunk_name);
+            let content_size = final_content.len();
+            self.fs_service.write_file(&chunk_path, &final_content).await?;
+
+            output_files_for_ui.push(OutputFileInfo {
+                name: chunk_name.clone(),
+                size: content_size,
+            });
+
+            output_files_for_result.push(OutputFile {
+                path: chunk_path,
+                content: final_content,
+                size: content_size,
+            });
+        }
+
+        self.profiler.end_timer("chunk_processing");
+
+        // Process CSS (same as normal build)
+        self.profiler.start_timer("css_processing");
+        if !structure.css_files.is_empty() {
+            let processed = self.css_processor.bundle_css(&structure.css_files).await?;
+            let css_path = config.outdir.join("bundle.css");
+            let css_size = processed.len();
+            self.fs_service.write_file(&css_path, &processed).await?;
+
+            output_files_for_ui.push(OutputFileInfo {
+                name: "bundle.css".to_string(),
+                size: css_size,
+            });
+
+            output_files_for_result.push(OutputFile {
+                path: css_path,
+                content: processed,
+                size: css_size,
+            });
+        }
+        self.profiler.end_timer("css_processing");
+
+        // Generate completion stats
+        self.ui.show_epic_completion(CompletionStats {
+            output_files: output_files_for_ui,
+            node_modules_optimized: None,
+            timing_breakdown: None,
+        });
+
+        self.profiler.end_timer("total_build");
+
+        Ok(BuildResult {
+            success: true,
+            js_modules_processed: js_modules.len(),
+            css_files_processed: structure.css_files.len(),
+            errors: Vec::new(),
+            warnings: Vec::new(),
+            tree_shaking_stats: tree_shaking_stats.cloned(),
+            build_time: build_start.elapsed(),
+            output_files: output_files_for_result,
+        })
+    }
 }
 
 #[async_trait::async_trait]
@@ -447,6 +577,11 @@ impl BuildService for UltraBuildService {
             .filter(|m| matches!(m.module_type, ModuleType::Css))
             .cloned()
             .collect();
+
+        // 📦 CODE SPLITTING (if enabled)
+        if config.enable_code_splitting {
+            return self.build_with_code_splitting(config, &js_only_modules, &structure, tree_shaking_stats.as_ref()).await;
+        }
 
         // ⚡ JAVASCRIPT PROCESSING WITH INTELLIGENT CACHING
         self.profiler.start_timer("js_processing");

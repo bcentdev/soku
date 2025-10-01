@@ -12,5 +12,5 @@ pub use css_processor::*;
 pub use tree_shaker::*;
 pub use ast_tree_shaker::*;
 pub use minifier::*;
-// pub use code_splitter::*; // Unused for now
+pub use code_splitter::*;
 pub use enhanced_js_processor::*;

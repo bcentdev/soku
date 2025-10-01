@@ -50,6 +50,9 @@ pub enum Commands {
         /// Disable caching for debugging
         #[arg(long)]
         no_cache: bool,
+        /// Enable code splitting (vendor, common, route chunks)
+        #[arg(long)]
+        code_splitting: bool,
     },
     /// Preview production build
     Preview {
@@ -89,9 +92,10 @@ impl CliHandler {
                 source_maps,
                 ultra_mode,
                 normal_mode,
-                no_cache
+                no_cache,
+                code_splitting
             } => {
-                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, ultra_mode, normal_mode, no_cache).await
+                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, ultra_mode, normal_mode, no_cache, code_splitting).await
             }
             Commands::Preview { dir, port } => {
                 self.handle_preview_command(&dir, port).await
@@ -112,6 +116,7 @@ impl CliHandler {
         force_ultra_mode: bool,
         force_normal_mode: bool,
         disable_cache: bool,
+        enable_code_splitting: bool,
     ) -> Result<()> {
         let config = BuildConfig {
             root: PathBuf::from(root),
@@ -119,9 +124,13 @@ impl CliHandler {
             enable_tree_shaking,
             enable_minification,
             enable_source_maps,
-            enable_code_splitting: false, // Disabled for now
+            enable_code_splitting,
             max_chunk_size: Some(250_000), // 250KB default
         };
+
+        if enable_code_splitting {
+            Logger::info("📦 Code Splitting: Enabled (vendor + common + route chunks)");
+        }
 
         // Analyze project to determine optimal mode
         let project_root = PathBuf::from(root);
