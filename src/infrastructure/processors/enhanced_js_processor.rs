@@ -27,12 +27,21 @@ static GENERIC_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| {
 #[derive(Clone)]
 pub struct EnhancedJsProcessor {
     cache: Arc<UltraCache>,
+    enable_cache: bool,
 }
 
 impl EnhancedJsProcessor {
     pub fn new() -> Self {
         Self {
             cache: Arc::new(UltraCache::new()),
+            enable_cache: true,
+        }
+    }
+
+    pub fn with_cache_disabled() -> Self {
+        Self {
+            cache: Arc::new(UltraCache::new()),
+            enable_cache: false,
         }
     }
 
@@ -53,6 +62,7 @@ impl EnhancedJsProcessor {
     pub fn with_persistent_cache(cache_dir: &Path) -> Self {
         Self {
             cache: Arc::new(UltraCache::with_persistent_cache(cache_dir)),
+            enable_cache: true,
         }
     }
 
@@ -693,13 +703,14 @@ impl JsProcessor for EnhancedJsProcessor {
                 .and_then(|s| s.to_str())
                 .unwrap_or("unknown")));
 
-        // Disable cache temporarily to test TypeScript stripping
-        // TODO: Re-enable cache once TypeScript processing is stable
-        // let path_str = module.path.to_string_lossy();
-        // if let Some(cached) = self.cache.get_js(&path_str, &module.content) {
-        //     Logger::debug("Cache hit for enhanced processing");
-        //     return Ok(cached);
-        // }
+        // Check cache first for ultra-fast rebuilds
+        let path_str = module.path.to_string_lossy();
+        if self.enable_cache {
+            if let Some(cached) = self.cache.get_js(&path_str, &module.content) {
+                Logger::debug("Cache hit for enhanced processing");
+                return Ok(cached);
+            }
+        }
 
         let result = match module.module_type {
             ModuleType::TypeScript => {
@@ -714,11 +725,12 @@ impl JsProcessor for EnhancedJsProcessor {
             ))),
         };
 
-        // Disable caching temporarily
-        // TODO: Re-enable once TypeScript processing is stable
-        // if let Ok(ref processed) = result {
-        //     self.cache.cache_js(&path_str, &module.content, processed.clone());
-        // }
+        // Cache the result for future builds
+        if self.enable_cache {
+            if let Ok(ref processed) = result {
+                self.cache.cache_js(&path_str, &module.content, processed.clone());
+            }
+        }
 
         result
     }

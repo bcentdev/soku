@@ -47,6 +47,9 @@ pub enum Commands {
         /// Force normal mode (disable auto-ultra detection)
         #[arg(long)]
         normal_mode: bool,
+        /// Disable caching for debugging
+        #[arg(long)]
+        no_cache: bool,
     },
     /// Preview production build
     Preview {
@@ -85,9 +88,10 @@ impl CliHandler {
                 no_minify,
                 source_maps,
                 ultra_mode,
-                normal_mode
+                normal_mode,
+                no_cache
             } => {
-                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, ultra_mode, normal_mode).await
+                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, ultra_mode, normal_mode, no_cache).await
             }
             Commands::Preview { dir, port } => {
                 self.handle_preview_command(&dir, port).await
@@ -107,6 +111,7 @@ impl CliHandler {
         enable_source_maps: bool,
         force_ultra_mode: bool,
         force_normal_mode: bool,
+        disable_cache: bool,
     ) -> Result<()> {
         let config = BuildConfig {
             root: PathBuf::from(root),
@@ -158,8 +163,13 @@ impl CliHandler {
         };
 
         let js_processor: Arc<dyn JsProcessor> = if should_use_ultra_mode {
-            Logger::info("⚡ Ultra Mode: Using enhanced JS processor with advanced caching");
-            Arc::new(EnhancedJsProcessor::new())
+            if disable_cache {
+                Logger::info("⚡ Ultra Mode: Using enhanced JS processor (caching disabled)");
+                Arc::new(EnhancedJsProcessor::with_cache_disabled())
+            } else {
+                Logger::info("⚡ Ultra Mode: Using enhanced JS processor with advanced caching");
+                Arc::new(EnhancedJsProcessor::new())
+            }
         } else {
             Arc::new(OxcJsProcessor::new())
         };
