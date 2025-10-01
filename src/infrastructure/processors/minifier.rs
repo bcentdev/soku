@@ -1,11 +1,13 @@
-use crate::utils::{Result, UltraError};
+use crate::utils::{Result, UltraError, ErrorContext};
 use oxc_allocator::Allocator;
 use oxc_codegen::{Codegen, CodegenOptions};
 use oxc_minifier::{Minifier, MinifierOptions, CompressOptions, MangleOptions};
 use oxc_parser::Parser;
 use oxc_span::SourceType;
+use oxc_diagnostics::OxcDiagnostic;
 use std::sync::Arc;
 use std::io::Write;
+use std::path::Path;
 use flate2::{Compression, write::GzEncoder};
 
 /// Ultra-fast JavaScript minification using oxc
@@ -34,11 +36,14 @@ impl OxcMinifier {
         let parse_result = parser.parse();
 
         if !parse_result.errors.is_empty() {
-            let errors: Vec<String> = parse_result.errors
-                .iter()
-                .map(|e| format!("Parse error: {}", e))
-                .collect();
-            return Err(UltraError::build(errors.join("\n")));
+            // Create detailed error context with location information
+            let error_context = Self::create_parse_error_context(&parse_result.errors, source_code, Path::new(filename));
+            let first_error = &parse_result.errors[0];
+
+            return Err(UltraError::parse_with_context(
+                format!("Parse error: {}", first_error),
+                error_context
+            ));
         }
 
         // Minify the AST with oxc 0.90 API
@@ -77,11 +82,14 @@ impl OxcMinifier {
         let parse_result = parser.parse();
 
         if !parse_result.errors.is_empty() {
-            let errors: Vec<String> = parse_result.errors
-                .iter()
-                .map(|e| format!("Parse error: {}", e))
-                .collect();
-            return Err(UltraError::build(errors.join("\n")));
+            // Create detailed error context with location information
+            let error_context = Self::create_parse_error_context(&parse_result.errors, source_code, Path::new(filename));
+            let first_error = &parse_result.errors[0];
+
+            return Err(UltraError::parse_with_context(
+                format!("Parse error: {}", first_error),
+                error_context
+            ));
         }
 
         // Create custom minifier options
@@ -118,6 +126,96 @@ impl OxcMinifier {
         }
 
         ((original_size - minified_size) / original_size) * 100.0
+    }
+}
+
+impl OxcMinifier {
+    /// Extract detailed error information from oxc parse errors
+    fn create_parse_error_context(errors: &[OxcDiagnostic], content: &str, file_path: &Path) -> ErrorContext {
+        // Try to extract span information from the first error
+        let mut line_num = None;
+        let mut col_num = None;
+
+        if let Some(first_error) = errors.first() {
+            let error_msg = format!("{:?}", first_error);
+            // Try to parse line/column from debug output
+            if let Some(start_pos) = Self::extract_span_from_debug(&error_msg) {
+                // Convert byte offset to line/column
+                let (line, col) = Self::byte_offset_to_line_col(content, start_pos);
+                line_num = Some(line);
+                col_num = Some(col);
+            }
+        }
+
+        // Extract contextual code snippet around the error
+        let code_snippet = if let (Some(line), Some(_)) = (line_num, col_num) {
+            Self::extract_code_snippet(content, line, 2)
+        } else {
+            // Fallback: show first 5 lines
+            content.lines().take(5).collect::<Vec<_>>().join("\n")
+        };
+
+        let mut context = ErrorContext::new()
+            .with_file(file_path.to_path_buf())
+            .with_snippet(code_snippet);
+
+        // Add line/column if available
+        if let (Some(line), Some(col)) = (line_num, col_num) {
+            context = context.with_location(line, col);
+        }
+
+        context
+    }
+
+    /// Extract span start position from debug output
+    fn extract_span_from_debug(debug_str: &str) -> Option<usize> {
+        // Look for pattern: offset: SourceOffset(313)
+        if let Some(offset_idx) = debug_str.find("offset: SourceOffset(") {
+            let after_offset = &debug_str[offset_idx + 21..]; // Skip "offset: SourceOffset("
+            let num_str: String = after_offset
+                .chars()
+                .take_while(|c| c.is_ascii_digit())
+                .collect();
+            num_str.parse::<usize>().ok()
+        } else {
+            None
+        }
+    }
+
+    /// Convert byte offset to 1-based line and 0-based column numbers
+    fn byte_offset_to_line_col(content: &str, byte_offset: usize) -> (usize, usize) {
+        let mut line = 1;
+        let mut col = 0;
+        let mut current_offset = 0;
+
+        for ch in content.chars() {
+            if current_offset >= byte_offset {
+                break;
+            }
+
+            if ch == '\n' {
+                line += 1;
+                col = 0;
+            } else {
+                col += 1;
+            }
+
+            current_offset += ch.len_utf8();
+        }
+
+        (line, col)
+    }
+
+    /// Extract code snippet with context lines around the error line
+    fn extract_code_snippet(content: &str, error_line: usize, context_lines: usize) -> String {
+        let lines: Vec<&str> = content.lines().collect();
+        let total_lines = lines.len();
+
+        // Calculate range with context
+        let start_line = error_line.saturating_sub(context_lines + 1);
+        let end_line = (error_line + context_lines).min(total_lines);
+
+        lines[start_line..end_line].join("\n")
     }
 }
 
