@@ -771,150 +771,19 @@ impl OxcJsProcessor {
 
     /// Check if a module path is from node_modules
     fn is_node_modules_path(&self, path: &std::path::Path) -> bool {
-        path.to_string_lossy().contains("node_modules")
+        super::common::is_node_modules_path(path)
     }
 
     /// Extract package name from node_modules path
     fn extract_package_name(&self, path: &std::path::Path) -> String {
-        let path_str = path.to_string_lossy();
-        if let Some(node_modules_pos) = path_str.find("node_modules") {
-            let after_node_modules = &path_str[node_modules_pos + "node_modules".len()..];
-            if let Some(package_part) = after_node_modules.split('/').nth(1) {
-                return package_part.to_string();
-            }
-        }
-        "unknown_package".to_string()
+        super::common::extract_package_name(path)
     }
 
     /// Optimize node_modules content by keeping only essential parts
     fn optimize_node_module_content(&self, content: &str, path: &std::path::Path) -> String {
-        let package_name = self.extract_package_name(path);
-
-        // For now, use a simple optimization strategy
-        // TODO: Implement more sophisticated tree shaking for specific packages
-
-        if package_name == "lodash" {
-            // For lodash, we can be more aggressive with tree shaking
-            self.optimize_lodash_content(content, &package_name)
-        } else {
-            // For other packages, apply general optimizations
-            self.optimize_general_node_module_content(content)
-        }
+        super::common::optimize_node_module_content(content, path)
     }
 
-    /// Specific optimization for lodash
-    fn optimize_lodash_content(&self, content: &str, package_name: &str) -> String {
-        let mut result = String::new();
-        let lines: Vec<&str> = content.lines().collect();
-
-        let mut in_function = false;
-        let mut brace_count = 0;
-
-        for line in lines {
-            let trimmed = line.trim();
-
-            // Skip comments and complex internal utilities
-            if trimmed.starts_with("//") || trimmed.starts_with("/*") || trimmed.is_empty() {
-                continue;
-            }
-
-            // Keep essential function definitions
-            if trimmed.starts_with("function ") ||
-               trimmed.starts_with("var ") ||
-               trimmed.starts_with("module.exports") ||
-               trimmed.starts_with("exports.") {
-                in_function = true;
-                result.push_str(line);
-                result.push('\n');
-
-                // Count braces to track function end
-                brace_count += line.matches('{').count();
-                brace_count -= line.matches('}').count();
-
-                if brace_count == 0 {
-                    in_function = false;
-                }
-                continue;
-            }
-
-            // If inside function, keep the content
-            if in_function {
-                result.push_str(line);
-                result.push('\n');
-
-                brace_count += line.matches('{').count();
-                brace_count -= line.matches('}').count();
-
-                if brace_count == 0 {
-                    in_function = false;
-                }
-            }
-        }
-
-        // Add a comment to indicate optimization
-        format!("// TREE-SHAKEN: Optimized {} content\n{}", package_name, result)
-    }
-
-    /// General optimization for node_modules
-    fn optimize_general_node_module_content(&self, content: &str) -> String {
-        // Convert CommonJS to ES6 if needed
-        let result = if self.is_commonjs_module(content) {
-            self.convert_commonjs_to_es6(content)
-        } else {
-            content.to_string()
-        };
-
-        // For general packages, apply lighter optimization
-        let mut optimized = String::new();
-
-        for line in result.lines() {
-            let trimmed = line.trim();
-
-            // Skip obvious dead code patterns
-            if trimmed.starts_with("// Development only") ||
-               trimmed.starts_with("// DEBUG") ||
-               trimmed.contains("console.warn") ||
-               trimmed.contains("console.error") {
-                optimized.push_str(&format!("// TREE-SHAKEN: {}\n", line));
-                continue;
-            }
-
-            optimized.push_str(line);
-            optimized.push('\n');
-        }
-
-        optimized
-    }
-
-    /// Convert CommonJS module.exports and exports to ES6 export statements
-    fn convert_commonjs_to_es6(&self, content: &str) -> String {
-        let mut converted = content.to_string();
-
-        // Convert module.exports = ... to export default ...
-        if let Ok(module_exports_regex) = regex::Regex::new(r"module\.exports\s*=\s*(.+);?") {
-            converted = module_exports_regex.replace_all(&converted, "export default $1;").to_string();
-        }
-
-        // Convert exports.name = ... to export const name = ...
-        if let Ok(exports_regex) = regex::Regex::new(r"exports\.(\w+)\s*=\s*(.+);?") {
-            converted = exports_regex.replace_all(&converted, "export const $1 = $2;").to_string();
-        }
-
-        // Convert require() calls to import statements (basic conversion)
-        // Note: This is a simplified conversion - full CommonJS support would need more sophisticated handling
-        if let Ok(require_regex) = regex::Regex::new(r#"(?:const|let|var)\s+(\w+)\s*=\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)"#) {
-            converted = require_regex.replace_all(&converted, "import $1 from '$2'").to_string();
-        }
-
-        converted
-    }
-
-    /// Check if content uses CommonJS patterns
-    fn is_commonjs_module(&self, content: &str) -> bool {
-        content.contains("module.exports") ||
-        content.contains("exports.") ||
-        content.contains("require(")
-    }
 }
 
 impl Default for OxcJsProcessor {

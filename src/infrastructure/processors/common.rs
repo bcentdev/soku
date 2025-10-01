@@ -37,51 +37,81 @@ pub fn optimize_node_module_content(content: &str, path: &Path) -> String {
 }
 
 /// Specific optimization for lodash
+/// Uses brace tracking to preserve complete function definitions
 fn optimize_lodash_content(content: &str, package_name: &str) -> String {
-    let mut result = Vec::new();
-    result.push(format!("// Tree-shaken lodash from {}", package_name));
+    let mut result = String::new();
+    let lines: Vec<&str> = content.lines().collect();
 
-    for line in content.lines() {
+    let mut in_function = false;
+    let mut brace_count = 0;
+
+    for line in lines {
         let trimmed = line.trim();
 
-        // Keep function definitions and exports
-        if trimmed.starts_with("function ")
-            || trimmed.starts_with("exports.")
-            || trimmed.starts_with("module.exports")
-            || trimmed.starts_with("var ")
-            || trimmed.contains("lodash")
-        {
-            result.push(line.to_string());
-        }
         // Skip comments and empty lines
-        else if trimmed.starts_with("//") || trimmed.starts_with("/*") || trimmed.is_empty() {
+        if trimmed.starts_with("//") || trimmed.starts_with("/*") || trimmed.is_empty() {
             continue;
+        }
+
+        // Keep essential function definitions
+        if trimmed.starts_with("function ")
+            || trimmed.starts_with("var ")
+            || trimmed.starts_with("module.exports")
+            || trimmed.starts_with("exports.")
+        {
+            in_function = true;
+            result.push_str(line);
+            result.push('\n');
+
+            brace_count += line.matches('{').count();
+            brace_count -= line.matches('}').count();
+
+            if brace_count == 0 {
+                in_function = false;
+            }
+            continue;
+        }
+
+        // If inside function, keep the content
+        if in_function {
+            result.push_str(line);
+            result.push('\n');
+
+            brace_count += line.matches('{').count();
+            brace_count -= line.matches('}').count();
+
+            if brace_count == 0 {
+                in_function = false;
+            }
         }
     }
 
-    result.join("\n")
+    format!("// TREE-SHAKEN: Optimized {} content\n{}", package_name, result)
 }
 
 /// General optimization for other node_modules packages
+/// Removes development-only code and verbose comments
 fn optimize_general_node_module_content(content: &str) -> String {
-    let mut result = Vec::new();
+    let mut result = String::new();
 
     for line in content.lines() {
         let trimmed = line.trim();
 
-        // Skip overly verbose comments
-        if trimmed.starts_with("/**") || trimmed.starts_with(" * @") {
-            continue;
-        }
-        // Skip empty lines in node_modules (they add up!)
-        if trimmed.is_empty() {
+        // Skip obvious dead code patterns
+        if trimmed.starts_with("// Development only")
+            || trimmed.starts_with("// DEBUG")
+            || trimmed.contains("console.warn")
+            || trimmed.contains("console.error")
+        {
+            result.push_str(&format!("// TREE-SHAKEN: {}\n", line));
             continue;
         }
 
-        result.push(line.to_string());
+        result.push_str(line);
+        result.push('\n');
     }
 
-    result.join("\n")
+    result
 }
 
 #[cfg(test)]
