@@ -35,6 +35,9 @@ lightningcss = "1.0.0-alpha.67"
 # Regex for parsing - Updated
 regex = "1.11"
 
+# Lazy evaluation for regex compilation
+once_cell = "1.19"
+
 # Async traits
 async-trait = "0.1"
 

@@ -9,6 +9,7 @@ pub struct UltraProfiler {
 }
 
 impl UltraProfiler {
+    #[allow(dead_code)] // Currently using Default trait, but keep for explicit construction
     pub fn new() -> Self {
         Self {
             timings: Arc::new(Mutex::new(HashMap::new())),

@@ -232,6 +232,7 @@ impl RegexTreeShaker {
     }
 
     /// Get the tracked node_modules imports for optimization
+    #[allow(dead_code)] // Future use for node_modules optimization analysis
     pub fn get_node_modules_imports(&self) -> &HashMap<String, NodeModuleImport> {
         &self.node_modules_imports
     }

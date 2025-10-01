@@ -100,6 +100,7 @@ impl UltraFileSystemService {
     }
 
     /// Read multiple files in parallel with memory mapping
+    #[allow(dead_code)] // Future use for batch file operations
     pub async fn read_files_parallel(&self, paths: &[PathBuf]) -> Vec<Result<String>> {
         parallel_files::process_files_parallel(paths, |reader| {
             reader.as_str().map(|s| s.to_string())
@@ -107,6 +108,7 @@ impl UltraFileSystemService {
     }
 
     /// Check if file has changed since last read
+    #[allow(dead_code)] // Future use for incremental rebuilds
     pub fn file_changed(&self, path: &Path) -> bool {
         if let Some(metadata) = self.file_metadata.get(path) {
             if let Ok(reader) = MmapFileReader::new(path) {
@@ -118,6 +120,7 @@ impl UltraFileSystemService {
     }
 
     /// Get cache statistics
+    #[allow(dead_code)] // Future use for cache analytics and debugging
     pub fn cache_stats(&self) -> UltraFileSystemStats {
         let incremental_stats = self.incremental_cache.stats();
 
@@ -129,6 +132,7 @@ impl UltraFileSystemService {
     }
 
     /// Clear all caches
+    #[allow(dead_code)] // Future use for cache management
     pub fn clear_caches(&self) {
         self.incremental_cache.clear();
         self.file_metadata.clear();
@@ -136,10 +140,10 @@ impl UltraFileSystemService {
 
     async fn collect_files_recursive(&self, dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
         let mut entries = tokio::fs::read_dir(dir).await
-            .map_err(|e| UltraError::Io(e))?;
+            .map_err(UltraError::Io)?;
 
         while let Some(entry) = entries.next_entry().await
-            .map_err(|e| UltraError::Io(e))? {
+            .map_err(UltraError::Io)? {
 
             let path = entry.path();
             if path.is_file() {
@@ -233,7 +237,7 @@ impl FileSystemService for UltraFileSystemService {
         }
 
         tokio::fs::write(path, content).await
-            .map_err(|e| UltraError::Io(e))?;
+            .map_err(UltraError::Io)?;
 
         // Update metadata after writing
         if let Ok(reader) = MmapFileReader::new(path) {
@@ -251,7 +255,7 @@ impl FileSystemService for UltraFileSystemService {
 
     async fn create_directory(&self, path: &Path) -> Result<()> {
         tokio::fs::create_dir_all(path).await
-            .map_err(|e| UltraError::Io(e))
+            .map_err(UltraError::Io)
     }
 }
 

@@ -25,6 +25,7 @@ impl ErrorContext {
         self
     }
 
+    #[allow(dead_code)] // Future use for detailed error reporting
     pub fn with_location(mut self, line: usize, column: usize) -> Self {
         self.line = Some(line);
         self.column = Some(column);
@@ -75,6 +76,7 @@ pub enum UltraError {
     InvalidPath(String),
 
     #[error("{0}")]
+    #[allow(dead_code)] // Generic error variant for future use
     Other(String),
 }
 
@@ -104,6 +106,7 @@ impl UltraError {
     }
 
     /// Create a build error with context
+    #[allow(dead_code)] // Future use for detailed build error reporting
     pub fn build_with_context(message: String, context: ErrorContext) -> Self {
         Self::Build {
             message,
@@ -155,7 +158,7 @@ impl UltraError {
 
         for (i, line) in lines.iter().enumerate() {
             let line_num = i + 1;
-            let is_error_line = error_line.map_or(false, |el| el == line_num);
+            let is_error_line = error_line == Some(line_num);
 
             if is_error_line {
                 output.push_str(&format!("→ {:3} │ {}\n", line_num, line));

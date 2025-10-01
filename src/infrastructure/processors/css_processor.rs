@@ -84,7 +84,7 @@ impl CssProcessor for LightningCssProcessor {
 
         for css_file in files {
             let content = tokio::fs::read_to_string(css_file).await
-                .map_err(|e| UltraError::Io(e))?;
+                .map_err(UltraError::Io)?;
 
             let processed = self.process_css(&content, css_file).await?;
 

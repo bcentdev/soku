@@ -10,6 +10,16 @@ use oxc_semantic::SemanticBuilder;
 use sourcemap::SourceMapBuilder;
 use std::path::Path;
 use std::sync::Arc;
+use once_cell::sync::Lazy;
+use regex::Regex;
+
+// Pre-compiled regex patterns for performance
+static CSS_IMPORT_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"import\s+['"]([^'"]+)['"]"#).unwrap()
+});
+static REQUIRE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"require\s*\(\s*['"]([^'"]+)['"]\s*\)"#).unwrap()
+});
 
 #[derive(Clone)]
 pub struct OxcJsProcessor {
@@ -475,14 +485,16 @@ impl OxcJsProcessor {
         // Fifth pass: Handle ONLY function parameter type annotations (NOT object property values)
         // Only match parameters in function/method signatures, avoiding object literals
         // Match patterns like `function(name: string, age: number)` but NOT `{ key: value }`
-        if let Ok(param_type_regex) = Regex::new(r"(?:function\s*\([^)]*|,\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]\|\s]*(?=[,\)])") {
-            result = param_type_regex.replace_all(&result, "$1").to_string();
+        // Fixed: Removed look-ahead, match full pattern with delimiter
+        if let Ok(param_type_regex) = Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]\|\s]*([,\)])") {
+            result = param_type_regex.replace_all(&result, "$1$2").to_string();
         }
 
         // Handle parameter type annotations in arrow functions and method definitions
         // Be very careful to only match function parameters, not object properties
-        if let Ok(arrow_param_regex) = Regex::new(r"(\([^)]*?)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]\|\?\s]*(?=[,\)])") {
-            result = arrow_param_regex.replace_all(&result, "${1}${2}").to_string();
+        // Fixed: Removed look-ahead and fixed backreference syntax
+        if let Ok(arrow_param_regex) = Regex::new(r"(\([^)]*?)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]\|\?\s]*([,\)])") {
+            result = arrow_param_regex.replace_all(&result, "$1$2$3").to_string();
         }
 
         // Sixth pass: Handle parameter destructuring with types like `}: ButtonProps) =>`
@@ -496,8 +508,9 @@ impl OxcJsProcessor {
         }
 
         // Eighth pass: Clean up any remaining orphaned type annotations
-        if let Ok(orphan_type_regex) = Regex::new(r":\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]]*\s*(?=\s|$|;|,)") {
-            result = orphan_type_regex.replace_all(&result, "").to_string();
+        // Fixed: Removed look-ahead, match with actual delimiters
+        if let Ok(orphan_type_regex) = Regex::new(r":\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]]*\s*([\s;,]|$)") {
+            result = orphan_type_regex.replace_all(&result, "$1").to_string();
         }
 
         // Process line by line for block-level TypeScript constructs
@@ -733,8 +746,8 @@ impl OxcJsProcessor {
                     }
                 } else {
                     // Handle CSS/asset imports like: import './styles.css'
-                    let import_regex = regex::Regex::new(r#"import\s+['"]([^'"]+)['"]"#).unwrap();
-                    if let Some(captures) = import_regex.captures(trimmed) {
+                    // Using pre-compiled regex for performance
+                    if let Some(captures) = CSS_IMPORT_REGEX.captures(trimmed) {
                         let import_path = &captures[1];
 
                         // Handle all import paths
@@ -744,12 +757,11 @@ impl OxcJsProcessor {
             }
 
             // Handle CommonJS require() patterns
-            if let Ok(require_regex) = regex::Regex::new(r#"require\s*\(\s*['"]([^'"]+)['"]\s*\)"#) {
-                for captures in require_regex.captures_iter(trimmed) {
-                    let require_path = &captures[1];
-                    if !require_path.is_empty() {
-                        dependencies.push(require_path.to_string());
-                    }
+            // Using pre-compiled regex for performance
+            for captures in REQUIRE_REGEX.captures_iter(trimmed) {
+                let require_path = &captures[1];
+                if !require_path.is_empty() {
+                    dependencies.push(require_path.to_string());
                 }
             }
         }

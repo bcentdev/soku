@@ -4,6 +4,13 @@ use crate::infrastructure::{NodeModuleResolver, MinificationService};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
+use once_cell::sync::Lazy;
+use regex::Regex;
+
+// Pre-compiled regex patterns for performance
+static CSS_IMPORT_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"@import\s+(?:url\s*\()?\s*['"]([^'"]+)['"]"#).unwrap()
+});
 
 /// Main build service implementation
 pub struct UltraBuildService {
@@ -65,7 +72,7 @@ impl UltraBuildService {
         let _timer = Timer::start("JavaScript processing");
 
         let tree_shaking_stats = if config.enable_tree_shaking {
-            if let Some(_) = self.tree_shaker {
+            if self.tree_shaker.is_some() {
                 Logger::tree_shaking_enabled();
 
                 // Create a new tree shaker instance for this build
@@ -299,8 +306,8 @@ impl UltraBuildService {
             // Handle @import statements
             if trimmed.starts_with("@import") {
                 // Parse @import statements: @import "path" or @import url("path")
-                let import_regex = regex::Regex::new(r#"@import\s+(?:url\s*\()?\s*['"]([^'"]+)['"]"#).unwrap();
-                if let Some(captures) = import_regex.captures(trimmed) {
+                // Using pre-compiled regex for performance
+                if let Some(captures) = CSS_IMPORT_REGEX.captures(trimmed) {
                     let import_path = &captures[1];
 
                     if import_path.starts_with("./") || import_path.starts_with("../") {
@@ -392,7 +399,7 @@ impl BuildService for UltraBuildService {
         // 🌳 TREE SHAKING (if enabled)
         self.profiler.start_timer("tree_shaking");
         let tree_shaking_stats = if config.enable_tree_shaking {
-            if let Some(_) = self.tree_shaker {
+            if self.tree_shaker.is_some() {
                 self.ui.show_tree_shaking_analysis(js_modules.len());
 
                 // Use AST tree shaker for better accuracy on complex projects

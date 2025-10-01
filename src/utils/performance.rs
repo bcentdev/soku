@@ -304,7 +304,7 @@ pub mod parallel {
     /// Chunk work for optimal CPU utilization
     pub fn optimal_chunk_size(total_items: usize) -> usize {
         let cpu_count = num_cpus::get();
-        (total_items / cpu_count).max(1).min(100)
+        (total_items / cpu_count).clamp(1, 100)
     }
 }
 

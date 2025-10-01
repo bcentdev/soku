@@ -30,7 +30,7 @@ impl MmapFileReader {
     /// Create a new memory-mapped file reader
     pub fn new(path: &Path) -> Result<Self> {
         let file = File::open(path)
-            .map_err(|e| UltraError::Io(e))?;
+            .map_err(UltraError::Io)?;
 
         let mmap = unsafe {
             MmapOptions::new()
@@ -51,6 +51,7 @@ impl MmapFileReader {
     }
 
     /// Get the raw bytes
+    #[allow(dead_code)] // Future use for binary file processing
     pub fn as_bytes(&self) -> &[u8] {
         &self.mmap
     }
@@ -105,6 +106,7 @@ impl IncrementalCache {
     }
 
     /// Add dependency relationship
+    #[allow(dead_code)] // Future use for dependency tracking
     pub fn add_dependency(&self, file: &str, dependency: &str) {
         self.dependency_graph
             .entry(file.to_string())
@@ -113,6 +115,7 @@ impl IncrementalCache {
     }
 
     /// Check if any dependencies have changed
+    #[allow(dead_code)] // Future use for incremental compilation
     pub fn dependencies_changed(&self, file: &str) -> bool {
         if let Some(deps) = self.dependency_graph.get(file) {
             deps.iter().any(|dep| {
@@ -125,6 +128,7 @@ impl IncrementalCache {
     }
 
     /// Get cache statistics
+    #[allow(dead_code)] // Future use for cache analytics
     pub fn stats(&self) -> IncrementalCacheStats {
         IncrementalCacheStats {
             content_entries: self.content_cache.len(),
@@ -134,6 +138,7 @@ impl IncrementalCache {
     }
 
     /// Clear all caches
+    #[allow(dead_code)] // Future use for cache management
     pub fn clear(&self) {
         self.content_cache.clear();
         self.dependency_graph.clear();

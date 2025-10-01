@@ -9,6 +9,19 @@ use oxc_span::SourceType;
 use oxc_ast::ast;
 use std::sync::Arc;
 use std::path::Path;
+use once_cell::sync::Lazy;
+use regex::Regex;
+
+// Pre-compiled regex patterns for performance
+static TYPE_ANNOTATION_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]*([,)=])").unwrap()
+});
+static RETURN_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"\)\s*:\s*[^=]+\s*(=>)").unwrap()
+});
+static GENERIC_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)<[^<>]*>").unwrap()
+});
 
 /// Enhanced JavaScript/TypeScript processor with advanced caching and optimizations
 #[derive(Clone)]
@@ -132,7 +145,8 @@ impl EnhancedJsProcessor {
         // This is a simplified transformation - full JSX would need more complex AST walking
 
         // Handle simple JSX elements: <div>content</div> -> React.createElement('div', null, 'content')
-        if let Ok(re) = regex::Regex::new(r"<(\w+)>([^<]*)</\1>") {
+        // Fixed: Removed backreference \1, match with general closing tag pattern
+        if let Ok(re) = regex::Regex::new(r"<(\w+)>([^<]*)</\w+>") {
             result = re.replace_all(&result, "React.createElement('$1', null, '$2')").to_string();
         }
 
@@ -159,7 +173,8 @@ impl EnhancedJsProcessor {
         Logger::debug(&format!("After TypeScript stripping:\n{}", result));
 
         // Transform simple lowercase elements: <div>text</div> (single line)
-        if let Ok(re) = regex::Regex::new(r#"<([a-z][a-zA-Z0-9]*)\s*([^>]*?)>\s*([^<>]*?)\s*</\1>"#) {
+        // Fixed: Removed backreference \1, match with general lowercase closing tag
+        if let Ok(re) = regex::Regex::new(r#"<([a-z][a-zA-Z0-9]*)\s*([^>]*?)>\s*([^<>]*?)\s*</[a-z][a-zA-Z0-9]*>"#) {
             let callback = |caps: &regex::Captures| {
                 let element = &caps[1];
                 let props = caps.get(2).map_or("", |m| m.as_str()).trim();
@@ -223,7 +238,8 @@ impl EnhancedJsProcessor {
         }
 
         // Transform simple component elements: <Component>content</Component> (single line)
-        if let Ok(re) = regex::Regex::new(r#"<([A-Z][a-zA-Z0-9.]*)\s*([^>]*?)>\s*([^<>]*?)\s*</\1>"#) {
+        // Fixed: Removed backreference \1, match with general uppercase closing tag
+        if let Ok(re) = regex::Regex::new(r#"<([A-Z][a-zA-Z0-9.]*)\s*([^>]*?)>\s*([^<>]*?)\s*</[A-Z][a-zA-Z0-9.]*>"#) {
             let callback = |caps: &regex::Captures| {
                 let component = &caps[1];
                 let props = caps.get(2).map_or("", |m| m.as_str()).trim();
@@ -308,10 +324,15 @@ impl EnhancedJsProcessor {
         }
 
         // Pattern 4: boolean props (just the name)
-        if let Ok(re) = regex::Regex::new(r#"\b([a-zA-Z][a-zA-Z0-9]*)\b(?!\s*=)"#) {
+        // Fixed: Removed negative look-ahead (?!...), filter manually instead
+        if let Ok(re) = regex::Regex::new(r#"\b([a-zA-Z][a-zA-Z0-9]*)\b"#) {
             for caps in re.captures_iter(props) {
                 let prop_name = &caps[1];
-                if !prop_pairs.iter().any(|p| p.starts_with(&format!("{}:", prop_name))) {
+                // Check if this prop is followed by '=' in original string
+                let full_match = caps.get(0).unwrap();
+                let after_match = &props[full_match.end()..];
+                if !after_match.trim_start().starts_with('=')
+                   && !prop_pairs.iter().any(|p| p.starts_with(&format!("{}:", prop_name))) {
                     prop_pairs.push(format!("{}: true", prop_name));
                 }
             }
@@ -428,14 +449,12 @@ impl EnhancedJsProcessor {
             let mut cleaned = line.to_string();
 
             // Remove simple type annotations: name: Type -> name
-            if let Ok(re) = regex::Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]*([,)=])") {
-                cleaned = re.replace_all(&cleaned, "$1$2").to_string();
-            }
+            // Using pre-compiled regex for performance
+            cleaned = TYPE_ANNOTATION_REGEX.replace_all(&cleaned, "$1$2").to_string();
 
             // Remove function return types: ): Type => -> ) =>
-            if let Ok(re) = regex::Regex::new(r"\)\s*:\s*[^=]+\s*(=>)") {
-                cleaned = re.replace_all(&cleaned, ")$1").to_string();
-            }
+            // Using pre-compiled regex for performance
+            cleaned = RETURN_TYPE_REGEX.replace_all(&cleaned, ")$1").to_string();
 
             lines.push(cleaned);
         }
@@ -595,16 +614,13 @@ impl EnhancedJsProcessor {
         const MAX_ITERATIONS: usize = 10; // Prevent infinite loops
 
         while iterations < MAX_ITERATIONS {
-            if let Ok(re) = regex::Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)<[^<>]*>") {
-                let new_result = re.replace_all(&result, "$1").to_string();
-                if new_result == result {
-                    break; // No more changes
-                }
-                result = new_result;
-                iterations += 1;
-            } else {
-                break;
+            // Using pre-compiled regex for performance
+            let new_result = GENERIC_TYPE_REGEX.replace_all(&result, "$1").to_string();
+            if new_result == result {
+                break; // No more changes
             }
+            result = new_result;
+            iterations += 1;
         }
         result
     }

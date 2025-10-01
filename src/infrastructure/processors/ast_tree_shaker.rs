@@ -19,12 +19,16 @@ pub struct AstTreeShaker {
 #[derive(Debug, Clone)]
 pub struct DeadCodeInfo {
     pub symbol_name: String,
+    #[allow(dead_code)] // Future use for precise code removal
     pub line_start: usize,
+    #[allow(dead_code)] // Future use for precise code removal
     pub line_end: usize,
+    #[allow(dead_code)] // Future use for categorizing dead code types
     pub code_type: DeadCodeType,
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Future use for categorizing different types of dead code
 pub enum DeadCodeType {
     UnusedFunction,
     UnusedVariable,
@@ -233,6 +237,7 @@ impl AstTreeShaker {
     }
 
     /// Generate optimized code with dead code removed
+    #[allow(dead_code)] // Future use for direct code transformation
     pub fn remove_dead_code(&self, module: &ModuleInfo) -> String {
         let module_path = module.path.to_string_lossy().to_string();
 
@@ -299,6 +304,7 @@ impl Default for AstTreeShaker {
 /// Analysis result for a single module
 #[derive(Debug)]
 pub struct ModuleAnalysis {
+    #[allow(dead_code)] // Future use for module tracking
     pub module_path: String,
     pub exports: HashSet<String>,
     pub imports: HashSet<String>,
