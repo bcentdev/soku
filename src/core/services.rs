@@ -1,5 +1,5 @@
 use crate::core::{interfaces::*, models::*};
-use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, UltraProfiler, UltraCache, performance::parallel};
+use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraProfiler, UltraCache, performance::parallel};
 use crate::infrastructure::{NodeModuleResolver, MinificationService, CodeSplitter, CodeSplitConfig};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
@@ -480,14 +480,23 @@ impl UltraBuildService {
         }
         self.profiler.end_timer("css_processing");
 
-        // Generate completion stats
+        self.profiler.end_timer("total_build");
+
+        // Generate completion stats with timing breakdown
+        let timing_breakdown = TimingBreakdown {
+            file_scan_ms: self.profiler.get_duration("file_discovery").as_millis() as u64,
+            js_processing_ms: self.profiler.get_duration("chunk_processing").as_millis() as u64,
+            css_processing_ms: self.profiler.get_duration("css_processing").as_millis() as u64,
+            tree_shaking_ms: self.profiler.get_duration("tree_shaking").as_millis() as u64,
+            minification_ms: 0, // Minification is included in chunk_processing
+            output_write_ms: self.profiler.get_duration("file_writing").as_millis() as u64,
+        };
+
         self.ui.show_epic_completion(CompletionStats {
             output_files: output_files_for_ui,
             node_modules_optimized: None,
-            timing_breakdown: None,
+            timing_breakdown: Some(timing_breakdown),
         });
-
-        self.profiler.end_timer("total_build");
 
         Ok(BuildResult {
             success: true,
@@ -702,7 +711,14 @@ impl BuildService for UltraBuildService {
                 size: f.size,
             }).collect(),
             node_modules_optimized: if node_modules_count > 0 { Some(node_modules_count) } else { None },
-            timing_breakdown: None, // TODO: Implement detailed timing collection
+            timing_breakdown: Some(TimingBreakdown {
+                file_scan_ms: self.profiler.get_duration("file_discovery").as_millis() as u64,
+                js_processing_ms: self.profiler.get_duration("js_processing").as_millis() as u64,
+                css_processing_ms: self.profiler.get_duration("css_processing").as_millis() as u64,
+                tree_shaking_ms: self.profiler.get_duration("tree_shaking").as_millis() as u64,
+                minification_ms: 0, // Minification is included in js_processing
+                output_write_ms: self.profiler.get_duration("file_writing").as_millis() as u64,
+            }),
         };
 
         self.ui.show_epic_completion(completion_stats);

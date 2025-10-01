@@ -33,6 +33,13 @@ impl UltraProfiler {
         duration
     }
 
+    pub fn get_duration(&self, name: &str) -> Duration {
+        let timings = self.timings.lock().unwrap();
+        timings.get(name)
+            .map(|durations| durations.iter().sum())
+            .unwrap_or_else(|| Duration::new(0, 0))
+    }
+
     pub fn get_stats(&self) -> ProfilerStats {
         let timings = self.timings.lock().unwrap();
         let mut stats = ProfilerStats {
