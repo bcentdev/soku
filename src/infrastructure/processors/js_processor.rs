@@ -1,9 +1,6 @@
 use crate::core::{interfaces::JsProcessor, models::*};
-use crate::utils::{Result, UltraError, ErrorContext, Logger, UltraCache};
+use crate::utils::{Result, UltraError, Logger, UltraCache};
 use oxc_allocator::Allocator;
-use oxc_parser::Parser;
-use oxc_diagnostics::OxcDiagnostic;
-use oxc_span::SourceType;
 use oxc_codegen::Codegen;
 use oxc_transformer::{TransformOptions, Transformer};
 use oxc_semantic::SemanticBuilder;
@@ -263,20 +260,6 @@ impl OxcJsProcessor {
         }
     }
 
-    /// Extract detailed error information from oxc parse errors
-    fn create_parse_error_context(&self, _errors: &[OxcDiagnostic], content: &str, file_path: &Path) -> ErrorContext {
-        // For now, create a simple context with just the file path
-        // TODO: Extract line/column information when oxc API is more stable
-
-        // Extract a small snippet of the content for context
-        let lines: Vec<&str> = content.lines().take(5).collect();
-        let code_snippet = lines.join("\n");
-
-        ErrorContext::new()
-            .with_file(file_path.to_path_buf())
-            .with_snippet(code_snippet)
-    }
-
     async fn build_used_exports_map(&self, _stats: &TreeShakingStats, modules: &[ModuleInfo]) -> std::collections::HashMap<String, std::collections::HashSet<String>> {
         let mut map = std::collections::HashMap::new();
 
@@ -334,41 +317,28 @@ impl OxcJsProcessor {
             self.preprocess_modern_js_features(&module.content)
         };
 
-        // Parse with oxc for validation (properly configured for TypeScript/JSX)
+        // Parse with oxc for validation (using unified parsing interface)
         let allocator = Allocator::default();
-        let source_type = if module.path.extension()
+        let config = if module.path.extension()
             .and_then(|s| s.to_str())
             .map(|ext| ext == "ts" || ext == "tsx")
             .unwrap_or(false)
         {
-            // TypeScript/TSX files - force module parsing for modern features
-            SourceType::default()
-                .with_typescript(true)
-                .with_jsx(true)
-                .with_module(true)
+            // TypeScript/TSX files - use JSX config
+            super::common::ParsingConfig::jsx()
         } else {
-            // JavaScript files - ensure module parsing for ES2020+ features
-            SourceType::default()
-                .with_module(true)
+            // JavaScript files - use JavaScript config
+            super::common::ParsingConfig::javascript()
         };
 
-        let parser = Parser::new(&allocator, &content_to_parse, source_type);
-        let result = parser.parse();
-
-        if !result.errors.is_empty() {
-            // Create detailed error context with file location
-            let error_context = self.create_parse_error_context(&result.errors, &content_to_parse, &module.path);
-            let first_error = &result.errors[0];
-
-            // Create detailed error
-            let detailed_error = UltraError::parse_with_context(
-                format!("JavaScript parsing failed: {}", first_error),
-                error_context
-            );
-
-            Logger::error(&detailed_error.format_detailed());
-            return Err(detailed_error);
-        }
+        // Parse with unified error handling
+        let _result = super::common::parse_with_oxc(
+            &allocator,
+            &content_to_parse,
+            config,
+            &module.path,
+            "JavaScript parsing failed"
+        )?;
 
         // Process the module content while preserving functionality
         let processed = self.transform_module_content(&content_to_parse);
@@ -394,31 +364,17 @@ impl OxcJsProcessor {
 
     fn strip_typescript_syntax_ast(&self, content: &str, file_path: &Path) -> Result<String> {
         let allocator = Allocator::default();
-        let source_type = SourceType::default()
-            .with_typescript(true)
-            .with_jsx(true)
-            .with_module(true); // Support modern JS features including optional chaining
 
         println!("🔧 Using AST transformation for TypeScript stripping");
 
-        // Parse the TypeScript code
-        let parser = Parser::new(&allocator, content, source_type);
-        let parse_result = parser.parse();
-
-        if !parse_result.errors.is_empty() {
-            // Create detailed error context with file location
-            let error_context = self.create_parse_error_context(&parse_result.errors, content, file_path);
-            let first_error = &parse_result.errors[0];
-
-            // Create detailed error
-            let detailed_error = UltraError::parse_with_context(
-                format!("TypeScript AST parsing failed: {}", first_error),
-                error_context
-            );
-
-            Logger::warn(&detailed_error.format_detailed());
-            return Err(detailed_error);
-        }
+        // Parse the TypeScript code (using unified parsing interface)
+        let parse_result = super::common::parse_with_oxc(
+            &allocator,
+            content,
+            super::common::ParsingConfig::jsx(),
+            file_path,
+            "TypeScript AST parsing failed"
+        )?;
 
         // Transform TypeScript to JavaScript using oxc 0.90 Transformer
         use oxc_transformer::TypeScriptOptions;

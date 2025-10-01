@@ -7,6 +7,11 @@ use std::sync::Arc;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use crate::utils::performance::UltraCache;
+use crate::utils::{Result, UltraError, ErrorContext, Logger};
+use oxc_allocator::Allocator;
+use oxc_parser::Parser;
+use oxc_span::SourceType;
+use oxc_diagnostics::OxcDiagnostic;
 
 // Pre-compiled regex patterns for TypeScript stripping (shared across processors)
 static TYPE_ANNOTATION_REGEX: Lazy<Regex> = Lazy::new(|| {
@@ -24,6 +29,156 @@ static GENERIC_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| {
 static SIMPLE_GENERIC_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"<[^<>]*>").unwrap()
 });
+
+// ============================================================================
+// Unified OXC Parsing Interface (Shared)
+// ============================================================================
+
+/// Configuration for OXC parser setup
+#[derive(Debug, Clone, Copy)]
+pub struct ParsingConfig {
+    pub typescript: bool,
+    pub jsx: bool,
+    pub module: bool,
+}
+
+impl ParsingConfig {
+    /// Create config for JavaScript parsing
+    pub fn javascript() -> Self {
+        Self {
+            typescript: false,
+            jsx: false,
+            module: true,
+        }
+    }
+
+    /// Create config for TypeScript parsing
+    pub fn typescript() -> Self {
+        Self {
+            typescript: true,
+            jsx: false,
+            module: true,
+        }
+    }
+
+    /// Create config for JSX/TSX parsing
+    pub fn jsx() -> Self {
+        Self {
+            typescript: true,
+            jsx: true,
+            module: true,
+        }
+    }
+
+    /// Convert config to OXC SourceType
+    pub fn to_source_type(&self) -> SourceType {
+        let mut source_type = SourceType::default();
+
+        if self.typescript {
+            source_type = source_type.with_typescript(true);
+        }
+        if self.jsx {
+            source_type = source_type.with_jsx(true);
+        }
+        if self.module {
+            source_type = source_type.with_module(true);
+        }
+
+        source_type
+    }
+}
+
+/// Parse content with unified error handling
+/// Returns parsed program or detailed error
+pub fn parse_with_oxc<'a>(
+    allocator: &'a Allocator,
+    content: &'a str,
+    config: ParsingConfig,
+    file_path: &Path,
+    error_prefix: &str,
+) -> Result<oxc_parser::ParserReturn<'a>> {
+    let source_type = config.to_source_type();
+    let parser = Parser::new(allocator, content, source_type);
+    let result = parser.parse();
+
+    if !result.errors.is_empty() {
+        let error_context = create_parse_error_context(&result.errors, content, file_path);
+        let first_error = &result.errors[0];
+
+        let detailed_error = UltraError::parse_with_context(
+            format!("{}: {}", error_prefix, first_error),
+            error_context
+        );
+
+        Logger::warn(&detailed_error.format_detailed());
+        return Err(detailed_error);
+    }
+
+    Ok(result)
+}
+
+/// Create detailed error context from OXC parse errors
+pub fn create_parse_error_context(
+    errors: &[OxcDiagnostic],
+    content: &str,
+    file_path: &Path,
+) -> ErrorContext {
+    if errors.is_empty() {
+        return ErrorContext::new()
+            .with_file(file_path.to_path_buf())
+            .with_location(1, 1)
+            .with_snippet("Unknown error".to_string());
+    }
+
+    let first_error = &errors[0];
+    let lines: Vec<&str> = content.lines().collect();
+
+    // Extract error location from labels
+    let (line_num, column) = first_error
+        .labels
+        .as_ref()
+        .and_then(|labels| labels.first())
+        .map(|label| {
+            let offset = label.offset();
+            let mut current_offset = 0;
+            let mut line = 1;
+            let mut col = 1;
+
+            for (line_index, line_content) in lines.iter().enumerate() {
+                let line_length = line_content.len() + 1; // +1 for newline
+                if current_offset + line_length > offset {
+                    line = line_index + 1;
+                    col = offset - current_offset + 1;
+                    break;
+                }
+                current_offset += line_length;
+            }
+
+            (line, col)
+        })
+        .unwrap_or((1, 1));
+
+    // Get source code context around error
+    let context_lines = 5;
+    let start_line = line_num.saturating_sub(context_lines).max(1);
+    let end_line = (line_num + context_lines).min(lines.len());
+
+    let mut code_context = String::new();
+    for i in start_line..=end_line {
+        if i <= lines.len() {
+            code_context.push_str(&format!("{:4} │ {}\n", i, lines[i - 1]));
+        }
+    }
+
+    ErrorContext::new()
+        .with_file(file_path.to_path_buf())
+        .with_location(line_num, column)
+        .with_snippet(code_context)
+}
+
+// ============================================================================
+// Node Modules Optimization (Shared)
+// ============================================================================
 
 /// Check if a module path is from node_modules
 pub fn is_node_modules_path(path: &Path) -> bool {

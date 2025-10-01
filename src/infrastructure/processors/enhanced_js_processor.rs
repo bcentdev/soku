@@ -1,11 +1,8 @@
 #![allow(dead_code)] // Enhanced JS processor - advanced features, may not all be used yet
 
 use crate::core::{interfaces::JsProcessor, models::*};
-use crate::utils::{Result, UltraError, Logger, UltraCache, ErrorContext};
+use crate::utils::{Result, UltraError, Logger, UltraCache};
 use oxc_allocator::Allocator;
-use oxc_parser::Parser;
-use oxc_diagnostics::OxcDiagnostic;
-use oxc_span::SourceType;
 use oxc_ast::ast;
 use std::sync::Arc;
 use std::path::Path;
@@ -33,97 +30,6 @@ impl EnhancedJsProcessor {
         }
     }
 
-    /// Extract detailed error information from oxc parse errors
-    fn create_parse_error_context(&self, errors: &[OxcDiagnostic], content: &str, file_path: &Path) -> ErrorContext {
-        // Try to extract span information from the first error's labels
-        let mut line_num = None;
-        let mut col_num = None;
-        let mut _error_span_start = None;
-
-        // Note: OxcDiagnostic uses oxc-miette (a fork), not standard miette
-        // We'll parse the error message to extract location info instead of accessing private fields
-        if let Some(first_error) = errors.first() {
-            let error_msg = format!("{:?}", first_error);
-            // Try to parse line/column from debug output
-            if let Some(start_pos) = Self::extract_span_from_debug(&error_msg) {
-                _error_span_start = Some(start_pos);
-                // Convert byte offset to line/column
-                let (line, col) = Self::byte_offset_to_line_col(content, start_pos);
-                line_num = Some(line);
-                col_num = Some(col);
-            }
-        }
-
-        // Extract contextual code snippet around the error (not just first 5 lines)
-        let code_snippet = if let (Some(line), Some(_)) = (line_num, col_num) {
-            Self::extract_code_snippet(content, line, 2) // 2 lines of context before/after
-        } else {
-            // Fallback: show first 5 lines if we couldn't extract location
-            content.lines().take(5).collect::<Vec<_>>().join("\n")
-        };
-
-        let mut context = ErrorContext::new()
-            .with_file(file_path.to_path_buf())
-            .with_snippet(code_snippet);
-
-        // Add line/column if available
-        if let (Some(line), Some(col)) = (line_num, col_num) {
-            context = context.with_location(line, col);
-        }
-
-        context
-    }
-
-    /// Extract span start position from debug output
-    fn extract_span_from_debug(debug_str: &str) -> Option<usize> {
-        // Look for pattern: offset: SourceOffset(313)
-        if let Some(offset_idx) = debug_str.find("offset: SourceOffset(") {
-            let after_offset = &debug_str[offset_idx + 21..]; // Skip "offset: SourceOffset("
-            let num_str: String = after_offset
-                .chars()
-                .take_while(|c| c.is_ascii_digit())
-                .collect();
-            num_str.parse::<usize>().ok()
-        } else {
-            None
-        }
-    }
-
-    /// Convert byte offset to 1-based line and 0-based column numbers
-    fn byte_offset_to_line_col(content: &str, byte_offset: usize) -> (usize, usize) {
-        let mut line = 1;
-        let mut col = 0;
-        let mut current_offset = 0;
-
-        for ch in content.chars() {
-            if current_offset >= byte_offset {
-                break;
-            }
-
-            if ch == '\n' {
-                line += 1;
-                col = 0;
-            } else {
-                col += 1;
-            }
-
-            current_offset += ch.len_utf8();
-        }
-
-        (line, col)
-    }
-
-    /// Extract code snippet with context lines around the error line
-    fn extract_code_snippet(content: &str, error_line: usize, context_lines: usize) -> String {
-        let lines: Vec<&str> = content.lines().collect();
-        let total_lines = lines.len();
-
-        // Calculate range with context
-        let start_line = error_line.saturating_sub(context_lines + 1); // Convert to 0-based
-        let end_line = (error_line + context_lines).min(total_lines);
-
-        lines[start_line..end_line].join("\n")
-    }
 
     pub fn with_persistent_cache(cache_dir: &Path) -> Self {
         Self {
@@ -165,29 +71,23 @@ impl EnhancedJsProcessor {
     /// Process JSX/TSX content using AST-based transformation
     fn process_jsx_content(&self, content: &str, file_path: &Path) -> Result<String> {
         let allocator = Allocator::default();
-        let source_type = SourceType::default().with_typescript(true).with_jsx(true); // Support TSX files
 
-        let parser = Parser::new(&allocator, content, source_type);
-        let result = parser.parse();
-
-        if !result.errors.is_empty() {
-            // Create detailed error context with file location
-            let error_context = self.create_parse_error_context(&result.errors, content, file_path);
-            let first_error = &result.errors[0];
-
-            // Log detailed error information
-            let detailed_error = UltraError::parse_with_context(
-                format!("JSX/TSX parsing failed: {}", first_error),
-                error_context
-            );
-
-            Logger::warn(&detailed_error.format_detailed());
-            Logger::warn("Falling back to regex-based approach for JSX processing");
-
-            // Fall back to regex-based approach
-            let type_stripped = self.strip_typescript_types(content);
-            return Ok(self.convert_jsx_to_js(&type_stripped));
-        }
+        // Parse with unified interface (with fallback to regex on error)
+        let result = match super::common::parse_with_oxc(
+            &allocator,
+            content,
+            super::common::ParsingConfig::jsx(),
+            file_path,
+            "JSX/TSX parsing failed"
+        ) {
+            Ok(result) => result,
+            Err(_) => {
+                Logger::warn("Falling back to regex-based approach for JSX processing");
+                // Fall back to regex-based approach
+                let type_stripped = self.strip_typescript_types(content);
+                return Ok(self.convert_jsx_to_js(&type_stripped));
+            }
+        };
 
         // Transform JSX AST to JavaScript
         let transformed = self.transform_jsx_ast(&result.program, content);
@@ -424,28 +324,22 @@ impl EnhancedJsProcessor {
     /// AST-based TypeScript transformation using oxc parser
     fn ast_typescript_transform(&self, content: &str, file_path: &Path) -> Result<String> {
         let allocator = Allocator::default();
-        let source_type = SourceType::default().with_typescript(true);
 
-        let parser = Parser::new(&allocator, content, source_type);
-        let result = parser.parse();
-
-        if !result.errors.is_empty() {
-            // Create detailed error context with file location
-            let error_context = self.create_parse_error_context(&result.errors, content, file_path);
-            let first_error = &result.errors[0];
-
-            // Log detailed error information
-            let detailed_error = UltraError::parse_with_context(
-                format!("TypeScript parsing failed: {}", first_error),
-                error_context
-            );
-
-            Logger::warn(&detailed_error.format_detailed());
-            Logger::warn("Falling back to regex-based approach for TypeScript processing");
-
-            // Fall back to fast regex-based approach if AST parsing fails
-            return Ok(self.fast_typescript_strip(content));
-        }
+        // Parse with unified interface (with fallback to regex on error)
+        let result = match super::common::parse_with_oxc(
+            &allocator,
+            content,
+            super::common::ParsingConfig::typescript(),
+            file_path,
+            "TypeScript parsing failed"
+        ) {
+            Ok(result) => result,
+            Err(_) => {
+                Logger::warn("Falling back to regex-based approach for TypeScript processing");
+                // Fall back to fast regex-based approach if AST parsing fails
+                return Ok(self.fast_typescript_strip(content));
+            }
+        };
 
         // For now, use a simple approach to extract JavaScript from AST
         // This is more robust than regex for handling complex TypeScript
@@ -708,27 +602,16 @@ impl EnhancedJsProcessor {
 
     /// Enhanced JavaScript processing with optimizations
     async fn process_javascript(&self, module: &ModuleInfo) -> Result<String> {
-        // Parse with oxc for validation
+        // Parse with oxc for validation (using unified interface)
         let allocator = Allocator::default();
-        let source_type = SourceType::from_path(&module.path)
-            .unwrap_or_default();
-
-        let parser = Parser::new(&allocator, &module.content, source_type);
-        let result = parser.parse();
-
-        if !result.errors.is_empty() {
-            // Create detailed error context with file location
-            let error_context = self.create_parse_error_context(&result.errors, &module.content, &module.path);
-            let first_error = &result.errors[0];
-
-            // Log detailed error information
-            let detailed_error = UltraError::parse_with_context(
-                format!("JavaScript parsing warning: {}", first_error),
-                error_context
-            );
-
-            Logger::warn(&detailed_error.format_detailed());
-        }
+        let _result = super::common::parse_with_oxc(
+            &allocator,
+            &module.content,
+            super::common::ParsingConfig::javascript(),
+            &module.path,
+            "JavaScript parsing warning"
+        );
+        // Ignore parse errors, just log warnings (already done in parse_with_oxc)
 
         // Simple processing: remove import/export statements for bundling
         let processed = module.content
