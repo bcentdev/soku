@@ -752,13 +752,11 @@ impl JsProcessor for EnhancedJsProcessor {
                 .and_then(|s| s.to_str())
                 .unwrap_or("unknown")));
 
-        // Check cache first for ultra-fast rebuilds
+        // Check cache first for ultra-fast rebuilds (using unified cache interface)
         let path_str = module.path.to_string_lossy();
-        if self.enable_cache {
-            if let Some(cached) = self.cache.get_js(&path_str, &module.content) {
-                Logger::debug("Cache hit for enhanced processing");
-                return Ok(cached);
-            }
+        if let Some(cached) = super::common::get_cached_js(&self.cache, &path_str, &module.content, self.enable_cache) {
+            Logger::debug("Cache hit for enhanced processing");
+            return Ok(cached);
         }
 
         let result = match module.module_type {
@@ -774,11 +772,9 @@ impl JsProcessor for EnhancedJsProcessor {
             ))),
         };
 
-        // Cache the result for future builds
-        if self.enable_cache {
-            if let Ok(ref processed) = result {
-                self.cache.cache_js(&path_str, &module.content, processed.clone());
-            }
+        // Cache the result for future builds (using unified cache interface)
+        if let Ok(ref processed) = result {
+            super::common::store_cached_js(&self.cache, &path_str, &module.content, processed.clone(), self.enable_cache);
         }
 
         result

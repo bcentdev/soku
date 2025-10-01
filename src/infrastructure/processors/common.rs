@@ -3,8 +3,10 @@
 /// to eliminate duplication and provide a single source of truth.
 
 use std::path::Path;
+use std::sync::Arc;
 use once_cell::sync::Lazy;
 use regex::Regex;
+use crate::utils::performance::UltraCache;
 
 // Pre-compiled regex patterns for TypeScript stripping (shared across processors)
 static TYPE_ANNOTATION_REGEX: Lazy<Regex> = Lazy::new(|| {
@@ -277,6 +279,68 @@ pub fn remove_generic_types(content: &str, max_iterations: usize) -> String {
     }
 
     result
+}
+
+// ============================================================================
+// Unified Caching Interface (Shared)
+// ============================================================================
+
+/// Check cache for processed JavaScript content
+/// Returns cached content if available and caching is enabled
+pub fn get_cached_js(
+    cache: &Arc<UltraCache>,
+    path: &str,
+    content: &str,
+    enable_cache: bool,
+) -> Option<String> {
+    if enable_cache {
+        cache.get_js(path, content)
+    } else {
+        None
+    }
+}
+
+/// Store processed JavaScript content in cache
+/// Only stores if caching is enabled
+pub fn store_cached_js(
+    cache: &Arc<UltraCache>,
+    path: &str,
+    content: &str,
+    processed: String,
+    enable_cache: bool,
+) {
+    if enable_cache {
+        cache.cache_js(path, content, processed);
+    }
+}
+
+/// Check cache for processed CSS content
+/// Returns cached content if available and caching is enabled
+pub fn get_cached_css(
+    cache: &Arc<UltraCache>,
+    path: &str,
+    content: &str,
+    enable_cache: bool,
+) -> Option<String> {
+    if enable_cache {
+        cache.get_css(path, content)
+    } else {
+        None
+    }
+}
+
+/// Store processed CSS content in cache
+/// Only stores if caching is enabled
+pub fn store_cached_css(
+    cache: &Arc<UltraCache>,
+    path: &str,
+    content: &str,
+    processed: String,
+    enable_cache: bool,
+) {
+    if enable_cache {
+        cache.cache_css(path, content, processed);
+    }
 }
 
 #[cfg(test)]

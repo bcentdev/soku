@@ -34,9 +34,9 @@ impl JsProcessor for OxcJsProcessor {
                 .and_then(|s| s.to_str())
                 .unwrap_or("unknown")));
 
-        // Check cache first
+        // Check cache first (using unified cache interface)
         let path_str = module.path.to_string_lossy();
-        if let Some(cached) = self.cache.get_js(&path_str, &module.content) {
+        if let Some(cached) = super::common::get_cached_js(&self.cache, &path_str, &module.content, true) {
             return Ok(cached);
         }
 
@@ -50,9 +50,9 @@ impl JsProcessor for OxcJsProcessor {
             ))),
         };
 
-        // Cache the result
+        // Cache the result (using unified cache interface)
         if let Ok(ref processed) = result {
-            self.cache.cache_js(&path_str, &module.content, processed.to_string());
+            super::common::store_cached_js(&self.cache, &path_str, &module.content, processed.to_string(), true);
         }
 
         result
