@@ -1,4 +1,5 @@
 // Processors module
+pub mod common;  // Shared functionality between processors
 pub mod js_processor;
 pub mod css_processor;
 pub mod tree_shaker;
