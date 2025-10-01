@@ -3,6 +3,25 @@
 /// to eliminate duplication and provide a single source of truth.
 
 use std::path::Path;
+use once_cell::sync::Lazy;
+use regex::Regex;
+
+// Pre-compiled regex patterns for TypeScript stripping (shared across processors)
+static TYPE_ANNOTATION_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]*([,)=])").unwrap()
+});
+
+static RETURN_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"\)\s*:\s*[^=]+\s*(=>)").unwrap()
+});
+
+static GENERIC_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)<[^<>]*>").unwrap()
+});
+
+static SIMPLE_GENERIC_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"<[^<>]*>").unwrap()
+});
 
 /// Check if a module path is from node_modules
 pub fn is_node_modules_path(path: &Path) -> bool {
@@ -109,6 +128,152 @@ fn optimize_general_node_module_content(content: &str) -> String {
 
         result.push_str(line);
         result.push('\n');
+    }
+
+    result
+}
+
+// ============================================================================
+// TypeScript Stripping Functions (Shared)
+// ============================================================================
+
+/// Strip TypeScript block-level constructs (interfaces, type aliases, enums)
+/// Returns the cleaned content with TypeScript blocks commented out
+pub fn strip_typescript_block_constructs(content: &str) -> String {
+    let mut result = String::new();
+    let mut in_interface = false;
+    let mut in_type_alias = false;
+    let mut in_enum = false;
+    let mut brace_depth = 0;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        // Skip interface declarations
+        if trimmed.starts_with("interface ") || trimmed.starts_with("export interface ") {
+            in_interface = true;
+            brace_depth = 0;
+            result.push_str(&format!("// {}\n", line));
+            if trimmed.contains('{') {
+                brace_depth += trimmed.matches('{').count();
+            }
+            if trimmed.contains('}') {
+                brace_depth -= trimmed.matches('}').count();
+                if brace_depth == 0 {
+                    in_interface = false;
+                }
+            }
+            continue;
+        }
+
+        // Skip type aliases
+        if trimmed.starts_with("type ") || trimmed.starts_with("export type ") {
+            in_type_alias = true;
+            result.push_str(&format!("// {}\n", line));
+            if !trimmed.contains(';') && !trimmed.contains('=') {
+                continue;
+            }
+            in_type_alias = false;
+            continue;
+        }
+
+        // Skip enum declarations (including const enums)
+        if trimmed.starts_with("enum ")
+            || trimmed.starts_with("export enum ")
+            || trimmed.starts_with("const enum ")
+            || trimmed.starts_with("export const enum ")
+        {
+            in_enum = true;
+            brace_depth = 0;
+            result.push_str(&format!("// {}\n", line));
+            if trimmed.contains('{') {
+                brace_depth += trimmed.matches('{').count();
+            }
+            if trimmed.contains('}') {
+                brace_depth -= trimmed.matches('}').count();
+                if brace_depth == 0 {
+                    in_enum = false;
+                }
+            }
+            continue;
+        }
+
+        // Handle interface/type/enum continuation
+        if in_interface || in_enum {
+            result.push_str(&format!("// {}\n", line));
+            if trimmed.contains('{') {
+                brace_depth += trimmed.matches('{').count();
+            }
+            if trimmed.contains('}') {
+                brace_depth -= trimmed.matches('}').count();
+                if brace_depth == 0 {
+                    in_interface = false;
+                    in_enum = false;
+                }
+            }
+            continue;
+        }
+
+        if in_type_alias {
+            result.push_str(&format!("// {}\n", line));
+            if trimmed.ends_with(';') {
+                in_type_alias = false;
+            }
+            continue;
+        }
+
+        // Keep other lines
+        result.push_str(line);
+        result.push('\n');
+    }
+
+    result
+}
+
+/// Clean inline TypeScript annotations from code
+/// Removes type annotations like `: Type`, return types, etc.
+pub fn clean_typescript_inline_annotations(content: &str) -> String {
+    let mut result = content.to_string();
+
+    // Remove simple type annotations: name: Type -> name
+    result = TYPE_ANNOTATION_REGEX.replace_all(&result, "$1$2").to_string();
+
+    // Remove function return types: ): Type => -> ) =>
+    result = RETURN_TYPE_REGEX.replace_all(&result, ")$1").to_string();
+
+    // Remove generic type parameters
+    result = SIMPLE_GENERIC_REGEX.replace_all(&result, "").to_string();
+
+    // Remove TypeScript non-null assertion operator
+    if let Ok(re) = Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*!") {
+        result = re.replace_all(&result, "$1").to_string();
+    }
+
+    // Remove access modifiers
+    if let Ok(re) = Regex::new(r"\b(private|public|protected|readonly)\s+") {
+        result = re.replace_all(&result, "").to_string();
+    }
+
+    // Remove as type assertions
+    if let Ok(re) = Regex::new(r"\s+as\s+[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]*") {
+        result = re.replace_all(&result, "").to_string();
+    }
+
+    result
+}
+
+/// Remove generic types from content (iteratively to handle nested generics)
+pub fn remove_generic_types(content: &str, max_iterations: usize) -> String {
+    let mut result = content.to_string();
+    let mut iterations = 0;
+
+    while iterations < max_iterations {
+        let new_result = GENERIC_TYPE_REGEX.replace_all(&result, "$1").to_string();
+        if new_result == result {
+            break; // No more changes
+        }
+        result = new_result;
+        iterations += 1;
     }
 
     result

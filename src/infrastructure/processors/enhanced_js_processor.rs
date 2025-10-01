@@ -9,19 +9,7 @@ use oxc_span::SourceType;
 use oxc_ast::ast;
 use std::sync::Arc;
 use std::path::Path;
-use once_cell::sync::Lazy;
-use regex::Regex;
-
-// Pre-compiled regex patterns for performance
-static TYPE_ANNOTATION_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]*([,)=])").unwrap()
-});
-static RETURN_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"\)\s*:\s*[^=]+\s*(=>)").unwrap()
-});
-static GENERIC_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)<[^<>]*>").unwrap()
-});
+// Note: Regex patterns now live in common.rs to avoid duplication
 
 /// Enhanced JavaScript/TypeScript processor with advanced caching and optimizations
 #[derive(Clone)]
@@ -536,13 +524,8 @@ impl EnhancedJsProcessor {
             // Basic type annotation cleaning for function parameters
             let mut cleaned = line.to_string();
 
-            // Remove simple type annotations: name: Type -> name
-            // Using pre-compiled regex for performance
-            cleaned = TYPE_ANNOTATION_REGEX.replace_all(&cleaned, "$1$2").to_string();
-
-            // Remove function return types: ): Type => -> ) =>
-            // Using pre-compiled regex for performance
-            cleaned = RETURN_TYPE_REGEX.replace_all(&cleaned, ")$1").to_string();
+            // Remove type annotations and return types using shared function
+            cleaned = super::common::clean_typescript_inline_annotations(&cleaned);
 
             lines.push(cleaned);
         }
@@ -697,20 +680,8 @@ impl EnhancedJsProcessor {
 
     /// Clean generic types recursively
     fn clean_generic_types(&self, content: &str) -> String {
-        let mut result = content.to_string();
-        let mut iterations = 0;
         const MAX_ITERATIONS: usize = 10; // Prevent infinite loops
-
-        while iterations < MAX_ITERATIONS {
-            // Using pre-compiled regex for performance
-            let new_result = GENERIC_TYPE_REGEX.replace_all(&result, "$1").to_string();
-            if new_result == result {
-                break; // No more changes
-            }
-            result = new_result;
-            iterations += 1;
-        }
-        result
+        super::common::remove_generic_types(content, MAX_ITERATIONS)
     }
 
     /// Clean export statements while preserving JavaScript functionality
