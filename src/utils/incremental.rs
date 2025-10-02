@@ -199,6 +199,16 @@ impl IncrementalBuildState {
         !self.get_changed_files().is_empty()
     }
 
+    /// Check if state is empty (first build)
+    pub fn is_empty(&self) -> bool {
+        self.file_metadata.is_empty()
+    }
+
+    /// Get number of tracked files
+    pub fn file_count(&self) -> usize {
+        self.file_metadata.len()
+    }
+
     /// Get dependency graph
     pub fn graph(&self) -> &DependencyGraph {
         &self.graph
@@ -208,6 +218,42 @@ impl IncrementalBuildState {
     pub fn clear(&mut self) {
         self.file_metadata.clear();
         self.graph.clear();
+    }
+
+    /// Save state to disk
+    pub fn save_to_disk(&self, cache_dir: &Path) -> std::io::Result<()> {
+        let state_path = cache_dir.join("incremental_state.json");
+
+        // Create cache directory if it doesn't exist
+        if !cache_dir.exists() {
+            std::fs::create_dir_all(cache_dir)?;
+        }
+
+        // Serialize state to JSON
+        let json = serde_json::to_string_pretty(self)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+
+        // Write to file
+        std::fs::write(state_path, json)?;
+
+        Ok(())
+    }
+
+    /// Load state from disk
+    pub fn load_from_disk(cache_dir: &Path) -> std::io::Result<Self> {
+        let state_path = cache_dir.join("incremental_state.json");
+
+        // If state file doesn't exist, return new state
+        if !state_path.exists() {
+            return Ok(Self::new());
+        }
+
+        // Read and deserialize
+        let json = std::fs::read_to_string(state_path)?;
+        let state: Self = serde_json::from_str(&json)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+
+        Ok(state)
     }
 }
 

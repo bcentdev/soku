@@ -23,6 +23,7 @@ pub struct UltraBuildService {
     profiler: Arc<UltraProfiler>,
     cache: Arc<UltraCache>,
     incremental_state: IncrementalBuildState,
+    cache_dir: PathBuf,
 }
 
 impl UltraBuildService {
@@ -37,6 +38,13 @@ impl UltraBuildService {
             .join(".ultra-cache");
         let cache = Arc::new(UltraCache::with_persistent_cache(&cache_dir));
 
+        // Load incremental state from disk if it exists
+        let incremental_state = IncrementalBuildState::load_from_disk(&cache_dir)
+            .unwrap_or_else(|_| {
+                Logger::debug("No previous incremental state found, starting fresh");
+                IncrementalBuildState::new()
+            });
+
         Self {
             fs_service,
             js_processor,
@@ -46,7 +54,8 @@ impl UltraBuildService {
             node_resolver: NodeModuleResolver::new(),
             profiler: Arc::new(UltraProfiler::new()),
             cache,
-            incremental_state: IncrementalBuildState::new(),
+            incremental_state,
+            cache_dir,
         }
     }
 
@@ -189,9 +198,6 @@ impl UltraBuildService {
             // Read and process the file
             Logger::debug(&format!("Processing module: {}", current_path.display()));
             if let Ok(content) = self.fs_service.read_file(&current_path).await {
-                // Track file metadata for incremental builds
-                let _ = self.incremental_state.update_file(&normalized_path);
-
                 let module_type = ModuleType::from_extension(
                     current_path.extension()
                         .and_then(|s| s.to_str())
@@ -510,8 +516,21 @@ impl UltraBuildService {
             timing_breakdown: Some(timing_breakdown),
         });
 
+        // Update file metadata for incremental builds (after successful build)
+        Logger::debug(&format!("Updating file metadata for {} modules", js_modules.len()));
+        for module in js_modules {
+            if let Err(e) = self.incremental_state.update_file(&module.path) {
+                Logger::debug(&format!("Failed to update file metadata for {}: {}", module.path.display(), e));
+            }
+        }
+
         // Mark build as complete for incremental build tracking
         self.incremental_state.mark_build_complete();
+
+        // Persist incremental state to disk
+        if let Err(e) = self.incremental_state.save_to_disk(&self.cache_dir) {
+            Logger::warn(&format!("Failed to save incremental state: {}", e));
+        }
 
         Ok(BuildResult {
             success: true,
@@ -545,10 +564,51 @@ impl BuildService for UltraBuildService {
         let structure = self.scan_and_analyze_with_ui(config).await?;
         self.profiler.end_timer("file_discovery");
 
+        // 🔄 CHECK IF FIRST BUILD (before resolving dependencies)
+        let is_first_build = self.incremental_state.is_empty();
+        Logger::debug(&format!("Is first build: {} (tracked files: {})", is_first_build, self.incremental_state.file_count()));
+
         // Convert paths to ModuleInfo and resolve dependencies
         self.profiler.start_timer("dependency_resolution");
         let js_modules = self.resolve_all_dependencies(&structure.js_modules, &config.root).await?;
         self.profiler.end_timer("dependency_resolution");
+
+        // 🔄 INCREMENTAL BUILD DETECTION
+        self.profiler.start_timer("change_detection");
+
+        Logger::debug(&format!("Incremental build check: is_first_build={}, tracked_files={}",
+            is_first_build,
+            self.incremental_state.file_count()
+        ));
+
+        if !is_first_build {
+            let has_changes = self.incremental_state.has_changes();
+
+            Logger::debug(&format!("Incremental build: has_changes={}", has_changes));
+
+            if has_changes {
+                let changed_files = self.incremental_state.get_changed_files();
+                let files_to_rebuild = self.incremental_state.get_files_to_rebuild();
+
+                Logger::info(&format!("🔄 Incremental build: {} files changed, {} files need rebuild",
+                    changed_files.len(),
+                    files_to_rebuild.len()
+                ));
+
+                // Log changed files in debug mode
+                if std::env::var("RUST_LOG").unwrap_or_default().contains("debug") {
+                    for file in &changed_files {
+                        Logger::debug(&format!("  Changed: {}", file.display()));
+                    }
+                }
+            } else {
+                Logger::info("✨ No changes detected - using cached build");
+            }
+        } else {
+            Logger::debug("First build - no incremental state");
+        }
+
+        self.profiler.end_timer("change_detection");
 
         // 🌳 TREE SHAKING (if enabled)
         self.profiler.start_timer("tree_shaking");
@@ -746,8 +806,21 @@ impl BuildService for UltraBuildService {
             self.profiler.report_bottlenecks();
         }
 
+        // Update file metadata for incremental builds (after successful build)
+        Logger::debug(&format!("Updating file metadata for {} modules", js_modules.len()));
+        for module in &js_modules {
+            if let Err(e) = self.incremental_state.update_file(&module.path) {
+                Logger::debug(&format!("Failed to update file metadata for {}: {}", module.path.display(), e));
+            }
+        }
+
         // Mark build as complete for incremental build tracking
         self.incremental_state.mark_build_complete();
+
+        // Persist incremental state to disk
+        if let Err(e) = self.incremental_state.save_to_disk(&self.cache_dir) {
+            Logger::warn(&format!("Failed to save incremental state: {}", e));
+        }
 
         Ok(BuildResult {
             js_modules_processed: js_only_modules.len(),
