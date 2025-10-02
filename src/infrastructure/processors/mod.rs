@@ -8,6 +8,14 @@ pub mod enhanced_js_processor;
 pub mod minifier;
 pub mod code_splitter;
 
+// Re-export unified processing components (recommended for new code)
+pub use common::{
+    ProcessingStrategy,
+    ProcessingOptions,
+    UnifiedJsProcessor,
+};
+
+// Re-export legacy processors (deprecated - use UnifiedJsProcessor instead)
 pub use js_processor::*;
 pub use css_processor::*;
 pub use tree_shaker::*;

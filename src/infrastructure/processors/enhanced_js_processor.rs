@@ -9,6 +9,25 @@ use std::path::Path;
 // Note: Regex patterns now live in common.rs to avoid duplication
 
 /// Enhanced JavaScript/TypeScript processor with advanced caching and optimizations
+///
+/// **DEPRECATED**: This processor is maintained for backward compatibility.
+/// For new code, use `UnifiedJsProcessor` with `ProcessingStrategy::Enhanced` instead.
+///
+/// The UnifiedJsProcessor provides:
+/// - Strategy-based processing (Fast, Standard, Enhanced)
+/// - Unified caching and parsing interfaces
+/// - Better code organization and maintainability
+/// - Same performance as EnhancedJsProcessor
+///
+/// Example migration:
+/// ```rust
+/// // Old (deprecated)
+/// let processor = EnhancedJsProcessor::new();
+///
+/// // New (recommended)
+/// use crate::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+/// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Enhanced);
+/// ```
 #[derive(Clone)]
 pub struct EnhancedJsProcessor {
     cache: Arc<UltraCache>,

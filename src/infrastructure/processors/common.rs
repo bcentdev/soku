@@ -127,7 +127,87 @@ impl ProcessingOptions {
 }
 
 /// Unified JavaScript/TypeScript processor with strategy-based processing
-/// This processor can handle Fast, Standard, or Enhanced processing modes
+///
+/// This processor consolidates the functionality of `OxcJsProcessor` and `EnhancedJsProcessor`
+/// into a single implementation with three processing strategies:
+///
+/// - **Fast**: Minimal transformations, maximum speed
+/// - **Standard**: Basic TypeScript stripping (equivalent to OxcJsProcessor)
+/// - **Enhanced**: Full TypeScript + JSX transformation (equivalent to EnhancedJsProcessor)
+///
+/// # Examples
+///
+/// ## Basic Usage
+///
+/// ```rust
+/// use crate::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+/// use std::path::Path;
+///
+/// // Create processor with Standard strategy
+/// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Standard);
+///
+/// // Process a file
+/// let content = "const x: number = 42;";
+/// let result = processor.process_content(content, Path::new("file.ts"))?;
+/// ```
+///
+/// ## With Persistent Cache
+///
+/// ```rust
+/// use std::path::Path;
+///
+/// let cache_dir = Path::new(".ultra-cache");
+/// let processor = UnifiedJsProcessor::with_persistent_cache(
+///     ProcessingStrategy::Enhanced,
+///     cache_dir
+/// );
+/// ```
+///
+/// ## Auto-Detection
+///
+/// ```rust
+/// // Automatically select strategy based on project characteristics
+/// let has_typescript = true;
+/// let has_jsx = false;
+/// let file_count = 10;
+///
+/// let strategy = ProcessingStrategy::auto_detect(has_typescript, has_jsx, file_count);
+/// let processor = UnifiedJsProcessor::new(strategy);
+/// ```
+///
+/// ## Custom Options
+///
+/// ```rust
+/// let mut options = ProcessingOptions::enhanced();
+/// options.generate_source_maps = true;
+///
+/// let processor = UnifiedJsProcessor::with_options(
+///     ProcessingStrategy::Enhanced,
+///     options
+/// );
+/// ```
+///
+/// # Performance Characteristics
+///
+/// - **Fast**: ~5ms for typical files (no transformations)
+/// - **Standard**: ~10-20ms (basic TypeScript stripping)
+/// - **Enhanced**: ~20-50ms (full transformations with caching)
+///
+/// # Migration from Legacy Processors
+///
+/// ```rust
+/// // Old: OxcJsProcessor
+/// let processor = OxcJsProcessor::new();
+///
+/// // New: UnifiedJsProcessor with Standard strategy
+/// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Standard);
+///
+/// // Old: EnhancedJsProcessor
+/// let processor = EnhancedJsProcessor::new();
+///
+/// // New: UnifiedJsProcessor with Enhanced strategy
+/// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Enhanced);
+/// ```
 #[derive(Clone)]
 pub struct UnifiedJsProcessor {
     strategy: ProcessingStrategy,

@@ -18,6 +18,25 @@ static REQUIRE_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"require\s*\(\s*['"]([^'"]+)['"]\s*\)"#).unwrap()
 });
 
+/// Standard JavaScript/TypeScript processor using OXC
+///
+/// **DEPRECATED**: This processor is maintained for backward compatibility.
+/// For new code, use `UnifiedJsProcessor` with `ProcessingStrategy::Standard` instead.
+///
+/// The UnifiedJsProcessor provides:
+/// - Strategy-based processing (Fast, Standard, Enhanced)
+/// - Unified caching and parsing interfaces
+/// - Better code organization and maintainability
+///
+/// Example migration:
+/// ```rust
+/// // Old (deprecated)
+/// let processor = OxcJsProcessor::new();
+///
+/// // New (recommended)
+/// use crate::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+/// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Standard);
+/// ```
 #[derive(Clone)]
 pub struct OxcJsProcessor {
     cache: Arc<UltraCache>,
