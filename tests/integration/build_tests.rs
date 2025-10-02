@@ -1,0 +1,134 @@
+use std::path::PathBuf;
+use ultra::core::models::BuildConfig;
+use ultra::core::interfaces::BuildService;
+use ultra::infrastructure::{TokioFileSystemService, UnifiedJsProcessor, LightningCssProcessor};
+use ultra::infrastructure::processors::ProcessingStrategy;
+
+#[tokio::test]
+async fn test_simple_project_build() {
+    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/simple-project");
+
+    let fs_service = std::sync::Arc::new(TokioFileSystemService);
+    let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
+    let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
+
+    let mut build_service = ultra::core::services::UltraBuildService::new(
+        fs_service,
+        js_processor,
+        css_processor,
+    );
+
+    let config = BuildConfig {
+        root: fixtures_dir.clone(),
+        outdir: fixtures_dir.join("dist"),
+        enable_tree_shaking: false,
+        enable_minification: false,
+        enable_source_maps: false,
+        enable_code_splitting: false,
+        max_chunk_size: None,
+    };
+
+    let result = build_service.build(&config).await;
+    assert!(result.is_ok(), "Build should succeed");
+
+    let build_result = result.unwrap();
+    assert!(!build_result.output_files.is_empty(), "Should have output files");
+
+    // Check bundle.js exists
+    let bundle_path = config.outdir.join("bundle.js");
+    assert!(bundle_path.exists(), "bundle.js should exist");
+
+    // Cleanup
+    let _ = std::fs::remove_dir_all(config.outdir);
+}
+
+#[tokio::test]
+async fn test_typescript_project_build() {
+    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/typescript-project");
+
+    let fs_service = std::sync::Arc::new(TokioFileSystemService);
+    let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Enhanced));
+    let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
+
+    let mut build_service = ultra::core::services::UltraBuildService::new(
+        fs_service,
+        js_processor,
+        css_processor,
+    );
+
+    let config = BuildConfig {
+        root: fixtures_dir.clone(),
+        outdir: fixtures_dir.join("dist"),
+        enable_tree_shaking: false,
+        enable_minification: false,
+        enable_source_maps: false,
+        enable_code_splitting: false,
+        max_chunk_size: None,
+    };
+
+    let result = build_service.build(&config).await;
+    assert!(result.is_ok(), "TypeScript build should succeed");
+
+    let build_result = result.unwrap();
+
+    // Check that TypeScript build succeeded
+    let bundle_path = config.outdir.join("bundle.js");
+    assert!(bundle_path.exists(), "bundle.js should exist");
+
+    let bundle_content = std::fs::read_to_string(&bundle_path).unwrap();
+    // Verify bundle contains expected JavaScript code
+    assert!(bundle_content.contains("Calculator"), "Bundle should contain Calculator class");
+    assert!(bundle_content.contains("function"), "Bundle should contain function keyword or similar");
+
+    // Cleanup
+    let _ = std::fs::remove_dir_all(config.outdir);
+}
+
+#[tokio::test]
+async fn test_source_maps_generation() {
+    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/simple-project");
+
+    let fs_service = std::sync::Arc::new(TokioFileSystemService);
+    let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
+    let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
+
+    let mut build_service = ultra::core::services::UltraBuildService::new(
+        fs_service,
+        js_processor,
+        css_processor,
+    );
+
+    let config = BuildConfig {
+        root: fixtures_dir.clone(),
+        outdir: fixtures_dir.join("dist"),
+        enable_tree_shaking: false,
+        enable_minification: false,
+        enable_source_maps: true,
+        enable_code_splitting: false,
+        max_chunk_size: None,
+    };
+
+    let result = build_service.build(&config).await;
+    assert!(result.is_ok(), "Build with source maps should succeed");
+
+    // Check source map file exists
+    let source_map_path = config.outdir.join("bundle.js.map");
+    assert!(source_map_path.exists(), "bundle.js.map should exist");
+
+    // Check source map content
+    let source_map_content = std::fs::read_to_string(&source_map_path).unwrap();
+    assert!(source_map_content.contains("\"version\":3"), "Should be source map v3");
+    assert!(source_map_content.contains("\"sources\""), "Should have sources field");
+    assert!(source_map_content.contains("\"sourcesContent\""), "Should have sourcesContent field");
+
+    // Check bundle has sourceMappingURL
+    let bundle_path = config.outdir.join("bundle.js");
+    let bundle_content = std::fs::read_to_string(&bundle_path).unwrap();
+    assert!(bundle_content.contains("sourceMappingURL=bundle.js.map"), "Should have sourceMappingURL comment");
+
+    // Cleanup
+    let _ = std::fs::remove_dir_all(config.outdir);
+}

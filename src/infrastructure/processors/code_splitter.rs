@@ -433,6 +433,7 @@ impl Default for CodeSplitter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::models::ModuleType;
     use std::path::Path;
 
     fn create_test_module(path: &str, content: &str, deps: Vec<String>) -> ModuleInfo {

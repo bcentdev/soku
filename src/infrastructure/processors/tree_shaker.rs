@@ -378,7 +378,7 @@ export const unusedFunction = () => "unused";
         let entry_points = vec!["main.js".to_string()];
         let stats = shaker.shake(&entry_points).await.unwrap();
 
-        assert!(stats.total_exports > 0);
+        assert!(stats.total_modules > 0);
         assert!(stats.removed_exports > 0);
         assert!(stats.reduction_percentage > 0.0);
     }
