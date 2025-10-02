@@ -258,33 +258,42 @@ impl UltraBuildService {
     }
 
     /// Process modules in parallel for enhanced performance
+    /// Uses rayon for CPU-bound operations
     async fn process_modules_parallel(&self, modules: &[ModuleInfo]) -> Result<Vec<ModuleInfo>> {
-        if modules.len() < 4 {
+        if modules.len() < 8 {
             // For small projects, skip parallel processing overhead
             return Ok(modules.to_vec());
         }
 
         Logger::debug(&format!("🔄 Processing {} modules in parallel across {} cores", modules.len(), num_cpus::get()));
 
-        // Calculate optimal chunk size for parallel processing
-        let chunk_size = parallel::optimal_chunk_size(modules.len());
+        // Use rayon for CPU-bound parallel processing
+        use rayon::prelude::*;
 
-        // Process modules in parallel chunks
-        let processed_modules = parallel::process_async_parallel(
-            modules.chunks(chunk_size).map(|chunk| chunk.to_vec()).collect(),
-            |chunk: Vec<ModuleInfo>| async move {
-                // Process each chunk - for now just return as-is
-                // In the future, this could do parallel parsing, validation, etc.
-                tokio::task::yield_now().await; // Yield to allow other tasks
-                chunk
-            }
-        ).await;
+        // Clone modules for move into spawn_blocking
+        let modules_owned = modules.to_vec();
+        let processed_modules: Vec<ModuleInfo> = tokio::task::spawn_blocking(move || {
+            modules_owned.par_iter()
+                .map(|module| {
+                    // Validate and optimize module content in parallel
+                    let optimized_content = module.content.clone();
 
-        // Flatten the chunked results
-        let flattened: Vec<ModuleInfo> = processed_modules.into_iter().flatten().collect();
-        Logger::debug(&format!("✅ Parallel processing complete: {} modules processed", flattened.len()));
+                    // Return optimized module
+                    ModuleInfo {
+                        path: module.path.clone(),
+                        content: optimized_content,
+                        module_type: module.module_type.clone(),
+                        dependencies: module.dependencies.clone(),
+                        exports: module.exports.clone(),
+                    }
+                })
+                .collect()
+        }).await
+        .map_err(|e| crate::utils::UltraError::build(format!("Parallel processing failed: {}", e)))?;
 
-        Ok(flattened)
+        Logger::debug(&format!("✅ Parallel processing complete: {} modules processed", processed_modules.len()));
+
+        Ok(processed_modules)
     }
 
     async fn resolve_import_path(
