@@ -1,4 +1,4 @@
-use crate::core::{interfaces::*, models::*};
+use crate::core::{interfaces::*, models::*, plugin::{PluginManager, PluginContext}};
 use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraProfiler, UltraCache, performance::parallel, IncrementalBuildState};
 use crate::infrastructure::{NodeModuleResolver, MinificationService, CodeSplitter, CodeSplitConfig};
 use std::sync::Arc;
@@ -24,6 +24,7 @@ pub struct UltraBuildService {
     cache: Arc<UltraCache>,
     incremental_state: IncrementalBuildState,
     cache_dir: PathBuf,
+    plugin_manager: PluginManager,
 }
 
 impl UltraBuildService {
@@ -56,12 +57,24 @@ impl UltraBuildService {
             cache,
             incremental_state,
             cache_dir,
+            plugin_manager: PluginManager::new(),
         }
     }
 
     pub fn with_tree_shaker(mut self, tree_shaker: Arc<dyn TreeShaker>) -> Self {
         self.tree_shaker = Some(tree_shaker);
         self
+    }
+
+    /// Register a plugin with the build service
+    pub fn with_plugin(mut self, plugin: Arc<dyn crate::core::plugin::Plugin>) -> Self {
+        self.plugin_manager.register(plugin);
+        self
+    }
+
+    /// Get mutable reference to plugin manager (for advanced usage)
+    pub fn plugin_manager_mut(&mut self) -> &mut PluginManager {
+        &mut self.plugin_manager
     }
 
 
@@ -396,6 +409,7 @@ impl UltraBuildService {
         js_modules: &[ModuleInfo],
         structure: &ProjectStructure,
         tree_shaking_stats: Option<&TreeShakingStats>,
+        plugin_context: &PluginContext,
     ) -> Result<BuildResult> {
         let build_start = std::time::Instant::now();
         self.profiler.start_timer("code_splitting");
@@ -532,7 +546,7 @@ impl UltraBuildService {
             Logger::warn(&format!("Failed to save incremental state: {}", e));
         }
 
-        Ok(BuildResult {
+        let build_result = BuildResult {
             success: true,
             js_modules_processed: js_modules.len(),
             css_files_processed: structure.css_files.len(),
@@ -541,7 +555,15 @@ impl UltraBuildService {
             tree_shaking_stats: tree_shaking_stats.cloned(),
             build_time: build_start.elapsed(),
             output_files: output_files_for_result,
-        })
+        };
+
+        // 🔌 PLUGIN HOOK: on_build_end
+        if self.plugin_manager.plugin_count() > 0 {
+            Logger::debug(&format!("Running on_build_end hook for {} plugins", self.plugin_manager.plugin_count()));
+            self.plugin_manager.on_build_end(&plugin_context, &build_result)?;
+        }
+
+        Ok(build_result)
     }
 }
 
@@ -553,6 +575,13 @@ impl BuildService for UltraBuildService {
 
         let build_start = std::time::Instant::now();
         self.profiler.start_timer("total_build");
+
+        // 🔌 PLUGIN HOOK: on_build_start
+        let plugin_context = PluginContext::new(config.root.clone(), config.clone());
+        if self.plugin_manager.plugin_count() > 0 {
+            Logger::debug(&format!("Running on_build_start hook for {} plugins", self.plugin_manager.plugin_count()));
+            self.plugin_manager.on_build_start(&plugin_context)?;
+        }
 
         // Create output directory
         self.profiler.start_timer("fs_setup");
@@ -664,7 +693,7 @@ impl BuildService for UltraBuildService {
 
         // 📦 CODE SPLITTING (if enabled)
         if config.enable_code_splitting {
-            return self.build_with_code_splitting(config, &js_only_modules, &structure, tree_shaking_stats.as_ref()).await;
+            return self.build_with_code_splitting(config, &js_only_modules, &structure, tree_shaking_stats.as_ref(), &plugin_context).await;
         }
 
         // ⚡ JAVASCRIPT PROCESSING WITH INTELLIGENT CACHING
