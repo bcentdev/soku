@@ -94,6 +94,33 @@ pub enum Commands {
     },
     /// Show bundler information
     Info,
+    /// Watch for changes and rebuild automatically
+    Watch {
+        /// Root directory
+        #[arg(short, long, default_value = ".")]
+        root: String,
+        /// Output directory
+        #[arg(short, long, default_value = "dist")]
+        outdir: String,
+        /// Disable tree shaking for faster builds
+        #[arg(long)]
+        no_tree_shaking: bool,
+        /// Disable minification
+        #[arg(long)]
+        no_minify: bool,
+        /// Enable source maps
+        #[arg(long)]
+        source_maps: bool,
+        /// Clear console on rebuild
+        #[arg(long)]
+        clear: bool,
+        /// Show verbose logging
+        #[arg(short, long)]
+        verbose: bool,
+        /// Processing strategy (fast, standard, enhanced)
+        #[arg(long, value_enum)]
+        strategy: Option<StrategyArg>,
+    },
 }
 
 pub struct CliHandler;
@@ -132,6 +159,27 @@ impl CliHandler {
             }
             Commands::Info => {
                 self.handle_info_command().await
+            }
+            Commands::Watch {
+                root,
+                outdir,
+                no_tree_shaking,
+                no_minify,
+                source_maps,
+                clear,
+                verbose,
+                strategy,
+            } => {
+                self.handle_watch_command(
+                    &root,
+                    &outdir,
+                    !no_tree_shaking,
+                    !no_minify,
+                    source_maps,
+                    clear,
+                    verbose,
+                    strategy,
+                ).await
             }
         }
     }
@@ -330,6 +378,82 @@ impl CliHandler {
         // Simulate server running
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         tracing::info!("✅ Preview server stopped");
+
+        Ok(())
+    }
+
+    async fn handle_watch_command(
+        &self,
+        root: &str,
+        outdir: &str,
+        enable_tree_shaking: bool,
+        enable_minification: bool,
+        enable_source_maps: bool,
+        clear_console: bool,
+        verbose: bool,
+        strategy: Option<StrategyArg>,
+    ) -> Result<()> {
+        use crate::utils::{UltraWatcher, WatchConfig};
+
+        tracing::info!("👀 Ultra Watch Mode");
+        tracing::info!("══════════════════════════════════════");
+
+        let root_path = Path::new(root).canonicalize().unwrap_or_else(|_| PathBuf::from(root));
+        let outdir_path = root_path.join(outdir);
+
+        // Create build config
+        let build_config = BuildConfig {
+            root: root_path.clone(),
+            outdir: outdir_path,
+            enable_tree_shaking,
+            enable_minification,
+            enable_source_maps,
+            enable_code_splitting: false, // Disable for watch mode for faster rebuilds
+            max_chunk_size: None,
+        };
+
+        // Create watch config
+        let watch_config = WatchConfig {
+            watch_paths: vec![root_path.clone()],
+            debounce_ms: 100,
+            clear_console,
+            verbose,
+        };
+
+        // Determine processing strategy
+        let processing_strategy = if let Some(strat) = strategy {
+            strat.to_processing_strategy()
+        } else {
+            // Auto-detect based on project
+            let project_stats = self.analyze_project(&root_path).await?;
+            if project_stats.typescript_files > 0 {
+                ProcessingStrategy::Enhanced
+            } else {
+                ProcessingStrategy::Standard
+            }
+        };
+
+        tracing::info!("🎯 Processing Strategy: {:?}", processing_strategy);
+
+        // Create build service
+        let fs_service = Arc::new(TokioFileSystemService);
+        let js_processor = Arc::new(UnifiedJsProcessor::new(processing_strategy));
+        let css_processor = Arc::new(LightningCssProcessor::new(enable_minification));
+
+        let mut build_service = UltraBuildService::new(
+            fs_service,
+            js_processor,
+            css_processor,
+        );
+
+        if enable_tree_shaking {
+            let tree_shaker = Arc::new(RegexTreeShaker::new());
+            build_service = build_service.with_tree_shaker(tree_shaker);
+        }
+
+        // Create watcher and start watching
+        let watcher = UltraWatcher::new(watch_config, build_config);
+        watcher.watch(&mut build_service).await?;
 
         Ok(())
     }

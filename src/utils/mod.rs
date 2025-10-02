@@ -6,6 +6,7 @@ pub mod performance;
 pub mod advanced_performance;
 pub mod profiler;
 pub mod incremental;
+pub mod watch;
 
 pub use errors::*;
 pub use logging::*;
@@ -14,3 +15,4 @@ pub use performance::*;
 pub use advanced_performance::*;
 pub use profiler::*;
 pub use incremental::*;
+pub use watch::*;
