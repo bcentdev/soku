@@ -382,7 +382,7 @@ impl NodeModuleResolver {
         &'a self,
         value: &'a serde_json::Value,
         package_dir: &'a Path,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<PathBuf>> + 'a>> {
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<PathBuf>> + Send + 'a>> {
         use serde_json::Value;
 
         Box::pin(async move {

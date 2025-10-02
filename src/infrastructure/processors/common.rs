@@ -471,13 +471,71 @@ impl JsProcessor for UnifiedJsProcessor {
     async fn bundle_modules_with_source_maps(
         &self,
         modules: &[ModuleInfo],
-        _config: &BuildConfig
+        config: &BuildConfig
     ) -> Result<BundleOutput> {
-        // For now, just bundle without source maps
-        let code = self.bundle_modules(modules).await?;
+        if !config.enable_source_maps {
+            // Source maps disabled, just bundle normally
+            let code = self.bundle_modules(modules).await?;
+            return Ok(BundleOutput {
+                code,
+                source_map: None,
+            });
+        }
+
+        // Build bundle with simple source map (line-level mapping)
+        let mut bundle = String::new();
+        let strategy_name = self.strategy.name();
+
+        // Bundle header
+        bundle.push_str(&format!("// Ultra Bundler - {} Mode Build\n", strategy_name));
+        bundle.push_str("(function() {\n'use strict';\n\n");
+
+        // Build source tracking
+        let mut sources = Vec::new();
+        let mut sources_content = Vec::new();
+
+        for module in modules {
+            if !self.supports_module_type(&module.module_type) {
+                continue;
+            }
+
+            // Process module
+            let processed = self.process_module(module).await?;
+
+            // Add module comment
+            bundle.push_str(&format!("// Module: {}\n", module.path.display()));
+
+            // Track source
+            sources.push(module.path.to_string_lossy().to_string());
+            sources_content.push(module.content.clone());
+
+            // Add module content
+            for line in processed.lines() {
+                bundle.push_str(line);
+                bundle.push('\n');
+            }
+
+            bundle.push_str("\n");
+        }
+
+        bundle.push_str("})();\n");
+
+        // Build a simple source map JSON manually
+        let source_map_json = serde_json::json!({
+            "version": 3,
+            "file": "bundle.js",
+            "sources": sources,
+            "sourcesContent": sources_content,
+            "names": [],
+            "mappings": "" // Simplified - no detailed mappings for now
+        });
+
+        let source_map_str = serde_json::to_string(&source_map_json)
+            .map_err(|e| crate::utils::UltraError::build(format!("Failed to generate source map: {}", e)))?;
+
         Ok(BundleOutput {
-            code,
-            source_map: None,
+            code: bundle,
+            source_map: Some(source_map_str),
         })
     }
 
