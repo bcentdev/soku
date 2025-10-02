@@ -7,6 +7,7 @@ pub mod advanced_performance;
 pub mod profiler;
 pub mod incremental;
 pub mod watch;
+pub mod bundle_analysis;
 
 pub use errors::*;
 pub use logging::*;
@@ -16,3 +17,4 @@ pub use advanced_performance::*;
 pub use profiler::*;
 pub use incremental::*;
 pub use watch::*;
+pub use bundle_analysis::*;

@@ -1,0 +1,116 @@
+{
+  "file_metadata": {
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/config.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/config.js",
+      "content_hash": 817023116470154385,
+      "modified_time": {
+        "secs_since_epoch": 1758748219,
+        "nanos_since_epoch": 824622641
+      },
+      "size": 604
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/services.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/services.js",
+      "content_hash": 6655930992072049501,
+      "modified_time": {
+        "secs_since_epoch": 1758747361,
+        "nanos_since_epoch": 913781467
+      },
+      "size": 981
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/components.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/components.js",
+      "content_hash": 9648914125720077071,
+      "modified_time": {
+        "secs_since_epoch": 1758747353,
+        "nanos_since_epoch": 422115673
+      },
+      "size": 1115
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/types.ts": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/types.ts",
+      "content_hash": 10592329049345116334,
+      "modified_time": {
+        "secs_since_epoch": 1758748240,
+        "nanos_since_epoch": 425928106
+      },
+      "size": 661
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/utils.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/utils.js",
+      "content_hash": 12891957701049207123,
+      "modified_time": {
+        "secs_since_epoch": 1758747507,
+        "nanos_since_epoch": 658024110
+      },
+      "size": 1127
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js",
+      "content_hash": 15055844669294771726,
+      "modified_time": {
+        "secs_since_epoch": 1758748226,
+        "nanos_since_epoch": 224368518
+      },
+      "size": 815
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/helpers.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/helpers.js",
+      "content_hash": 6896596851391614162,
+      "modified_time": {
+        "secs_since_epoch": 1758748146,
+        "nanos_since_epoch": 324075014
+      },
+      "size": 987
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/styles.css": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/styles.css",
+      "content_hash": 8293811090183165173,
+      "modified_time": {
+        "secs_since_epoch": 1758747383,
+        "nanos_since_epoch": 447825569
+      },
+      "size": 1493
+    }
+  },
+  "graph": {
+    "dependencies": {
+      "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js": [
+        "test-large/./src/components.js",
+        "test-large/./src/utils.js",
+        "test-large/./src/config.js",
+        "test-large/./src/types.ts",
+        "test-large/./src/styles.css",
+        "test-large/./src/services.js",
+        "test-large/./src/helpers.js"
+      ]
+    },
+    "dependents": {
+      "test-large/./src/helpers.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
+      ],
+      "test-large/./src/types.ts": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
+      ],
+      "test-large/./src/styles.css": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
+      ],
+      "test-large/./src/components.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
+      ],
+      "test-large/./src/services.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
+      ],
+      "test-large/./src/config.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
+      ],
+      "test-large/./src/utils.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
+      ]
+    }
+  },
+  "last_build_time": {
+    "secs_since_epoch": 1759432289,
+    "nanos_since_epoch": 532108000
+  }
+}

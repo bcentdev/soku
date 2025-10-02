@@ -3,7 +3,6 @@
 use crate::core::plugin::{Plugin, PluginContext};
 use crate::core::models::{BuildResult, ModuleInfo};
 use crate::utils::{Result, Logger};
-use std::path::Path;
 use std::time::Instant;
 
 /// Plugin that tracks and logs detailed build statistics
@@ -21,6 +20,7 @@ use std::time::Instant;
 /// ```
 pub struct StatsPlugin {
     verbose: bool,
+    #[allow(dead_code)] // Future feature: timing tracking
     start_time: Option<Instant>,
 }
 

@@ -82,6 +82,9 @@ pub enum Commands {
         /// Enable code splitting (vendor, common, route chunks)
         #[arg(long)]
         code_splitting: bool,
+        /// Generate bundle analysis report
+        #[arg(long)]
+        analyze: bool,
     },
     /// Preview production build
     Preview {
@@ -150,9 +153,10 @@ impl CliHandler {
                 ultra_mode,
                 normal_mode,
                 no_cache,
-                code_splitting
+                code_splitting,
+                analyze,
             } => {
-                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, strategy, ultra_mode, normal_mode, no_cache, code_splitting).await
+                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, strategy, ultra_mode, normal_mode, no_cache, code_splitting, analyze).await
             }
             Commands::Preview { dir, port } => {
                 self.handle_preview_command(&dir, port).await
@@ -196,6 +200,7 @@ impl CliHandler {
         force_normal_mode: bool,
         _disable_cache: bool,
         enable_code_splitting: bool,
+        enable_analysis: bool,
     ) -> Result<()> {
         let config = BuildConfig {
             root: PathBuf::from(root),
@@ -292,6 +297,22 @@ impl CliHandler {
 
         // Execute build
         let result = build_service.build(&config).await?;
+
+        // Generate bundle analysis if requested
+        if enable_analysis && result.success {
+            use crate::utils::{BundleAnalysis, display_analysis};
+
+            let analysis = BundleAnalysis::analyze(&result.modules, &result);
+            display_analysis(&analysis);
+
+            // Optionally save JSON report
+            let analysis_path = config.outdir.join("bundle-analysis.json");
+            if let Err(e) = analysis.save_json(&analysis_path) {
+                Logger::warn(&format!("Failed to save analysis JSON: {}", e));
+            } else {
+                Logger::info(&format!("📊 Analysis saved to: {}", analysis_path.display()));
+            }
+        }
 
         if !result.success {
             for error in &result.errors {

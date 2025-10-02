@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use serde::{Serialize, Deserialize};
 
 /// Bundle output with optional source map
 #[derive(Debug, Clone)]
@@ -47,7 +48,7 @@ pub struct ModuleInfo {
     pub exports: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
 pub enum ModuleType {
     JavaScript,
     TypeScript,
@@ -85,6 +86,8 @@ pub struct BuildResult {
     pub errors: Vec<String>,
     #[allow(dead_code)] // Used for detailed reporting
     pub warnings: Vec<String>,
+    #[allow(dead_code)] // Used for bundle analysis
+    pub modules: Vec<ModuleInfo>,
 }
 
 #[derive(Debug, Clone)]

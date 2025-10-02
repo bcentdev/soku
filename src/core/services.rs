@@ -555,6 +555,7 @@ impl UltraBuildService {
             tree_shaking_stats: tree_shaking_stats.cloned(),
             build_time: build_start.elapsed(),
             output_files: output_files_for_result,
+            modules: js_modules.to_vec(),
         };
 
         // 🔌 PLUGIN HOOK: on_build_end
@@ -860,6 +861,7 @@ impl BuildService for UltraBuildService {
             success: true,
             errors: Vec::new(),
             warnings: Vec::new(),
+            modules: js_only_modules.clone(),
         })
     }
 }
