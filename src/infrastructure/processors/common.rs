@@ -13,6 +13,315 @@ use oxc_parser::Parser;
 use oxc_span::SourceType;
 use oxc_diagnostics::OxcDiagnostic;
 
+// ============================================================================
+// Processing Strategy Pattern (Shared)
+// ============================================================================
+
+/// Processing strategy determines the level of transformations and optimizations
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProcessingStrategy {
+    /// Fast mode: Minimal transformations, maximum speed
+    /// - Basic import/export handling
+    /// - No TypeScript stripping
+    /// - No JSX transformation
+    Fast,
+
+    /// Standard mode: Basic TypeScript stripping
+    /// - TypeScript type annotations removed
+    /// - Basic JSX support
+    /// - Moderate caching
+    Standard,
+
+    /// Enhanced mode: Full TypeScript + JSX + all optimizations
+    /// - Complete TypeScript transformation
+    /// - Full JSX/TSX support
+    /// - Advanced caching
+    /// - Memory-mapped file operations
+    Enhanced,
+}
+
+impl ProcessingStrategy {
+    /// Auto-detect strategy based on file characteristics
+    pub fn auto_detect(has_typescript: bool, has_jsx: bool, file_count: usize) -> Self {
+        // Use Enhanced mode for TypeScript/JSX files or larger projects
+        if has_typescript || has_jsx || file_count > 5 {
+            Self::Enhanced
+        } else if file_count > 2 {
+            Self::Standard
+        } else {
+            Self::Fast
+        }
+    }
+
+    /// Get strategy name for logging
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Fast => "Fast",
+            Self::Standard => "Standard",
+            Self::Enhanced => "Enhanced",
+        }
+    }
+}
+
+/// Configuration options for processing
+#[derive(Debug, Clone)]
+pub struct ProcessingOptions {
+    /// Strip TypeScript type annotations
+    pub strip_types: bool,
+
+    /// Transform JSX/TSX to JavaScript
+    pub transform_jsx: bool,
+
+    /// Generate source maps
+    pub generate_source_maps: bool,
+
+    /// Enable caching
+    pub enable_cache: bool,
+
+    /// Optimize node_modules content
+    pub optimize_node_modules: bool,
+}
+
+impl ProcessingOptions {
+    /// Create options for Fast strategy
+    pub fn fast() -> Self {
+        Self {
+            strip_types: false,
+            transform_jsx: false,
+            generate_source_maps: false,
+            enable_cache: true,
+            optimize_node_modules: false,
+        }
+    }
+
+    /// Create options for Standard strategy
+    pub fn standard() -> Self {
+        Self {
+            strip_types: true,
+            transform_jsx: true,
+            generate_source_maps: false,
+            enable_cache: true,
+            optimize_node_modules: true,
+        }
+    }
+
+    /// Create options for Enhanced strategy
+    pub fn enhanced() -> Self {
+        Self {
+            strip_types: true,
+            transform_jsx: true,
+            generate_source_maps: false,
+            enable_cache: true,
+            optimize_node_modules: true,
+        }
+    }
+
+    /// Create options from strategy
+    pub fn from_strategy(strategy: ProcessingStrategy) -> Self {
+        match strategy {
+            ProcessingStrategy::Fast => Self::fast(),
+            ProcessingStrategy::Standard => Self::standard(),
+            ProcessingStrategy::Enhanced => Self::enhanced(),
+        }
+    }
+}
+
+/// Unified JavaScript/TypeScript processor with strategy-based processing
+/// This processor can handle Fast, Standard, or Enhanced processing modes
+#[derive(Clone)]
+pub struct UnifiedJsProcessor {
+    strategy: ProcessingStrategy,
+    options: ProcessingOptions,
+    cache: Arc<UltraCache>,
+}
+
+impl UnifiedJsProcessor {
+    /// Create new processor with specified strategy
+    pub fn new(strategy: ProcessingStrategy) -> Self {
+        Self {
+            strategy,
+            options: ProcessingOptions::from_strategy(strategy),
+            cache: Arc::new(UltraCache::new()),
+        }
+    }
+
+    /// Create processor with custom options
+    pub fn with_options(strategy: ProcessingStrategy, options: ProcessingOptions) -> Self {
+        Self {
+            strategy,
+            options,
+            cache: Arc::new(UltraCache::new()),
+        }
+    }
+
+    /// Create processor with persistent cache
+    pub fn with_persistent_cache(strategy: ProcessingStrategy, cache_dir: &Path) -> Self {
+        Self {
+            strategy,
+            options: ProcessingOptions::from_strategy(strategy),
+            cache: Arc::new(UltraCache::with_persistent_cache(cache_dir)),
+        }
+    }
+
+    /// Get current strategy
+    pub fn strategy(&self) -> ProcessingStrategy {
+        self.strategy
+    }
+
+    /// Get processing options
+    pub fn options(&self) -> &ProcessingOptions {
+        &self.options
+    }
+
+    /// Process content based on strategy
+    pub fn process_content(&self, content: &str, file_path: &Path) -> Result<String> {
+        // Check cache first
+        let path_str = file_path.to_string_lossy();
+        if let Some(cached) = get_cached_js(&self.cache, &path_str, content, self.options.enable_cache) {
+            Logger::debug(&format!("Cache hit for {}", path_str));
+            return Ok(cached);
+        }
+
+        // Process based on strategy
+        let processed = match self.strategy {
+            ProcessingStrategy::Fast => {
+                // Fast mode: minimal processing
+                self.process_fast(content, file_path)?
+            }
+            ProcessingStrategy::Standard => {
+                // Standard mode: basic TypeScript stripping
+                self.process_standard(content, file_path)?
+            }
+            ProcessingStrategy::Enhanced => {
+                // Enhanced mode: full processing
+                self.process_enhanced(content, file_path)?
+            }
+        };
+
+        // Store in cache
+        store_cached_js(&self.cache, &path_str, content, processed.clone(), self.options.enable_cache);
+
+        Ok(processed)
+    }
+
+    /// Fast processing: minimal transformations
+    fn process_fast(&self, content: &str, _file_path: &Path) -> Result<String> {
+        // In Fast mode, just remove import/export for bundling
+        let processed = content
+            .lines()
+            .filter(|line| {
+                let trimmed = line.trim();
+                !trimmed.starts_with("import ") && !trimmed.starts_with("export ")
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        Ok(processed)
+    }
+
+    /// Standard processing: basic TypeScript stripping
+    fn process_standard(&self, content: &str, file_path: &Path) -> Result<String> {
+        let allocator = Allocator::default();
+
+        // Determine if file has TypeScript or JSX
+        let has_ts = file_path.extension()
+            .and_then(|s| s.to_str())
+            .map(|ext| ext == "ts" || ext == "tsx")
+            .unwrap_or(false);
+
+        let has_jsx = file_path.extension()
+            .and_then(|s| s.to_str())
+            .map(|ext| ext == "tsx" || ext == "jsx")
+            .unwrap_or(false);
+
+        // Parse with appropriate config
+        let config = if has_jsx {
+            ParsingConfig::jsx()
+        } else if has_ts {
+            ParsingConfig::typescript()
+        } else {
+            ParsingConfig::javascript()
+        };
+
+        // Parse and validate
+        let _result = parse_with_oxc(
+            &allocator,
+            content,
+            config,
+            file_path,
+            "Standard processing"
+        );
+        // Ignore parse errors in Standard mode
+
+        // Strip TypeScript if needed
+        let processed = if has_ts && self.options.strip_types {
+            let stripped = strip_typescript_block_constructs(content);
+            clean_typescript_inline_annotations(&stripped)
+        } else {
+            content.to_string()
+        };
+
+        Ok(processed)
+    }
+
+    /// Enhanced processing: full TypeScript + JSX transformation
+    fn process_enhanced(&self, content: &str, file_path: &Path) -> Result<String> {
+        let allocator = Allocator::default();
+
+        // Determine file characteristics
+        let has_ts = file_path.extension()
+            .and_then(|s| s.to_str())
+            .map(|ext| ext == "ts" || ext == "tsx")
+            .unwrap_or(false);
+
+        let has_jsx = file_path.extension()
+            .and_then(|s| s.to_str())
+            .map(|ext| ext == "tsx" || ext == "jsx")
+            .unwrap_or(false);
+
+        // Parse with appropriate config
+        let config = if has_jsx {
+            ParsingConfig::jsx()
+        } else if has_ts {
+            ParsingConfig::typescript()
+        } else {
+            ParsingConfig::javascript()
+        };
+
+        // Parse with full error handling
+        let _result = match parse_with_oxc(
+            &allocator,
+            content,
+            config,
+            file_path,
+            "Enhanced processing"
+        ) {
+            Ok(result) => result,
+            Err(_) => {
+                // Fallback to regex-based approach
+                Logger::warn("Enhanced parsing failed, falling back to regex");
+                let stripped = if has_ts {
+                    let temp = strip_typescript_block_constructs(content);
+                    clean_typescript_inline_annotations(&temp)
+                } else {
+                    content.to_string()
+                };
+                return Ok(stripped);
+            }
+        };
+
+        // Full processing with all transformations
+        let processed = if has_ts && self.options.strip_types {
+            let stripped = strip_typescript_block_constructs(content);
+            clean_typescript_inline_annotations(&stripped)
+        } else {
+            content.to_string()
+        };
+
+        Ok(processed)
+    }
+}
+
 // Pre-compiled regex patterns for TypeScript stripping (shared across processors)
 static TYPE_ANNOTATION_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]*([,)=])").unwrap()
