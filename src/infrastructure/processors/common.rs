@@ -44,6 +44,7 @@ pub enum ProcessingStrategy {
 
 impl ProcessingStrategy {
     /// Auto-detect strategy based on file characteristics
+    #[allow(dead_code)]
     pub fn auto_detect(has_typescript: bool, has_jsx: bool, file_count: usize) -> Self {
         // Use Enhanced mode for TypeScript/JSX files or larger projects
         if has_typescript || has_jsx || file_count > 5 {
@@ -67,6 +68,7 @@ impl ProcessingStrategy {
 
 /// Configuration options for processing
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ProcessingOptions {
     /// Strip TypeScript type annotations
     pub strip_types: bool,
@@ -228,6 +230,7 @@ impl UnifiedJsProcessor {
     }
 
     /// Create processor with custom options
+    #[allow(dead_code)]
     pub fn with_options(strategy: ProcessingStrategy, options: ProcessingOptions) -> Self {
         Self {
             strategy,
@@ -237,6 +240,7 @@ impl UnifiedJsProcessor {
     }
 
     /// Create processor with persistent cache
+    #[allow(dead_code)]
     pub fn with_persistent_cache(strategy: ProcessingStrategy, cache_dir: &Path) -> Self {
         Self {
             strategy,
@@ -246,11 +250,13 @@ impl UnifiedJsProcessor {
     }
 
     /// Get current strategy
+    #[allow(dead_code)]
     pub fn strategy(&self) -> ProcessingStrategy {
         self.strategy
     }
 
     /// Get processing options
+    #[allow(dead_code)]
     pub fn options(&self) -> &ProcessingOptions {
         &self.options
     }
@@ -938,6 +944,7 @@ pub fn store_cached_js(
 
 /// Check cache for processed CSS content
 /// Returns cached content if available and caching is enabled
+#[allow(dead_code)]
 pub fn get_cached_css(
     cache: &Arc<UltraCache>,
     path: &str,
@@ -953,6 +960,7 @@ pub fn get_cached_css(
 
 /// Store processed CSS content in cache
 /// Only stores if caching is enabled
+#[allow(dead_code)]
 pub fn store_cached_css(
     cache: &Arc<UltraCache>,
     path: &str,
