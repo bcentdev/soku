@@ -19,17 +19,19 @@ The `UnifiedJsProcessor` is a unified JavaScript/TypeScript processor that conso
 
 ```bash
 # Auto-detect strategy (Standard or Enhanced based on project)
-ultra build --unified
+ultra build
 
 # Explicit Fast mode (minimal transformations)
-ultra build --unified --strategy fast
+ultra build --strategy fast
 
 # Explicit Standard mode (basic TypeScript stripping)
-ultra build --unified --strategy standard
+ultra build --strategy standard
 
 # Explicit Enhanced mode (full TS + JSX)
-ultra build --unified --strategy enhanced
+ultra build --strategy enhanced
 ```
+
+**Note**: UnifiedJsProcessor is now the **default**. No flags needed for basic usage!
 
 ### From Code
 
@@ -258,14 +260,14 @@ All strategies have been tested with:
 
 ### Current Status (v0.3.0)
 
-- ✅ UnifiedJsProcessor: **Stable and recommended**
-- ⚠️ OxcJsProcessor: **Deprecated** (functional, backward compatible)
-- ⚠️ EnhancedJsProcessor: **Deprecated** (functional, backward compatible)
+- ✅ UnifiedJsProcessor: **Default and stable**
+- ⚠️ OxcJsProcessor: **Deprecated** (no longer used internally)
+- ⚠️ EnhancedJsProcessor: **Deprecated** (no longer used internally)
 
 ### Future Plans
 
-- v0.4.0: Make UnifiedJsProcessor the default
-- v0.5.0: Remove legacy processors
+- ✅ v0.3.0: UnifiedJsProcessor is now the default (completed)
+- v0.4.0: Remove legacy processors entirely
 
 ## 🤝 Contributing
 

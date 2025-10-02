@@ -1,6 +1,6 @@
 use crate::core::{models::*, services::*, interfaces::*};
 use crate::infrastructure::{
-    TokioFileSystemService, UltraFileSystemService, OxcJsProcessor, EnhancedJsProcessor,
+    TokioFileSystemService, UltraFileSystemService,
     LightningCssProcessor, RegexTreeShaker, UltraHmrService, generate_hmr_client_code,
     ProcessingStrategy, UnifiedJsProcessor
 };
@@ -67,12 +67,9 @@ pub enum Commands {
         /// Enable source maps
         #[arg(long)]
         source_maps: bool,
-        /// Processing strategy (fast, standard, enhanced)
+        /// Processing strategy (fast, standard, enhanced) - optional override, auto-detects by default
         #[arg(long, value_enum)]
         strategy: Option<StrategyArg>,
-        /// Use unified processor (recommended, uses --strategy if provided)
-        #[arg(long)]
-        unified: bool,
         /// Force ultra performance mode (advanced caching, SIMD, parallel processing)
         #[arg(long)]
         ultra_mode: bool,
@@ -123,13 +120,12 @@ impl CliHandler {
                 no_minify,
                 source_maps,
                 strategy,
-                unified,
                 ultra_mode,
                 normal_mode,
                 no_cache,
                 code_splitting
             } => {
-                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, strategy, unified, ultra_mode, normal_mode, no_cache, code_splitting).await
+                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, strategy, ultra_mode, normal_mode, no_cache, code_splitting).await
             }
             Commands::Preview { dir, port } => {
                 self.handle_preview_command(&dir, port).await
@@ -148,10 +144,9 @@ impl CliHandler {
         enable_minification: bool,
         enable_source_maps: bool,
         strategy: Option<StrategyArg>,
-        use_unified: bool,
         force_ultra_mode: bool,
         force_normal_mode: bool,
-        disable_cache: bool,
+        _disable_cache: bool,
         enable_code_splitting: bool,
     ) -> Result<()> {
         let config = BuildConfig {
@@ -207,41 +202,27 @@ impl CliHandler {
             Arc::new(TokioFileSystemService)
         };
 
-        let js_processor: Arc<dyn JsProcessor> = if use_unified {
-            // Use UnifiedJsProcessor with explicit or auto-detected strategy
-            let detected_strategy = if should_use_ultra_mode {
-                ProcessingStrategy::Enhanced
-            } else {
-                ProcessingStrategy::Standard
-            };
-
-            let selected_strategy = strategy
-                .map(|s| s.to_processing_strategy())
-                .unwrap_or(detected_strategy);
-
-            Logger::info(&format!(
-                "🎯 Using Unified Processor: {} Mode",
-                match selected_strategy {
-                    ProcessingStrategy::Fast => "Fast",
-                    ProcessingStrategy::Standard => "Standard",
-                    ProcessingStrategy::Enhanced => "Enhanced",
-                }
-            ));
-
-            Arc::new(UnifiedJsProcessor::new(selected_strategy))
-        } else if should_use_ultra_mode {
-            // Legacy: Use EnhancedJsProcessor for ultra mode
-            if disable_cache {
-                Logger::info("⚡ Ultra Mode: Using enhanced JS processor (caching disabled)");
-                Arc::new(EnhancedJsProcessor::with_cache_disabled())
-            } else {
-                Logger::info("⚡ Ultra Mode: Using enhanced JS processor with advanced caching");
-                Arc::new(EnhancedJsProcessor::new())
-            }
+        // Use UnifiedJsProcessor with explicit or auto-detected strategy
+        let detected_strategy = if should_use_ultra_mode {
+            ProcessingStrategy::Enhanced
         } else {
-            // Legacy: Use OxcJsProcessor for normal mode
-            Arc::new(OxcJsProcessor::new())
+            ProcessingStrategy::Standard
         };
+
+        let selected_strategy = strategy
+            .map(|s| s.to_processing_strategy())
+            .unwrap_or(detected_strategy);
+
+        Logger::info(&format!(
+            "🎯 Processing Strategy: {} Mode",
+            match selected_strategy {
+                ProcessingStrategy::Fast => "Fast",
+                ProcessingStrategy::Standard => "Standard",
+                ProcessingStrategy::Enhanced => "Enhanced",
+            }
+        ));
+
+        let js_processor: Arc<dyn JsProcessor> = Arc::new(UnifiedJsProcessor::new(selected_strategy));
         let css_processor = Arc::new(LightningCssProcessor::new(enable_minification));
 
         if should_use_ultra_mode {
@@ -399,7 +380,7 @@ impl CliHandler {
 
         // Create services
         let fs_service = Arc::new(TokioFileSystemService);
-        let js_processor = Arc::new(OxcJsProcessor::new());
+        let js_processor = Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
         let css_processor = Arc::new(LightningCssProcessor::new(false));
 
         // Create build service
