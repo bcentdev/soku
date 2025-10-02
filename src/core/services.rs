@@ -211,29 +211,29 @@ impl UltraBuildService {
                     _ => Vec::new(),
                 };
 
-                // Resolve dependency paths in parallel
+                // Resolve dependency paths in parallel (NOW ENABLED with thread-safe resolver)
                 let resolve_tasks: Vec<_> = dependencies.iter()
                     .map(|dep| {
                         let dep_clone = dep.clone();
                         let current_path_clone = current_path.clone();
-                        let _root_dir_clone = root_dir.to_path_buf();
+                        let root_dir_clone = root_dir.to_path_buf();
+                        let resolver_ref = &self.node_resolver;
                         async move {
                             Logger::debug(&format!("Resolving import '{}' from {}", dep_clone, current_path_clone.display()));
-                            // Note: We would resolve in parallel here, but the node resolver currently needs &mut self
-                            // For now, keep sequential resolution but process multiple files in parallel later
-                            (dep_clone.clone(), dep_clone)
+                            let resolved_path = resolver_ref.resolve(&dep_clone, &current_path_clone, &root_dir_clone).await;
+                            (dep_clone, resolved_path)
                         }
                     })
                     .collect();
 
-                let _parallel_results = futures::future::join_all(resolve_tasks).await;
+                let parallel_results = futures::future::join_all(resolve_tasks).await;
 
-                // Resolve dependency paths (keeping sequential for now due to &mut self requirement)
+                // Collect resolved dependencies
                 let mut resolved_deps = Vec::new();
-                for dep in &dependencies {
-                    if let Some(resolved_path) = self.resolve_import_path(&current_path, dep, root_dir).await {
+                for (dep, resolved_path_opt) in parallel_results {
+                    if let Some(resolved_path) = resolved_path_opt {
                         Logger::debug(&format!("Resolved '{}' to: {}", dep, resolved_path.display()));
-                        resolved_deps.push(dep.clone());
+                        resolved_deps.push(dep);
                         to_process.push(resolved_path);
                     } else {
                         Logger::debug(&format!("Failed to resolve import: {}", dep));
