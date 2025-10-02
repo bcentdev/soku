@@ -8,10 +8,12 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use crate::utils::performance::UltraCache;
 use crate::utils::{Result, UltraError, ErrorContext, Logger};
+use crate::core::{models::*, interfaces::JsProcessor};
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
 use oxc_diagnostics::OxcDiagnostic;
+use async_trait::async_trait;
 
 // ============================================================================
 // Processing Strategy Pattern (Shared)
@@ -399,6 +401,82 @@ impl UnifiedJsProcessor {
         };
 
         Ok(processed)
+    }
+}
+
+// ============================================================================
+// JsProcessor Trait Implementation for UnifiedJsProcessor
+// ============================================================================
+
+#[async_trait]
+impl JsProcessor for UnifiedJsProcessor {
+    async fn process_module(&self, module: &ModuleInfo) -> Result<String> {
+        let _timer = crate::utils::Timer::start(&format!("Processing {} ({})",
+            module.path.file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("unknown"),
+            self.strategy.name()));
+
+        // Use the unified process_content method
+        self.process_content(&module.content, &module.path)
+    }
+
+    async fn bundle_modules(&self, modules: &[ModuleInfo]) -> Result<String> {
+        let _timer = crate::utils::Timer::start(&format!("Bundling modules ({})", self.strategy.name()));
+
+        let mut bundle = String::new();
+        bundle.push_str(&format!("// Ultra Bundler - {} Mode Build\n", self.strategy.name()));
+        bundle.push_str("(function() {\n'use strict';\n\n");
+
+        // Process each module
+        for module in modules {
+            if self.supports_module_type(&module.module_type) {
+                Logger::processing_file(
+                    module.path.file_name()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("unknown"),
+                    "bundling"
+                );
+
+                let processed = self.process_module(module).await?;
+                bundle.push_str(&format!(
+                    "// Module: {}\n",
+                    module.path.display()
+                ));
+                bundle.push_str(&processed);
+                bundle.push_str("\n\n");
+            }
+        }
+
+        bundle.push_str("})();\n");
+        Ok(bundle)
+    }
+
+    async fn bundle_modules_with_tree_shaking(
+        &self,
+        modules: &[ModuleInfo],
+        _tree_shaking_stats: Option<&TreeShakingStats>
+    ) -> Result<String> {
+        // For now, delegate to bundle_modules
+        // Tree shaking is handled at a higher level
+        self.bundle_modules(modules).await
+    }
+
+    async fn bundle_modules_with_source_maps(
+        &self,
+        modules: &[ModuleInfo],
+        _config: &BuildConfig
+    ) -> Result<BundleOutput> {
+        // For now, just bundle without source maps
+        let code = self.bundle_modules(modules).await?;
+        Ok(BundleOutput {
+            code,
+            source_map: None,
+        })
+    }
+
+    fn supports_module_type(&self, module_type: &ModuleType) -> bool {
+        matches!(module_type, ModuleType::JavaScript | ModuleType::TypeScript)
     }
 }
 
