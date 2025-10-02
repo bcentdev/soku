@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
+use std::sync::Arc;
+use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use crate::utils::{Result, UltraError};
 
@@ -30,21 +32,31 @@ pub enum BrowserField {
 }
 
 /// Node.js-style module resolution implementation
+/// Now thread-safe for parallel resolution
 pub struct NodeModuleResolver {
-    /// Cache of package.json files
-    package_cache: HashMap<PathBuf, PackageJson>,
+    /// Cache of package.json files (thread-safe)
+    package_cache: Arc<DashMap<PathBuf, PackageJson>>,
 }
 
 impl NodeModuleResolver {
     pub fn new() -> Self {
         Self {
-            package_cache: HashMap::new(),
+            package_cache: Arc::new(DashMap::new()),
+        }
+    }
+
+    /// Clone the resolver for use in parallel contexts
+    /// This is cheap as it only clones the Arc
+    pub fn clone_ref(&self) -> Self {
+        Self {
+            package_cache: Arc::clone(&self.package_cache),
         }
     }
 
     /// Resolve a module import following Node.js resolution algorithm
+    /// Now thread-safe - can be called from multiple threads
     pub async fn resolve(
-        &mut self,
+        &self,
         import_path: &str,
         from_file: &Path,
         project_root: &Path,
@@ -65,7 +77,7 @@ impl NodeModuleResolver {
     }
 
     /// Resolve relative imports
-    async fn resolve_relative(&mut self, import_path: &str, from_file: &Path) -> Option<PathBuf> {
+    async fn resolve_relative(&self, import_path: &str, from_file: &Path) -> Option<PathBuf> {
         let current_dir = from_file.parent()?;
         let resolved = current_dir.join(import_path);
         self.resolve_file_or_directory(&resolved).await
@@ -73,7 +85,7 @@ impl NodeModuleResolver {
 
     /// Resolve a node_modules package
     async fn resolve_node_module(
-        &mut self,
+        &self,
         package_name: &str,
         from_file: &Path,
         project_root: &Path,
@@ -137,7 +149,7 @@ impl NodeModuleResolver {
 
     /// Resolve package entry point
     async fn resolve_package_entry(
-        &mut self,
+        &self,
         package_dir: &Path,
         subpath: Option<String>,
     ) -> Option<PathBuf> {
@@ -200,7 +212,7 @@ impl NodeModuleResolver {
     }
 
     /// Try to resolve as file or directory
-    async fn resolve_file_or_directory(&mut self, path: &Path) -> Option<PathBuf> {
+    async fn resolve_file_or_directory(&self, path: &Path) -> Option<PathBuf> {
         // Try as file first
         if let Some(file) = self.resolve_as_file(path).await {
             return Some(file);
@@ -257,7 +269,7 @@ impl NodeModuleResolver {
 
 
     /// Read and cache package.json
-    async fn read_package_json(&mut self, path: &Path) -> Option<PackageJson> {
+    async fn read_package_json(&self, path: &Path) -> Option<PackageJson> {
         // Check cache first
         if let Some(cached) = self.package_cache.get(path) {
             return Some(cached.clone());

@@ -164,7 +164,7 @@ impl UltraBuildService {
     }
 
     async fn resolve_all_dependencies(
-        &mut self,
+        &self,
         entry_files: &[PathBuf],
         root_dir: &Path,
     ) -> Result<Vec<ModuleInfo>> {
@@ -288,7 +288,7 @@ impl UltraBuildService {
     }
 
     async fn resolve_import_path(
-        &mut self,
+        &self,
         current_file: &Path,
         import_path: &str,
         root_dir: &Path,
