@@ -1,5 +1,5 @@
 use crate::core::{interfaces::*, models::*};
-use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraProfiler, UltraCache, performance::parallel};
+use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraProfiler, UltraCache, performance::parallel, IncrementalBuildState};
 use crate::infrastructure::{NodeModuleResolver, MinificationService, CodeSplitter, CodeSplitConfig};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
@@ -22,6 +22,7 @@ pub struct UltraBuildService {
     node_resolver: NodeModuleResolver,
     profiler: Arc<UltraProfiler>,
     cache: Arc<UltraCache>,
+    incremental_state: IncrementalBuildState,
 }
 
 impl UltraBuildService {
@@ -45,6 +46,7 @@ impl UltraBuildService {
             node_resolver: NodeModuleResolver::new(),
             profiler: Arc::new(UltraProfiler::new()),
             cache,
+            incremental_state: IncrementalBuildState::new(),
         }
     }
 
@@ -164,7 +166,7 @@ impl UltraBuildService {
     }
 
     async fn resolve_all_dependencies(
-        &self,
+        &mut self,
         entry_files: &[PathBuf],
         root_dir: &Path,
     ) -> Result<Vec<ModuleInfo>> {
@@ -187,6 +189,9 @@ impl UltraBuildService {
             // Read and process the file
             Logger::debug(&format!("Processing module: {}", current_path.display()));
             if let Ok(content) = self.fs_service.read_file(&current_path).await {
+                // Track file metadata for incremental builds
+                let _ = self.incremental_state.update_file(&normalized_path);
+
                 let module_type = ModuleType::from_extension(
                     current_path.extension()
                         .and_then(|s| s.to_str())
@@ -233,6 +238,14 @@ impl UltraBuildService {
                 for (dep, resolved_path_opt) in parallel_results {
                     if let Some(resolved_path) = resolved_path_opt {
                         Logger::debug(&format!("Resolved '{}' to: {}", dep, resolved_path.display()));
+
+                        // Track dependency relationship for incremental builds
+                        // normalized_path depends on resolved_path
+                        self.incremental_state.add_dependency(
+                            normalized_path.clone(),
+                            resolved_path.clone()
+                        );
+
                         resolved_deps.push(dep);
                         to_process.push(resolved_path);
                     } else {
@@ -294,16 +307,6 @@ impl UltraBuildService {
         Logger::debug(&format!("✅ Parallel processing complete: {} modules processed", processed_modules.len()));
 
         Ok(processed_modules)
-    }
-
-    async fn resolve_import_path(
-        &self,
-        current_file: &Path,
-        import_path: &str,
-        root_dir: &Path,
-    ) -> Option<PathBuf> {
-        // Use the node resolver for all imports
-        self.node_resolver.resolve(import_path, current_file, root_dir).await
     }
 
     fn extract_css_dependencies(&self, content: &str) -> Vec<String> {
@@ -506,6 +509,9 @@ impl UltraBuildService {
             node_modules_optimized: None,
             timing_breakdown: Some(timing_breakdown),
         });
+
+        // Mark build as complete for incremental build tracking
+        self.incremental_state.mark_build_complete();
 
         Ok(BuildResult {
             success: true,
@@ -739,6 +745,9 @@ impl BuildService for UltraBuildService {
         if std::env::var("RUST_LOG").unwrap_or_default().contains("debug") {
             self.profiler.report_bottlenecks();
         }
+
+        // Mark build as complete for incremental build tracking
+        self.incremental_state.mark_build_complete();
 
         Ok(BuildResult {
             js_modules_processed: js_only_modules.len(),
