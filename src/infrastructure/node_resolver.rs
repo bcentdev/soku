@@ -31,6 +31,38 @@ pub enum BrowserField {
     Object(HashMap<String, serde_json::Value>),
 }
 
+/// Export conditions for conditional exports
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExportCondition {
+    Import,    // ESM import
+    Require,   // CommonJS require
+    Browser,   // Browser environment
+    Node,      // Node.js environment
+    Default,   // Fallback
+}
+
+impl ExportCondition {
+    fn as_str(&self) -> &str {
+        match self {
+            ExportCondition::Import => "import",
+            ExportCondition::Require => "require",
+            ExportCondition::Browser => "browser",
+            ExportCondition::Node => "node",
+            ExportCondition::Default => "default",
+        }
+    }
+
+    /// Get priority order for resolution (higher priority first)
+    fn priority_order() -> Vec<Self> {
+        vec![
+            ExportCondition::Import,   // Prefer ESM
+            ExportCondition::Browser,  // Browser context
+            ExportCondition::Node,     // Node.js context
+            ExportCondition::Default,  // Fallback
+        ]
+    }
+}
+
 /// Node.js-style module resolution implementation
 /// Now thread-safe for parallel resolution
 pub struct NodeModuleResolver {
@@ -169,11 +201,12 @@ impl NodeModuleResolver {
         // Parse package.json
         let package_json = self.read_package_json(&package_json_path).await?;
 
-        // Try different entry points in order of preference
-        // 1. exports field (if present)
-        if let Some(_exports) = &package_json.exports {
-            // TODO: Implement exports field resolution (complex)
-            // For now, fall through to other methods
+        // Try different entry points in order of preference (Node.js 22/24 compatible)
+        // 1. exports field (if present) - HIGHEST PRIORITY for modern packages
+        if let Some(exports) = &package_json.exports {
+            if let Some(resolved) = self.resolve_exports(exports, subpath.as_deref(), package_dir).await {
+                return Some(resolved);
+            }
         }
 
         // 2. module field (ES6 modules)
@@ -193,8 +226,17 @@ impl NodeModuleResolver {
                         return Some(resolved);
                     }
                 }
-                BrowserField::Object(_) => {
-                    // TODO: Handle browser field replacements
+                BrowserField::Object(replacements) => {
+                    // Handle browser field replacements
+                    // Check if there's a main replacement
+                    if let Some(main_value) = replacements.get(".") {
+                        if let Some(path) = main_value.as_str() {
+                            let entry = package_dir.join(path);
+                            if let Some(resolved) = self.resolve_file_or_directory(&entry).await {
+                                return Some(resolved);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -267,6 +309,132 @@ impl NodeModuleResolver {
         None
     }
 
+    /// Resolve exports field for a given subpath
+    /// Implements Node.js exports field resolution algorithm
+    async fn resolve_exports(
+        &self,
+        exports: &serde_json::Value,
+        subpath: Option<&str>,
+        package_dir: &Path,
+    ) -> Option<PathBuf> {
+        use serde_json::Value;
+
+        let target_subpath = subpath.unwrap_or(".");
+
+        match exports {
+            // String export: "exports": "./index.js"
+            Value::String(path) if target_subpath == "." => {
+                let resolved = package_dir.join(path);
+                return self.resolve_file_or_directory(&resolved).await;
+            }
+
+            // Object export
+            Value::Object(map) => {
+                // Check if it's a conditional export or subpath export
+                let has_conditions = map.keys().any(|k| {
+                    matches!(k.as_str(), "import" | "require" | "browser" | "node" | "default")
+                });
+
+                if has_conditions && target_subpath == "." {
+                    // Conditional exports: { "import": "./esm/index.js", "require": "./cjs/index.js" }
+                    return self.resolve_conditional_exports(map, package_dir).await;
+                }
+
+                // Subpath exports: { "./utils": "./src/utils.js", "./package.json": "./package.json" }
+                if let Some(export_value) = map.get(target_subpath) {
+                    return self.resolve_export_value(export_value, package_dir).await;
+                }
+
+                // Try pattern matching: { "./*": "./dist/*.js" }
+                for (pattern, export_value) in map {
+                    if let Some(resolved) = self.match_subpath_pattern(pattern, target_subpath, export_value, package_dir).await {
+                        return Some(resolved);
+                    }
+                }
+            }
+
+            _ => {}
+        }
+
+        None
+    }
+
+    /// Resolve conditional exports based on conditions
+    async fn resolve_conditional_exports(
+        &self,
+        conditions: &serde_json::Map<String, serde_json::Value>,
+        package_dir: &Path,
+    ) -> Option<PathBuf> {
+        // Try conditions in priority order
+        for condition in ExportCondition::priority_order() {
+            if let Some(export_value) = conditions.get(condition.as_str()) {
+                if let Some(resolved) = self.resolve_export_value(export_value, package_dir).await {
+                    return Some(resolved);
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Resolve an export value (string or nested object)
+    fn resolve_export_value<'a>(
+        &'a self,
+        value: &'a serde_json::Value,
+        package_dir: &'a Path,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<PathBuf>> + 'a>> {
+        use serde_json::Value;
+
+        Box::pin(async move {
+            match value {
+                Value::String(path) => {
+                    let resolved = package_dir.join(path);
+                    self.resolve_file_or_directory(&resolved).await
+                }
+                Value::Object(map) => {
+                    // Nested conditional exports
+                    self.resolve_conditional_exports(map, package_dir).await
+                }
+                _ => None,
+            }
+        })
+    }
+
+    /// Match and resolve subpath patterns like "./*": "./dist/*.js"
+    async fn match_subpath_pattern(
+        &self,
+        pattern: &str,
+        subpath: &str,
+        export_value: &serde_json::Value,
+        package_dir: &Path,
+    ) -> Option<PathBuf> {
+        // Only handle patterns with single *
+        if !pattern.contains('*') {
+            return None;
+        }
+
+        // Split pattern by *
+        let parts: Vec<&str> = pattern.split('*').collect();
+        if parts.len() != 2 {
+            return None; // Only support single * patterns
+        }
+
+        let (prefix, suffix) = (parts[0], parts[1]);
+
+        // Check if subpath matches pattern
+        if subpath.starts_with(prefix) && subpath.ends_with(suffix) {
+            let matched = &subpath[prefix.len()..subpath.len() - suffix.len()];
+
+            // Replace * in export value with matched part
+            if let serde_json::Value::String(export_pattern) = export_value {
+                let resolved_path = export_pattern.replace('*', matched);
+                let full_path = package_dir.join(&resolved_path);
+                return self.resolve_file_or_directory(&full_path).await;
+            }
+        }
+
+        None
+    }
 
     /// Read and cache package.json
     async fn read_package_json(&self, path: &Path) -> Option<PackageJson> {
