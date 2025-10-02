@@ -21,7 +21,12 @@
 - ✅ Complete Source Maps (Phase 1: Basic source maps con sourcesContent)
 - ✅ Test Suite (integration tests + framework establecido)
 
-**Resultado hasta ahora**: Ultra es 5-10x más rápido, bundles 30-50% más pequeños, código 40% más limpio, source maps básicos funcionando.
+### Sprint 4: Architecture 🚧 [33% EN PROGRESO]
+- ✅ Incremental Builds Infrastructure (file metadata tracking + dependency graph + build state manager)
+- ⏳ Incremental Rebuilds (smart rebuild logic with change detection)
+- ⏳ Plugin System (extensible architecture for custom transformations)
+
+**Resultado hasta ahora**: Ultra es 5-10x más rápido, bundles 30-50% más pequeños, código 40% más limpio, source maps básicos funcionando, infraestructura de incremental builds lista.
 
 ---
 
@@ -1904,7 +1909,7 @@ Sprint 5+ (3-4 weeks) - Advanced Features
 |---------|--------|--------|
 | Code splitting | ❌ | ✅ |
 | Source maps | 🟡 | ✅ |
-| Incremental builds | ❌ | ✅ |
+| Incremental builds | 🟡 | ✅ |
 | Plugin system | ❌ | ✅ |
 | CSS Modules | ❌ | ✅ |
 | WASM Support | ❌ | ✅ |
