@@ -8,19 +8,42 @@ pub struct BundleOutput {
     pub source_map: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BuildConfig {
+    #[serde(default = "default_root")]
     pub root: PathBuf,
+    #[serde(default = "default_outdir")]
     pub outdir: PathBuf,
+    #[serde(default = "default_true")]
     pub enable_tree_shaking: bool,
+    #[serde(default = "default_true")]
     #[allow(dead_code)] // Future feature
     pub enable_minification: bool,
+    #[serde(default)]
     #[allow(dead_code)] // Future feature
     pub enable_source_maps: bool,
+    #[serde(default)]
     #[allow(dead_code)] // Smart bundling feature
     pub enable_code_splitting: bool,
+    #[serde(default = "default_chunk_size")]
     #[allow(dead_code)] // Maximum chunk size in bytes
     pub max_chunk_size: Option<usize>,
+}
+
+fn default_root() -> PathBuf {
+    PathBuf::from(".")
+}
+
+fn default_outdir() -> PathBuf {
+    PathBuf::from("dist")
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_chunk_size() -> Option<usize> {
+    Some(250_000)
 }
 
 impl Default for BuildConfig {

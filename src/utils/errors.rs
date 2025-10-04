@@ -114,6 +114,11 @@ impl UltraError {
         }
     }
 
+    /// Create a configuration error
+    pub fn config(message: String) -> Self {
+        Self::Config(message)
+    }
+
     /// Format error with enhanced context display
     pub fn format_detailed(&self) -> String {
         match self {

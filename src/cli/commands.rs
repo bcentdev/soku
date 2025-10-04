@@ -55,9 +55,9 @@ pub enum Commands {
         /// Root directory
         #[arg(short, long, default_value = ".")]
         root: String,
-        /// Output directory
-        #[arg(short, long, default_value = "dist")]
-        outdir: String,
+        /// Output directory (overrides config file if specified)
+        #[arg(short, long)]
+        outdir: Option<String>,
         /// Disable tree shaking for faster builds
         #[arg(long)]
         no_tree_shaking: bool,
@@ -156,7 +156,7 @@ impl CliHandler {
                 code_splitting,
                 analyze,
             } => {
-                self.handle_build_command(&root, &outdir, !no_tree_shaking, !no_minify, source_maps, strategy, ultra_mode, normal_mode, no_cache, code_splitting, analyze).await
+                self.handle_build_command(&root, outdir.as_deref(), !no_tree_shaking, !no_minify, source_maps, strategy, ultra_mode, normal_mode, no_cache, code_splitting, analyze).await
             }
             Commands::Preview { dir, port } => {
                 self.handle_preview_command(&dir, port).await
@@ -191,7 +191,7 @@ impl CliHandler {
     async fn handle_build_command(
         &self,
         root: &str,
-        outdir: &str,
+        outdir: Option<&str>,
         enable_tree_shaking: bool,
         enable_minification: bool,
         enable_source_maps: bool,
@@ -202,22 +202,33 @@ impl CliHandler {
         enable_code_splitting: bool,
         enable_analysis: bool,
     ) -> Result<()> {
-        let config = BuildConfig {
-            root: PathBuf::from(root),
-            outdir: PathBuf::from(outdir),
-            enable_tree_shaking,
-            enable_minification,
-            enable_source_maps,
-            enable_code_splitting,
-            max_chunk_size: Some(250_000), // 250KB default
-        };
+        use crate::utils::ConfigLoader;
+
+        let project_root = PathBuf::from(root);
+
+        // Load config file if it exists
+        let file_config = ConfigLoader::load_from_file(&project_root)?;
+        if file_config.is_some() {
+            Logger::info("📋 Loaded configuration from ultra.config.json");
+        }
+
+        // Merge file config with CLI arguments (CLI takes precedence)
+        let config = ConfigLoader::merge_with_cli(
+            file_config,
+            project_root.clone(),
+            outdir,
+            Some(enable_tree_shaking),
+            Some(enable_minification),
+            Some(enable_source_maps),
+            Some(enable_code_splitting),
+            Some(250_000), // max_chunk_size
+        );
 
         if enable_code_splitting {
             Logger::info("📦 Code Splitting: Enabled (vendor + common + route chunks)");
         }
 
         // Analyze project to determine optimal mode
-        let project_root = PathBuf::from(root);
         let should_use_ultra_mode = if force_ultra_mode {
             Logger::info("🔧 Ultra Mode: Forced by --ultra-mode flag");
             true
