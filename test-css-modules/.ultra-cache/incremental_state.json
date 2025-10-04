@@ -1,0 +1,38 @@
+{
+  "file_metadata": {
+    "/Users/vicentetorres/Projects/ultra-bundler/test-css-modules/src/Button.module.css": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-css-modules/src/Button.module.css",
+      "content_hash": 2519713735018468096,
+      "modified_time": {
+        "secs_since_epoch": 1759597089,
+        "nanos_since_epoch": 129031223
+      },
+      "size": 325
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-css-modules/main.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-css-modules/main.js",
+      "content_hash": 17696503996371300860,
+      "modified_time": {
+        "secs_since_epoch": 1759597017,
+        "nanos_since_epoch": 60307558
+      },
+      "size": 238
+    }
+  },
+  "graph": {
+    "dependencies": {
+      "/Users/vicentetorres/Projects/ultra-bundler/test-css-modules/main.js": [
+        "././src/Button.module.css"
+      ]
+    },
+    "dependents": {
+      "././src/Button.module.css": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-css-modules/main.js"
+      ]
+    }
+  },
+  "last_build_time": {
+    "secs_since_epoch": 1759598058,
+    "nanos_since_epoch": 162575000
+  }
+}

@@ -1,5 +1,5 @@
 use crate::core::interfaces::CssProcessor;
-use crate::utils::{Result, UltraError, Logger, UltraCache};
+use crate::utils::{Result, UltraError, Logger, UltraCache, CssModulesProcessor};
 use lightningcss::{
     stylesheet::{StyleSheet, ParserOptions as CssParserOptions},
     printer::PrinterOptions,
@@ -42,8 +42,24 @@ impl CssProcessor for LightningCssProcessor {
                 .unwrap_or("unknown")
         );
 
+        // Check if this is a CSS Module
+        let css_content = if CssModulesProcessor::is_css_module(path) {
+            Logger::info(&format!("📦 CSS Module detected: {}",
+                path.file_name().and_then(|s| s.to_str()).unwrap_or("unknown")));
+
+            let css_modules = CssModulesProcessor::new();
+            let module_result = css_modules.process(content, path)?;
+
+            // TODO: Save exports for JS import resolution
+            Logger::debug(&format!("CSS Module exports: {:?}", module_result.exports.keys()));
+
+            module_result.css
+        } else {
+            content.to_string()
+        };
+
         // Process CSS with lightningcss
-        let result = match StyleSheet::parse(content, CssParserOptions::default()) {
+        let result = match StyleSheet::parse(&css_content, CssParserOptions::default()) {
             Ok(stylesheet) => {
                 match stylesheet.to_css(PrinterOptions {
                     minify: self.minify,

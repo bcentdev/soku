@@ -245,7 +245,6 @@ mod tests {
                 enable_source_maps: false,
                 enable_code_splitting: false,
                 max_chunk_size: None,
-                enable_css_modules: false,
             },
         };
 
