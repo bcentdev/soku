@@ -209,12 +209,20 @@ impl UltraBuildService {
 
             // Read and process the file
             Logger::debug(&format!("Processing module: {}", current_path.display()));
-            if let Ok(content) = self.fs_service.read_file(&current_path).await {
-                let module_type = ModuleType::from_extension(
+            if let Ok(mut content) = self.fs_service.read_file(&current_path).await {
+                let mut module_type = ModuleType::from_extension(
                     current_path.extension()
                         .and_then(|s| s.to_str())
                         .unwrap_or("")
                 );
+
+                // 📦 Process JSON assets - convert to ES module
+                if module_type == ModuleType::Json {
+                    let asset_processor = crate::infrastructure::AssetProcessor::new();
+                    content = asset_processor.process_json(&content, &current_path)?;
+                    // Change module type to JavaScript since content is now JS
+                    module_type = ModuleType::JavaScript;
+                }
 
                 // Extract dependencies in parallel when possible
                 let dependencies = match module_type {

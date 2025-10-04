@@ -181,7 +181,6 @@ mod tests {
         writeln!(temp_file, r#"{{"outdir": "build", "minify": false}}"#).unwrap();
 
         let parent = temp_file.path().parent().unwrap();
-        let file_name = temp_file.path().file_name().unwrap();
 
         // Rename to ultra.config.json
         let config_path = parent.join("ultra.config.json");
