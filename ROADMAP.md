@@ -1,7 +1,7 @@
 # Ultra Bundler - Roadmap
 
 > Última actualización: 2025-10-04
-> Estado: 10,383 líneas Rust | 45 unit tests | 6 integration tests | 0 warnings | Estructura de tests limpia
+> Estado: 10,299 líneas Rust | 43 unit tests | 6 integration tests | 0 warnings | Sprint 6.5 al 50%
 
 ## ✅ Completado
 
@@ -95,12 +95,13 @@
 ## 📊 Estado Actual
 
 ### Métricas
-- **Líneas de código**: 10,383 (src) + 400 (tests)
-- **Test coverage**: ~22% (45 unit + 6 integration + 3 TODOs)
+- **Líneas de código**: 10,299 (src) + 400 (tests)
+- **Test coverage**: ~21% (43 unit + 6 integration + 3 TODOs)
 - **Test fixtures**: 6 proyectos oficiales organizados
 - **Warnings**: 0 ✅
 - **Performance**: Sub-250ms builds
 - **Tree shaking**: 50-80% reduction
+- **Code cleanup**: 809 líneas eliminadas (Sprint 6 + 6.5)
 
 ### Features Activas
 - ✅ JS/TS/TSX bundling
