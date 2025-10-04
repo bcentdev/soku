@@ -72,12 +72,12 @@
 
 ---
 
-### Sprint 8: Features (En progreso - 25%)
+### Sprint 8: Features (En progreso - 50%)
 **Objetivo**: Advanced features y developer experience
 
 **Tareas**:
 - ✅ Config file support (ultra.config.json con merge CLI/file)
-- HMR improvements (error recovery, CSS hot reload)
+- ✅ HMR improvements (error recovery con overlay, CSS hot reload)
 - Advanced source maps (inline sources)
 - Plugin API (simplified)
 
