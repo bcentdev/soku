@@ -26,13 +26,13 @@
 - ✅ Incremental Rebuilds (smart rebuild logic with change detection - 50% faster on no-change builds)
 - ✅ Plugin System (extensible architecture con lifecycle hooks + 2 plugins de ejemplo)
 
-### Sprint 5: Advanced Features 🚧 [50% EN PROGRESO]
+### Sprint 5: Advanced Features 🚧 [75% EN PROGRESO]
 - ✅ Watch Mode (intelligent file monitoring + auto-rebuild con debouncing)
-- ⏳ CSS Modules (scoped CSS support)
+- ✅ CSS Modules (auto-detection + scoped CSS con hash-based names)
 - ⏳ WebAssembly Support (WASM module bundling)
 - ✅ Bundle Analysis (size analysis + visualization + JSON export)
 
-**Resultado hasta ahora**: Ultra es 5-10x más rápido, bundles 30-50% más pequeños, código 40% más limpio, source maps básicos, incremental builds (50% más rápido), plugin system extensible, watch mode con auto-rebuild inteligente, bundle analysis con reportes detallados.
+**Resultado hasta ahora**: Ultra es 5-10x más rápido, bundles 30-50% más pequeños, código 40% más limpio, source maps básicos, incremental builds (50% más rápido), plugin system extensible, watch mode con auto-rebuild inteligente, bundle analysis con reportes detallados, CSS Modules con detección automática.
 
 ---
 
@@ -1919,7 +1919,7 @@ Sprint 5+ (3-4 weeks) - Advanced Features
 | Plugin system | ✅ | ✅ |
 | Watch Mode | ✅ | ✅ |
 | Bundle Analysis | ✅ | ✅ |
-| CSS Modules | ❌ | ✅ |
+| CSS Modules | ✅ | ✅ |
 | WASM Support | ❌ | ✅ |
 
 ### Developer Experience
