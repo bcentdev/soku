@@ -33,6 +33,8 @@ pub struct BuildConfig {
     pub mode: String,
     #[serde(default)]
     pub alias: HashMap<String, String>,
+    #[serde(default)]
+    pub external: Vec<String>,
 }
 
 fn default_root() -> PathBuf {
@@ -67,6 +69,7 @@ impl Default for BuildConfig {
             max_chunk_size: Some(250_000), // 250KB default
             mode: "production".to_string(),
             alias: HashMap::new(),
+            external: Vec::new(),
         }
     }
 }

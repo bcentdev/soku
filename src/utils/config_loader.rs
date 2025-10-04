@@ -43,6 +43,10 @@ pub struct UltraConfig {
     /// Path aliases for import resolution (e.g., "@": "./src", "~": ".")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alias: Option<HashMap<String, String>>,
+
+    /// External dependencies to exclude from bundle (e.g., ["react", "vue"])
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external: Option<Vec<String>>,
 }
 
 impl Default for UltraConfig {
@@ -57,6 +61,7 @@ impl Default for UltraConfig {
             code_splitting: Some(false),
             max_chunk_size: Some(250_000),
             alias: None,
+            external: None,
         }
     }
 }
@@ -134,6 +139,7 @@ impl ConfigLoader {
             max_chunk_size: max_chunk_size.or(base.max_chunk_size).or(Some(250_000)),
             mode,
             alias: base.alias.unwrap_or_default(),
+            external: base.external.unwrap_or_default(),
         }
     }
 

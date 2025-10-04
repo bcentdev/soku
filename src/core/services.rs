@@ -189,6 +189,11 @@ impl UltraBuildService {
             root_dir.to_path_buf()
         );
 
+        // 📦 Log external dependencies
+        if !config.external.is_empty() {
+            Logger::debug(&format!("📦 External dependencies (will not be bundled): {:?}", config.external));
+        }
+
         // Start with entry files
         for path in entry_files {
             to_process.push(path.clone());
@@ -237,8 +242,15 @@ impl UltraBuildService {
                         let root_dir_clone = root_dir.to_path_buf();
                         let resolver_ref = &self.node_resolver;
                         let alias_resolver_ref = &alias_resolver;
+                        let external_list = &config.external;
                         async move {
                             Logger::debug(&format!("Resolving import '{}' from {}", dep_clone, current_path_clone.display()));
+
+                            // 📦 Check if dependency is marked as external
+                            if Self::is_external_dependency(&dep_clone, external_list) {
+                                Logger::debug(&format!("📦 Skipping external dependency: {}", dep_clone));
+                                return (dep_clone, None); // Skip external dependencies
+                            }
 
                             // 🔗 Try path alias resolution first
                             if let Some(aliased_path) = alias_resolver_ref.resolve(&dep_clone) {
@@ -354,6 +366,24 @@ impl UltraBuildService {
         }
 
         dependencies
+    }
+
+    /// Check if a dependency should be treated as external
+    fn is_external_dependency(dep: &str, external_list: &[String]) -> bool {
+        // Check exact match
+        if external_list.contains(&dep.to_string()) {
+            return true;
+        }
+
+        // Check if dependency starts with any external package
+        // e.g., "react" matches "react", "react/hooks", "react/dom"
+        for external in external_list {
+            if dep == external || dep.starts_with(&format!("{}/", external)) {
+                return true;
+            }
+        }
+
+        false
     }
 
     /// Generate cache key based on module contents and build configuration

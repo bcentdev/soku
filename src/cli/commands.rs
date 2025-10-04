@@ -471,6 +471,7 @@ impl CliHandler {
             max_chunk_size: None,
             mode: "development".to_string(), // Watch mode is for development
             alias: std::collections::HashMap::new(), // No aliases in watch mode
+            external: Vec::new(), // No external deps in watch mode
         };
 
         // Create watch config
@@ -563,6 +564,7 @@ impl CliHandler {
             max_chunk_size: Some(250_000), // 250KB default
             mode: "development".to_string(), // Dev server with HMR
             alias: std::collections::HashMap::new(), // No aliases in dev mode
+            external: Vec::new(), // No external deps in dev mode
         };
 
         // Create services
