@@ -88,29 +88,105 @@
 
 ---
 
-### Sprint 9: Advanced Features (Pendiente)
-**Objetivo**: Source maps avanzados y Plugin API
+### Sprint 9A: Quick Wins (Pendiente)
+**Objetivo**: Features críticas de alta prioridad
 
 **Tareas**:
-- Advanced source maps (inline sources, accurate mappings)
-- Plugin API (simplified, event-based)
-- Custom transformers support
-- Advanced HMR hooks
+- Environment Variables (process.env, import.meta.env)
+- Path Aliases (@/, @components, @utils integration)
+- External Dependencies (exclude React, etc. del bundle)
+- TypeScript Path Mapping (leer tsconfig.json paths)
 
-**Tiempo**: 2-3 semanas
+**Impacto**: ALTO - Mejora DX y optimización inmediata
+**Tiempo**: 1 día
 
 ---
 
-### Sprint 10: Production (Pendiente)
+### Sprint 9B: Optimization (Pendiente)
+**Objetivo**: Performance y code splitting avanzado
+
+**Tareas**:
+- Manual Chunks/Vendor Splitting (configuración explícita)
+- Dynamic Imports (lazy loading, code splitting automático)
+- Asset Handling (images, fonts, JSON imports)
+- Conditional Exports (import.meta.env.DEV, dead code elimination)
+
+**Impacto**: ALTO - Bundle size y performance
+**Tiempo**: 1-2 días
+
+---
+
+### Sprint 10: Architecture (Pendiente)
+**Objetivo**: Features arquitecturales avanzadas
+
+**Tareas**:
+- Multiple Entry Points (multi-page apps, libraries)
+- Advanced Source Maps (inline sources, accurate mappings)
+- Plugin API (simplified, event-based)
+- Custom Transformers Support
+- Advanced HMR Hooks
+
+**Impacto**: MEDIO-ALTO - Casos de uso avanzados
+**Tiempo**: 2-3 días
+
+---
+
+### Sprint 11: Preprocessing & DX (Pendiente)
+**Objetivo**: Developer experience avanzado
+
+**Tareas**:
+- CSS Preprocessing (SCSS/SASS support)
+- PostCSS Integration (autoprefixer automático)
+- Advanced TypeScript features
+- Better error messages con suggestions
+- Performance profiling tools
+
+**Tiempo**: 2-3 días
+
+---
+
+### Sprint 12: Production (Pendiente)
 **Objetivo**: Production-ready release
 
 **Tareas**:
 - Comprehensive docs
-- More examples
+- More examples (React, Vue, vanilla)
 - CLI improvements
+- Performance benchmarks vs competitors
 - Release v1.0
 
 **Tiempo**: 3-4 semanas
+
+---
+
+## 🎯 Features Planificadas por Categoría
+
+### 🚀 Alta Prioridad (Sprint 9A - Quick Wins)
+- **Environment Variables**: process.env.NODE_ENV, import.meta.env.DEV/PROD
+- **Path Aliases**: @/, @components, @utils con tsconfig.json integration
+- **External Dependencies**: Exclude libraries del bundle (React, Vue, etc.)
+- **TypeScript Path Mapping**: Sincronización automática con tsconfig paths
+
+### ⚡ Optimización (Sprint 9B)
+- **Manual Chunks**: Configuración explícita de chunks (vendor, common, etc.)
+- **Vendor Splitting**: Separación automática de node_modules
+- **Dynamic Imports**: import() lazy loading con code splitting automático
+- **Asset Handling**: import de images, fonts, JSON con URL resolution
+- **Conditional Exports**: Dead code elimination basado en environment
+
+### 🏗️ Arquitectura (Sprint 10)
+- **Multiple Entry Points**: Multi-page apps, library mode
+- **Advanced Source Maps**: Inline sources, accurate line mappings
+- **Plugin API**: Event-based, extensible architecture
+- **Custom Transformers**: User-defined code transformations
+- **Advanced HMR Hooks**: Lifecycle hooks para hot reload
+
+### 🎨 Preprocessing & DX (Sprint 11)
+- **SCSS/SASS Support**: CSS preprocessing integrado
+- **PostCSS Integration**: Autoprefixer, CSS variables, etc.
+- **Advanced TypeScript**: Decorators, metadata, advanced features
+- **Better Error Messages**: Suggestions y hints contextuales
+- **Performance Profiling**: Bundle analysis tools
 
 ---
 
@@ -148,5 +224,17 @@
 - ✅ WebSocket-based HMR server
 - ✅ CLI con progress tracking
 
-### Features en API (No Integradas)
-- 🔌 CSS Modules Manager (simplificado, no necesario)
+### Features Planificadas (Roadmap Actualizado)
+- 🎯 **Sprint 9A**: 4 features (Environment, Aliases, Externals, TS Paths)
+- ⚡ **Sprint 9B**: 5 features (Chunks, Dynamic Imports, Assets, Conditional Exports)
+- 🏗️ **Sprint 10**: 5 features (Multi-entry, Source Maps, Plugin API, Transformers, HMR Hooks)
+- 🎨 **Sprint 11**: 5 features (SCSS, PostCSS, Advanced TS, Better Errors, Profiling)
+- **Total planificado**: 19 features adicionales
+
+### Comparación con Competidores
+Cuando completemos Sprint 9-11, Ultra tendrá:
+- **37 features activas** (18 actuales + 19 planificadas)
+- **Velocidad**: 10-20x más rápido que Webpack
+- **Bundle size**: 50-80% reducción con tree shaking
+- **DX**: Config file, HMR, error overlay, aliases
+- **Features únicos**: Ultra mode, auto-optimization, 3.8MB binary
