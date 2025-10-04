@@ -147,18 +147,6 @@ impl CssModulesProcessor {
         format!("{:x}", hasher.finish())
     }
 
-    /// Generate JavaScript exports for the CSS module
-    #[allow(dead_code)] // Part of public API
-    pub fn generate_js_exports(exports: &HashMap<String, String>) -> String {
-        let mut js = String::from("export default {\n");
-
-        for (original, scoped) in exports {
-            js.push_str(&format!("  \"{}\": \"{}\",\n", original, scoped));
-        }
-
-        js.push_str("};\n");
-        js
-    }
 }
 
 impl Default for CssModulesProcessor {
@@ -167,57 +155,6 @@ impl Default for CssModulesProcessor {
     }
 }
 
-/// Manager for CSS Modules across the entire build
-#[allow(dead_code)] // Part of public API, will be used when CSS modules are fully integrated
-pub struct CssModulesManager {
-    processor: CssModulesProcessor,
-    /// All CSS module exports by file path
-    modules: HashMap<String, HashMap<String, String>>,
-}
-
-#[allow(dead_code)] // Part of public API
-impl CssModulesManager {
-    /// Create a new CSS Modules manager
-    pub fn new() -> Self {
-        Self {
-            processor: CssModulesProcessor::new(),
-            modules: HashMap::new(),
-        }
-    }
-
-    /// Process a CSS file and track its exports
-    pub fn process_file(&mut self, content: &str, path: &Path) -> Result<CssModuleResult> {
-        let result = self.processor.process(content, path)?;
-
-        // Store the exports
-        let path_str = path.to_string_lossy().to_string();
-        self.modules.insert(path_str, result.exports.clone());
-
-        Ok(result)
-    }
-
-    /// Get exports for a specific module
-    pub fn get_exports(&self, path: &Path) -> Option<&HashMap<String, String>> {
-        let path_str = path.to_string_lossy();
-        self.modules.get(path_str.as_ref())
-    }
-
-    /// Generate a JSON file with all CSS module exports
-    pub fn generate_exports_json(&self) -> String {
-        serde_json::to_string_pretty(&self.modules).unwrap_or_default()
-    }
-
-    /// Get total number of CSS modules processed
-    pub fn module_count(&self) -> usize {
-        self.modules.len()
-    }
-}
-
-impl Default for CssModulesManager {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -293,33 +230,4 @@ mod tests {
         assert_eq!(result.exports.len(), 1);
     }
 
-    #[test]
-    fn test_generate_js_exports() {
-        let mut exports = HashMap::new();
-        exports.insert("button".to_string(), "Button_button_a1b2c3".to_string());
-        exports.insert("primary".to_string(), "Button_primary_a1b2c3".to_string());
-
-        let js = CssModulesProcessor::generate_js_exports(&exports);
-
-        assert!(js.contains("export default {"));
-        assert!(js.contains("\"button\": \"Button_button_a1b2c3\""));
-        assert!(js.contains("\"primary\": \"Button_primary_a1b2c3\""));
-    }
-
-    #[test]
-    fn test_css_modules_manager() {
-        let mut manager = CssModulesManager::new();
-
-        let css1 = ".button { color: blue; }";
-        let path1 = PathBuf::from("Button.module.css");
-        manager.process_file(css1, &path1).unwrap();
-
-        let css2 = ".card { padding: 10px; }";
-        let path2 = PathBuf::from("Card.module.css");
-        manager.process_file(css2, &path2).unwrap();
-
-        assert_eq!(manager.module_count(), 2);
-        assert!(manager.get_exports(&path1).is_some());
-        assert!(manager.get_exports(&path2).is_some());
-    }
 }
