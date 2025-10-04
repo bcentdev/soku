@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
 /// Bundle output with optional source map
@@ -30,6 +31,8 @@ pub struct BuildConfig {
     pub max_chunk_size: Option<usize>,
     #[serde(default = "default_mode")]
     pub mode: String,
+    #[serde(default)]
+    pub alias: HashMap<String, String>,
 }
 
 fn default_root() -> PathBuf {
@@ -63,6 +66,7 @@ impl Default for BuildConfig {
             enable_code_splitting: false, // Disabled by default for now
             max_chunk_size: Some(250_000), // 250KB default
             mode: "production".to_string(),
+            alias: HashMap::new(),
         }
     }
 }

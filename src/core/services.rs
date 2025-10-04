@@ -178,9 +178,16 @@ impl UltraBuildService {
         &mut self,
         entry_files: &[PathBuf],
         root_dir: &Path,
+        config: &BuildConfig,
     ) -> Result<Vec<ModuleInfo>> {
         let mut resolved_modules = HashMap::new();
         let mut to_process = Vec::new();
+
+        // 🔗 Create path alias resolver
+        let alias_resolver = crate::utils::PathAliasResolver::new(
+            config.alias.clone(),
+            root_dir.to_path_buf()
+        );
 
         // Start with entry files
         for path in entry_files {
@@ -229,8 +236,19 @@ impl UltraBuildService {
                         let current_path_clone = current_path.clone();
                         let root_dir_clone = root_dir.to_path_buf();
                         let resolver_ref = &self.node_resolver;
+                        let alias_resolver_ref = &alias_resolver;
                         async move {
                             Logger::debug(&format!("Resolving import '{}' from {}", dep_clone, current_path_clone.display()));
+
+                            // 🔗 Try path alias resolution first
+                            if let Some(aliased_path) = alias_resolver_ref.resolve(&dep_clone) {
+                                // Verify the file exists
+                                if aliased_path.exists() {
+                                    return (dep_clone, Some(aliased_path));
+                                }
+                            }
+
+                            // Fall back to node resolver
                             let resolved_path = resolver_ref.resolve(&dep_clone, &current_path_clone, &root_dir_clone).await;
                             (dep_clone, resolved_path)
                         }
@@ -560,7 +578,7 @@ impl BuildService for UltraBuildService {
         Logger::debug(&format!("Is first build: {} (tracked files: {})", is_first_build, self.incremental_state.file_count()));
 
         // Convert paths to ModuleInfo and resolve dependencies
-        let js_modules = self.resolve_all_dependencies(&structure.js_modules, &config.root).await?;
+        let js_modules = self.resolve_all_dependencies(&structure.js_modules, &config.root, config).await?;
 
         // 🔄 INCREMENTAL BUILD DETECTION
 

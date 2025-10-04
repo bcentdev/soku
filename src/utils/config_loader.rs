@@ -1,6 +1,7 @@
 use crate::core::models::BuildConfig;
 use crate::utils::{Logger, UltraError, Result};
 use std::path::{Path, PathBuf};
+use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 /// Configuration file format (ultra.config.json)
@@ -38,6 +39,10 @@ pub struct UltraConfig {
     /// Maximum chunk size in bytes (default: 250000)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_chunk_size: Option<usize>,
+
+    /// Path aliases for import resolution (e.g., "@": "./src", "~": ".")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alias: Option<HashMap<String, String>>,
 }
 
 impl Default for UltraConfig {
@@ -51,6 +56,7 @@ impl Default for UltraConfig {
             target: Some("es2020".to_string()),
             code_splitting: Some(false),
             max_chunk_size: Some(250_000),
+            alias: None,
         }
     }
 }
@@ -127,6 +133,7 @@ impl ConfigLoader {
             }),
             max_chunk_size: max_chunk_size.or(base.max_chunk_size).or(Some(250_000)),
             mode,
+            alias: base.alias.unwrap_or_default(),
         }
     }
 

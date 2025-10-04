@@ -470,6 +470,7 @@ impl CliHandler {
             enable_code_splitting: false, // Disable for watch mode for faster rebuilds
             max_chunk_size: None,
             mode: "development".to_string(), // Watch mode is for development
+            alias: std::collections::HashMap::new(), // No aliases in watch mode
         };
 
         // Create watch config
@@ -561,6 +562,7 @@ impl CliHandler {
             enable_code_splitting: false, // Disabled for dev
             max_chunk_size: Some(250_000), // 250KB default
             mode: "development".to_string(), // Dev server with HMR
+            alias: std::collections::HashMap::new(), // No aliases in dev mode
         };
 
         // Create services
