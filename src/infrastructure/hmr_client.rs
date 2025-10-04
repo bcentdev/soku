@@ -68,20 +68,33 @@ pub fn generate_hmr_client_code(port: u16) -> String {
 
             switch (update.kind) {{
                 case 'FullReload':
+                    this.hideErrorOverlay();
                     this.performFullReload();
                     break;
 
                 case 'ModuleUpdated':
+                    this.hideErrorOverlay();
                     this.updateModule(update);
                     break;
 
                 case 'CssUpdated':
+                    this.hideErrorOverlay();
                     this.updateCss(update);
+                    break;
+
+                case 'BuildError':
+                    this.showErrorOverlay(update.content || 'Build failed');
+                    break;
+
+                case 'BuildSuccess':
+                    this.hideErrorOverlay();
+                    this.showNotification('✅ Build successful', 'success');
                     break;
 
                 case 'FileAdded':
                 case 'FileRemoved':
                     // For now, trigger full reload for file additions/removals
+                    this.hideErrorOverlay();
                     this.performFullReload();
                     break;
 
@@ -284,15 +297,91 @@ pub fn generate_hmr_client_code(port: u16) -> String {
             }}, 3000);
         }}
 
+        showErrorOverlay(errorMessage) {{
+            // Remove existing overlay
+            this.hideErrorOverlay();
+
+            const overlay = document.createElement('div');
+            overlay.id = '__ultra_hmr_error_overlay__';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                color: #ff5555;
+                font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+                font-size: 14px;
+                padding: 20px;
+                box-sizing: border-box;
+                z-index: 999999;
+                overflow: auto;
+            `;
+
+            const content = document.createElement('div');
+            content.style.cssText = `
+                max-width: 800px;
+                margin: 0 auto;
+            `;
+
+            const header = document.createElement('h2');
+            header.style.cssText = `
+                color: #ff5555;
+                margin: 0 0 20px 0;
+                font-size: 24px;
+                font-weight: bold;
+            `;
+            header.textContent = '❌ Build Failed';
+
+            const message = document.createElement('pre');
+            message.style.cssText = `
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                background: rgba(255, 255, 255, 0.05);
+                padding: 15px;
+                border-radius: 4px;
+                border-left: 4px solid #ff5555;
+                margin: 0;
+                line-height: 1.5;
+            `;
+            message.textContent = errorMessage;
+
+            const tip = document.createElement('p');
+            tip.style.cssText = `
+                margin: 20px 0 0 0;
+                color: #888;
+                font-size: 12px;
+            `;
+            tip.textContent = '💡 Fix the error and save the file to continue';
+
+            content.appendChild(header);
+            content.appendChild(message);
+            content.appendChild(tip);
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+        }}
+
+        hideErrorOverlay() {{
+            const overlay = document.getElementById('__ultra_hmr_error_overlay__');
+            if (overlay) {{
+                overlay.remove();
+            }}
+        }}
+
         setupErrorHandling() {{
             // Handle unhandled promise rejections
             window.addEventListener('unhandledrejection', (event) => {{
                 console.warn('[Ultra HMR] Unhandled promise rejection:', event.reason);
+                const errorMsg = event.reason?.stack || event.reason?.message || String(event.reason);
+                this.showErrorOverlay(`Unhandled Promise Rejection:\n\n${{errorMsg}}`);
             }});
 
             // Handle JavaScript errors
             window.addEventListener('error', (event) => {{
                 console.warn('[Ultra HMR] JavaScript error:', event.error);
+                const errorMsg = event.error?.stack || event.message;
+                this.showErrorOverlay(`JavaScript Error:\n\n${{errorMsg}}`);
             }});
         }}
 

@@ -27,10 +27,16 @@ pub enum HmrUpdateKind {
     ModuleUpdated,
     CssUpdated,
     FullReload,
+    BuildError,
+    BuildSuccess,
 }
 
 #[derive(Debug, Clone)]
-pub struct HmrClient;
+pub struct HmrClient {
+    #[allow(dead_code)] // Used for logging and debugging
+    pub id: String,
+    pub sender: tokio::sync::mpsc::UnboundedSender<String>,
+}
 
 /// Ultra-fast Hot Module Replacement system
 #[derive(Clone)]
@@ -67,19 +73,31 @@ impl UltraHmrService {
         let broadcaster_clients = clients.clone();
         tokio::spawn(async move {
             while let Ok(update) = update_receiver.recv().await {
-                let _message = serde_json::to_string(&update).unwrap_or_default();
-                let clients_to_remove: Arc<DashMap<String, bool>> = Arc::new(DashMap::new());
+                let message = match serde_json::to_string(&update) {
+                    Ok(msg) => msg,
+                    Err(e) => {
+                        tracing::warn!("Failed to serialize HMR update: {}", e);
+                        continue;
+                    }
+                };
+
+                let mut clients_to_remove = Vec::new();
 
                 // Send to all connected clients
                 for entry in broadcaster_clients.iter() {
-                    let _client_id = entry.key().clone();
-                    // In a real implementation, we'd store the WebSocket connection
-                    // For now, we just track clients
+                    let client_id = entry.key().clone();
+                    let client = entry.value();
+
+                    if let Err(_) = client.sender.send(message.clone()) {
+                        // Client channel closed, mark for removal
+                        clients_to_remove.push(client_id);
+                    }
                 }
 
                 // Remove disconnected clients
-                for entry in clients_to_remove.iter() {
-                    broadcaster_clients.remove(entry.key());
+                for client_id in clients_to_remove {
+                    broadcaster_clients.remove(&client_id);
+                    tracing::info!("🔌 Removed disconnected HMR client: {}", client_id);
                 }
             }
         });
@@ -108,8 +126,15 @@ impl UltraHmrService {
         let (mut ws_sender, mut ws_receiver) = ws_stream.split();
         let client_id = Uuid::new_v4().to_string();
 
-        // Register client
-        clients.insert(client_id.clone(), HmrClient);
+        // Create channel for this client
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<String>();
+
+        // Register client with sender channel
+        let client = HmrClient {
+            id: client_id.clone(),
+            sender: tx,
+        };
+        clients.insert(client_id.clone(), client);
 
         tracing::info!("🔌 HMR client connected: {}", client_id);
 
@@ -130,12 +155,22 @@ impl UltraHmrService {
             let _ = ws_sender.send(Message::Text(welcome_msg)).await;
         }
 
-        // Handle client messages (for now just ping/pong)
+        // Spawn task to forward messages from channel to websocket
+        let client_id_clone = client_id.clone();
+        tokio::spawn(async move {
+            while let Some(message) = rx.recv().await {
+                if let Err(e) = ws_sender.send(Message::Text(message)).await {
+                    tracing::warn!("Failed to send to HMR client {}: {}", client_id_clone, e);
+                    break;
+                }
+            }
+        });
+
+        // Handle incoming client messages (ping/pong)
         while let Some(msg) = ws_receiver.next().await {
             match msg {
                 Ok(Message::Text(_)) => {
-                    // Echo back for ping/pong
-                    let _ = ws_sender.send(Message::Text("pong".to_string())).await;
+                    // Ping/pong handled automatically by tungstenite
                 }
                 Ok(Message::Close(_)) => break,
                 Err(_) => break,
