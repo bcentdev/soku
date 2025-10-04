@@ -72,20 +72,36 @@
 
 ---
 
-### Sprint 8: Features (En progreso - 50%)
+### Sprint 8: Features (Completado - 100%) ✅
 **Objetivo**: Advanced features y developer experience
 
 **Tareas**:
 - ✅ Config file support (ultra.config.json con merge CLI/file)
-- ✅ HMR improvements (error recovery con overlay, CSS hot reload)
-- Advanced source maps (inline sources)
-- Plugin API (simplified)
+- ✅ HMR improvements (error recovery con overlay, CSS hot reload mejorado)
+- ✅ WebSocket connection management real con channel-based messaging
+- ✅ Error overlay visual para build failures
+- ✅ Auto-recovery cuando se corrigen errores
+
+**Resultado**: Config files funcionales, HMR robusto con error recovery, mejor DX
+
+**Tiempo**: 2 días (completado)
+
+---
+
+### Sprint 9: Advanced Features (Pendiente)
+**Objetivo**: Source maps avanzados y Plugin API
+
+**Tareas**:
+- Advanced source maps (inline sources, accurate mappings)
+- Plugin API (simplified, event-based)
+- Custom transformers support
+- Advanced HMR hooks
 
 **Tiempo**: 2-3 semanas
 
 ---
 
-### Sprint 9: Production (Pendiente)
+### Sprint 10: Production (Pendiente)
 **Objetivo**: Production-ready release
 
 **Tareas**:
@@ -101,7 +117,7 @@
 ## 📊 Estado Actual
 
 ### Métricas
-- **Líneas de código**: 10,351 (src) + 400 (tests)
+- **Líneas de código**: 10,764 (src) + 400 (tests) [+413 líneas en Sprint 8]
 - **Binary size**: 3.8MB (down from 13MB, 71% reduction) ✅
 - **Test coverage**: ~21% (43 unit + 6 integration + 6 doctests)
 - **Test fixtures**: 6 proyectos oficiales organizados
@@ -110,19 +126,27 @@
 - **Tree shaking**: 50-80% reduction
 - **Code cleanup**: 809 líneas eliminadas (Sprint 6 + 6.5)
 - **Compile time**: 58s release (LTO enabled), <3s dev
+- **Features activas**: 18 (Sprint 1-8)
 
-### Features Activas
+### Features Activas (18 total)
 - ✅ JS/TS/TSX bundling
 - ✅ CSS bundling + modules
-- ✅ Tree shaking
+- ✅ Tree shaking (50-80% reduction)
 - ✅ Code splitting
-- ✅ Source maps
+- ✅ Source maps (basic)
 - ✅ Incremental builds
 - ✅ Watch mode
 - ✅ Bundle analysis
-- ✅ HMR
+- ✅ HMR con error recovery
 - ✅ WASM support (auto loaders)
 - ✅ Config file support (ultra.config.json)
+- ✅ Error overlay visual
+- ✅ CSS hot reload
+- ✅ Auto mode selection (ultra/normal)
+- ✅ Minification avanzada
+- ✅ Node modules optimization
+- ✅ WebSocket-based HMR server
+- ✅ CLI con progress tracking
 
 ### Features en API (No Integradas)
 - 🔌 CSS Modules Manager (simplificado, no necesario)
