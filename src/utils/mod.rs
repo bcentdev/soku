@@ -9,6 +9,7 @@ pub mod incremental;
 pub mod watch;
 pub mod bundle_analysis;
 pub mod css_modules;
+pub mod wasm_support;
 
 pub use errors::*;
 pub use logging::*;
@@ -20,3 +21,4 @@ pub use incremental::*;
 pub use watch::*;
 pub use bundle_analysis::*;
 pub use css_modules::*;
+pub use wasm_support::*;

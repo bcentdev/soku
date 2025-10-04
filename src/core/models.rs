@@ -55,6 +55,7 @@ pub enum ModuleType {
     Css,
     Html,
     Json,
+    Wasm,
     Unknown,
 }
 
@@ -66,6 +67,7 @@ impl ModuleType {
             "css" => ModuleType::Css,
             "html" | "htm" => ModuleType::Html,
             "json" => ModuleType::Json,
+            "wasm" => ModuleType::Wasm,
             _ => ModuleType::Unknown,
         }
     }
