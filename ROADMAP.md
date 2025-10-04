@@ -36,18 +36,18 @@
 
 ## 🎯 Próximos Sprints
 
-### Sprint 6.5: Finalización Quality (En Progreso - 33%)
+### Sprint 6.5: Finalización Quality (En Progreso - 67%)
 **Objetivo**: Completar error handling, docs y TODOs
 
 **Tareas**:
 - ✅ Fix 7 doctests (6 passing + 1 ignored)
-- 📝 Documentar 3 integration test TODOs con causas ra\u00edz
+- ✅ Documentar 3 integration test TODOs con causas ra\u00edz
   - Source maps: problema de caching
   - Tree shaking stats: no se populan removed_exports
   - TypeScript tree shaking: integración Enhanced + tree shaking
 - ⏳ Error handling improvements
-- ⏳ WASM pipeline integration
-- ⏳ CSS Modules simplification
+- ✅ WASM pipeline integration (loader JS automático, copy files)
+- ✅ CSS Modules simplification (80 líneas eliminadas)
 - ⏳ Documentation updates
 
 **Tiempo**: 1-2 semanas
@@ -114,7 +114,7 @@
 - ✅ Watch mode
 - ✅ Bundle analysis
 - ✅ HMR
+- ✅ WASM support (auto loaders)
 
 ### Features en API (No Integradas)
-- 🔌 WASM support
-- 🔌 CSS Modules Manager
+- 🔌 CSS Modules Manager (simplificado, no necesario)
