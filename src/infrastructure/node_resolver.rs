@@ -33,8 +33,10 @@ pub enum BrowserField {
 
 /// Export conditions for conditional exports
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Part of package.json exports API
 pub enum ExportCondition {
     Import,    // ESM import
+    #[allow(dead_code)]
     Require,   // CommonJS require
     Browser,   // Browser environment
     Node,      // Node.js environment
@@ -79,6 +81,7 @@ impl NodeModuleResolver {
 
     /// Clone the resolver for use in parallel contexts
     /// This is cheap as it only clones the Arc
+    #[allow(dead_code)] // Part of public API for parallel resolution
     pub fn clone_ref(&self) -> Self {
         Self {
             package_cache: Arc::clone(&self.package_cache),

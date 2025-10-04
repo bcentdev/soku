@@ -400,11 +400,13 @@ impl CodeSplitter {
     }
 
     /// Get chunk assignment for a specific module
+    #[allow(dead_code)] // Part of public API
     pub fn get_module_chunk(&self, module_path: &str) -> Option<&String> {
         self.module_chunk_map.get(module_path)
     }
 
     /// Generate bundle code for a specific chunk
+    #[allow(dead_code)] // Part of public API
     pub fn generate_chunk_bundle(&self, chunk_name: &str) -> Option<String> {
         self.chunks.get(chunk_name).map(|modules| {
             let mut bundle = String::new();

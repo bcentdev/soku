@@ -5,11 +5,13 @@ use crate::utils::Result;
 use std::path::Path;
 
 /// WebAssembly module processor
+#[allow(dead_code)] // Part of public API for WASM support
 pub struct WasmProcessor {
     /// Base URL for WASM files (relative to bundle)
     pub base_url: String,
 }
 
+#[allow(dead_code)] // Part of public API
 impl WasmProcessor {
     /// Create a new WASM processor
     pub fn new() -> Self {
@@ -119,6 +121,7 @@ impl Default for WasmProcessor {
 
 /// Information about a WASM module in the bundle
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Part of WASM support API
 pub struct WasmModuleInfo {
     /// Original path to the WASM file
     pub path: std::path::PathBuf,

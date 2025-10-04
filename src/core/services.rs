@@ -1,5 +1,5 @@
-use crate::core::{interfaces::*, models::*, plugin::{PluginManager, PluginContext}};
-use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraProfiler, UltraCache, performance::parallel, IncrementalBuildState};
+use crate::core::{interfaces::*, models::*};
+use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraCache, performance::parallel, IncrementalBuildState};
 use crate::infrastructure::{NodeModuleResolver, MinificationService, CodeSplitter, CodeSplitConfig};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
@@ -20,11 +20,9 @@ pub struct UltraBuildService {
     tree_shaker: Option<Arc<dyn TreeShaker>>,
     ui: UltraUI,
     node_resolver: NodeModuleResolver,
-    profiler: Arc<UltraProfiler>,
     cache: Arc<UltraCache>,
     incremental_state: IncrementalBuildState,
     cache_dir: PathBuf,
-    plugin_manager: PluginManager,
 }
 
 impl UltraBuildService {
@@ -53,11 +51,9 @@ impl UltraBuildService {
             tree_shaker: None,
             ui: UltraUI::new(),
             node_resolver: NodeModuleResolver::new(),
-            profiler: Arc::new(UltraProfiler::new()),
             cache,
             incremental_state,
             cache_dir,
-            plugin_manager: PluginManager::new(),
         }
     }
 
@@ -65,19 +61,6 @@ impl UltraBuildService {
         self.tree_shaker = Some(tree_shaker);
         self
     }
-
-    /// Register a plugin with the build service
-    pub fn with_plugin(mut self, plugin: Arc<dyn crate::core::plugin::Plugin>) -> Self {
-        self.plugin_manager.register(plugin);
-        self
-    }
-
-    /// Get mutable reference to plugin manager (for advanced usage)
-    pub fn plugin_manager_mut(&mut self) -> &mut PluginManager {
-        &mut self.plugin_manager
-    }
-
-
 
     async fn scan_and_analyze_with_ui(&self, config: &BuildConfig) -> Result<ProjectStructure> {
         let structure = self.fs_service.scan_directory(&config.root).await?;
@@ -409,10 +392,8 @@ impl UltraBuildService {
         js_modules: &[ModuleInfo],
         structure: &ProjectStructure,
         tree_shaking_stats: Option<&TreeShakingStats>,
-        plugin_context: &PluginContext,
     ) -> Result<BuildResult> {
         let build_start = std::time::Instant::now();
-        self.profiler.start_timer("code_splitting");
 
         // Configure code splitter
         let split_config = CodeSplitConfig {
@@ -442,10 +423,8 @@ impl UltraBuildService {
 
         Logger::info(&format!("📦 Code splitting: Created {} chunks", chunks.len()));
 
-        self.profiler.end_timer("code_splitting");
 
         // Process each chunk
-        self.profiler.start_timer("chunk_processing");
         let mut output_files_for_ui = Vec::new();
         let mut output_files_for_result = Vec::new();
 
@@ -489,10 +468,8 @@ impl UltraBuildService {
             });
         }
 
-        self.profiler.end_timer("chunk_processing");
 
         // Process CSS (same as normal build)
-        self.profiler.start_timer("css_processing");
         if !structure.css_files.is_empty() {
             let processed = self.css_processor.bundle_css(&structure.css_files).await?;
             let css_path = config.outdir.join("bundle.css");
@@ -510,18 +487,16 @@ impl UltraBuildService {
                 size: css_size,
             });
         }
-        self.profiler.end_timer("css_processing");
 
-        self.profiler.end_timer("total_build");
 
         // Generate completion stats with timing breakdown
         let timing_breakdown = TimingBreakdown {
-            file_scan_ms: self.profiler.get_duration("file_discovery").as_millis() as u64,
-            js_processing_ms: self.profiler.get_duration("chunk_processing").as_millis() as u64,
-            css_processing_ms: self.profiler.get_duration("css_processing").as_millis() as u64,
-            tree_shaking_ms: self.profiler.get_duration("tree_shaking").as_millis() as u64,
-            minification_ms: 0, // Minification is included in chunk_processing
-            output_write_ms: self.profiler.get_duration("file_writing").as_millis() as u64,
+            file_scan_ms: 0,
+            js_processing_ms: 0,
+            css_processing_ms: 0,
+            tree_shaking_ms: 0,
+            output_write_ms: 0,
+            minification_ms: 0,
         };
 
         self.ui.show_epic_completion(CompletionStats {
@@ -558,12 +533,6 @@ impl UltraBuildService {
             modules: js_modules.to_vec(),
         };
 
-        // 🔌 PLUGIN HOOK: on_build_end
-        if self.plugin_manager.plugin_count() > 0 {
-            Logger::debug(&format!("Running on_build_end hook for {} plugins", self.plugin_manager.plugin_count()));
-            self.plugin_manager.on_build_end(&plugin_context, &build_result)?;
-        }
-
         Ok(build_result)
     }
 }
@@ -575,36 +544,21 @@ impl BuildService for UltraBuildService {
         self.ui.show_epic_banner();
 
         let build_start = std::time::Instant::now();
-        self.profiler.start_timer("total_build");
-
-        // 🔌 PLUGIN HOOK: on_build_start
-        let plugin_context = PluginContext::new(config.root.clone(), config.clone());
-        if self.plugin_manager.plugin_count() > 0 {
-            Logger::debug(&format!("Running on_build_start hook for {} plugins", self.plugin_manager.plugin_count()));
-            self.plugin_manager.on_build_start(&plugin_context)?;
-        }
 
         // Create output directory
-        self.profiler.start_timer("fs_setup");
         self.fs_service.create_directory(&config.outdir).await?;
-        self.profiler.end_timer("fs_setup");
 
         // 🔍 FILE DISCOVERY
-        self.profiler.start_timer("file_discovery");
         let structure = self.scan_and_analyze_with_ui(config).await?;
-        self.profiler.end_timer("file_discovery");
 
         // 🔄 CHECK IF FIRST BUILD (before resolving dependencies)
         let is_first_build = self.incremental_state.is_empty();
         Logger::debug(&format!("Is first build: {} (tracked files: {})", is_first_build, self.incremental_state.file_count()));
 
         // Convert paths to ModuleInfo and resolve dependencies
-        self.profiler.start_timer("dependency_resolution");
         let js_modules = self.resolve_all_dependencies(&structure.js_modules, &config.root).await?;
-        self.profiler.end_timer("dependency_resolution");
 
         // 🔄 INCREMENTAL BUILD DETECTION
-        self.profiler.start_timer("change_detection");
 
         Logger::debug(&format!("Incremental build check: is_first_build={}, tracked_files={}",
             is_first_build,
@@ -638,10 +592,8 @@ impl BuildService for UltraBuildService {
             Logger::debug("First build - no incremental state");
         }
 
-        self.profiler.end_timer("change_detection");
 
         // 🌳 TREE SHAKING (if enabled)
-        self.profiler.start_timer("tree_shaking");
         let tree_shaking_stats = if config.enable_tree_shaking {
             if self.tree_shaker.is_some() {
                 self.ui.show_tree_shaking_analysis(js_modules.len());
@@ -679,7 +631,6 @@ impl BuildService for UltraBuildService {
         } else {
             None
         };
-        self.profiler.end_timer("tree_shaking");
 
         // Separate JS modules from CSS modules
         let js_only_modules: Vec<ModuleInfo> = js_modules.iter()
@@ -694,11 +645,10 @@ impl BuildService for UltraBuildService {
 
         // 📦 CODE SPLITTING (if enabled)
         if config.enable_code_splitting {
-            return self.build_with_code_splitting(config, &js_only_modules, &structure, tree_shaking_stats.as_ref(), &plugin_context).await;
+            return self.build_with_code_splitting(config, &js_only_modules, &structure, tree_shaking_stats.as_ref()).await;
         }
 
         // ⚡ JAVASCRIPT PROCESSING WITH INTELLIGENT CACHING
-        self.profiler.start_timer("js_processing");
         let js_module_names: Vec<String> = js_only_modules.iter()
             .map(|m| m.path.file_name().unwrap().to_str().unwrap().to_string())
             .collect();
@@ -740,7 +690,6 @@ impl BuildService for UltraBuildService {
             let stats = minification_service.get_stats(&original_content, &js_content);
             tracing::info!("🗜️  {}", stats);
         }
-        self.profiler.end_timer("js_processing");
 
         // 🎨 CSS PROCESSING WITH INTELLIGENT CACHING
         // Include both original CSS files and CSS modules found through imports
@@ -753,7 +702,6 @@ impl BuildService for UltraBuildService {
             .map(|p| p.file_name().unwrap().to_str().unwrap().to_string())
             .collect();
         self.ui.show_processing_phase(&css_names, "🎨 CSS");
-        self.profiler.start_timer("css_processing");
 
         let css_cache_key = self.generate_css_cache_key(&all_css_files);
         let css_content = if let Some(cached_css) = self.cache.get_css(&css_cache_key, &css_cache_key) {
@@ -796,12 +744,9 @@ impl BuildService for UltraBuildService {
             result
         };
 
-        self.profiler.end_timer("css_processing");
 
         // 💾 WRITE FILES
-        self.profiler.start_timer("file_writing");
         let output_files = self.write_output_files(config, &js_content, &css_content, source_map).await?;
-        self.profiler.end_timer("file_writing");
 
         let build_time = build_start.elapsed();
 
@@ -817,23 +762,21 @@ impl BuildService for UltraBuildService {
             }).collect(),
             node_modules_optimized: if node_modules_count > 0 { Some(node_modules_count) } else { None },
             timing_breakdown: Some(TimingBreakdown {
-                file_scan_ms: self.profiler.get_duration("file_discovery").as_millis() as u64,
-                js_processing_ms: self.profiler.get_duration("js_processing").as_millis() as u64,
-                css_processing_ms: self.profiler.get_duration("css_processing").as_millis() as u64,
-                tree_shaking_ms: self.profiler.get_duration("tree_shaking").as_millis() as u64,
-                minification_ms: 0, // Minification is included in js_processing
-                output_write_ms: self.profiler.get_duration("file_writing").as_millis() as u64,
+                file_scan_ms: 0,
+                js_processing_ms: 0,
+                css_processing_ms: 0,
+                tree_shaking_ms: 0,
+                output_write_ms: 0,
+                minification_ms: 0,
             }),
         };
 
         self.ui.show_epic_completion(completion_stats);
 
         // End total timing and report bottlenecks
-        self.profiler.end_timer("total_build");
 
         // Report performance bottlenecks in debug mode
         if std::env::var("RUST_LOG").unwrap_or_default().contains("debug") {
-            self.profiler.report_bottlenecks();
         }
 
         // Update file metadata for incremental builds (after successful build)

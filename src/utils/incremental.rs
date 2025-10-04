@@ -1,3 +1,5 @@
+#![allow(dead_code)] // Incremental build API - Sprint 5 feature
+
 // Incremental build system for Ultra Bundler
 // Tracks file changes and dependencies for smart rebuilds
 

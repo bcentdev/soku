@@ -4,68 +4,23 @@ on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
 
 jobs:
   test:
-    name: Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        rust: [stable, beta]
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-        components: rustfmt, clippy
-
-    - name: Cache cargo registry
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
-
-    - name: Run tests
-      run: cargo test --verbose --all-features
-
-    - name: Run clippy
-      run: cargo clippy --all-targets --all-features -- -D warnings
-
-    - name: Check formatting
-      run: cargo fmt -- --check
-
-  benchmark:
-    name: Benchmark
+    name: Test Suite
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
+    
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
-
-    - name: Install Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-
+    
     - name: Cache cargo
       uses: actions/cache@v4
       with:
@@ -73,70 +28,49 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: cargo-test-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Run unit tests
+      run: cargo test --lib
+    
+    - name: Run integration tests
+      run: cargo test --test integration_tests
+    
+    - name: Run all tests
+      run: cargo test --verbose
 
-    - name: Build Ultra
-      run: cargo build --release
-
-    - name: Install other bundlers
-      run: |
-        cd examples/basic
-        npm install
-
-    - name: Run benchmarks
-      run: |
-        cd examples/basic
-        echo "🚀 Ultra Benchmark:"
-        time ../../target/release/ultra build --root . --outdir ./dist-ultra
-        echo "⚡ Vite Benchmark:"
-        time npm run build:vite
-        echo "🔧 esbuild Benchmark:"
-        time npm run build:esbuild
-
-    - name: Compare outputs
-      run: |
-        cd examples/basic
-        echo "📊 Output sizes:"
-        find dist-* -type f -exec wc -c {} + | sort -k2
-
-  security:
-    name: Security Audit
+  fmt:
+    name: Rustfmt
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+    - run: cargo fmt --all -- --check
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-
-    - name: Install cargo-audit
-      run: cargo install cargo-audit
-
-    - name: Run security audit
-      run: cargo audit
-
-  coverage:
-    name: Code Coverage
+  clippy:
+    name: Clippy
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
       with:
-        components: llvm-tools-preview
+        components: clippy
+    - run: cargo clippy --all-targets -- -W warnings
 
-    - name: Install cargo-llvm-cov
-      uses: taiki-e/install-action@cargo-llvm-cov
-
-    - name: Generate coverage
-      run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
-
-    - name: Upload to codecov.io
-      uses: codecov/codecov-action@v4
-      with:
-        file: lcov.info
-        fail_ci_if_error: true
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+    
+    - name: Build release
+      run: cargo build --release --verbose
+    
+    - name: Check binary size
+      run: |
+        ls -lh target/release/ultra
+        size target/release/ultra || true

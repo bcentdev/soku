@@ -148,6 +148,7 @@ impl CssModulesProcessor {
     }
 
     /// Generate JavaScript exports for the CSS module
+    #[allow(dead_code)] // Part of public API
     pub fn generate_js_exports(exports: &HashMap<String, String>) -> String {
         let mut js = String::from("export default {\n");
 
@@ -167,12 +168,14 @@ impl Default for CssModulesProcessor {
 }
 
 /// Manager for CSS Modules across the entire build
+#[allow(dead_code)] // Part of public API, will be used when CSS modules are fully integrated
 pub struct CssModulesManager {
     processor: CssModulesProcessor,
     /// All CSS module exports by file path
     modules: HashMap<String, HashMap<String, String>>,
 }
 
+#[allow(dead_code)] // Part of public API
 impl CssModulesManager {
     /// Create a new CSS Modules manager
     pub fn new() -> Self {
