@@ -255,9 +255,11 @@ mod tests {
     #[test]
     fn test_create_bar() {
         let bar = BundleAnalysis::create_bar(50.0, 10);
-        assert_eq!(bar.len(), 12); // 10 chars + 2 brackets
+        assert_eq!(bar.chars().count(), 12); // 10 chars + 2 brackets
         assert!(bar.contains("█"));
         assert!(bar.contains("░"));
+        assert!(bar.starts_with('['));
+        assert!(bar.ends_with(']'));
     }
 
     #[test]

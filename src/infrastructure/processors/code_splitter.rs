@@ -448,7 +448,12 @@ mod tests {
 
     #[test]
     fn test_code_splitting_basic() {
-        let mut splitter = CodeSplitter::default();
+        // Use config that allows single-module chunks
+        let config = CodeSplitConfig {
+            min_modules_per_chunk: 1, // Allow single-module chunks for testing
+            ..Default::default()
+        };
+        let mut splitter = CodeSplitter::new(config);
 
         let modules = vec![
             create_test_module("main.js", "console.log('main');", vec!["utils".to_string()]),
@@ -459,9 +464,9 @@ mod tests {
         let chunks = splitter.analyze_and_split(&modules, &["main.js".to_string()]).unwrap();
 
         // Should create at least main and vendor chunks
-        assert!(chunks.len() >= 2);
-        assert!(chunks.iter().any(|c| c.chunk_type == ChunkType::Entry));
-        assert!(chunks.iter().any(|c| c.chunk_type == ChunkType::Vendor));
+        assert!(chunks.len() >= 2, "Expected at least 2 chunks, got {}", chunks.len());
+        assert!(chunks.iter().any(|c| c.chunk_type == ChunkType::Entry), "No Entry chunk found");
+        assert!(chunks.iter().any(|c| c.chunk_type == ChunkType::Vendor), "No Vendor chunk found");
     }
 
     #[test]
