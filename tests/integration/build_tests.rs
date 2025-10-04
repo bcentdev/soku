@@ -71,7 +71,7 @@ async fn test_typescript_project_build() {
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "TypeScript build should succeed");
 
-    let build_result = result.unwrap();
+    let _build_result = result.unwrap();
 
     // Check that TypeScript build succeeded
     let bundle_path = config.outdir.join("bundle.js");

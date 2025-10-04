@@ -66,7 +66,11 @@ impl UltraBuildService {
         let structure = self.fs_service.scan_directory(&config.root).await?;
 
         // Show file discovery
-        self.ui.show_file_discovery(structure.js_modules.len(), structure.css_files.len());
+        self.ui.show_file_discovery(
+            structure.js_modules.len(),
+            structure.css_files.len(),
+            structure.wasm_files.len()
+        );
 
         Ok(structure)
     }
@@ -745,8 +749,44 @@ impl BuildService for UltraBuildService {
         };
 
 
+        // 🌐 WASM PROCESSING
+        let mut wasm_loader_code = String::new();
+        if !structure.wasm_files.is_empty() {
+            Logger::info(&format!("🌐 Processing {} WASM modules", structure.wasm_files.len()));
+
+            let wasm_processor = crate::utils::WasmProcessor::new();
+
+            for wasm_path in &structure.wasm_files {
+                let module_name = crate::utils::WasmProcessor::get_module_name(wasm_path);
+
+                // Generate JavaScript loader code
+                let loader = wasm_processor.generate_loader_code(wasm_path, &module_name)?;
+                wasm_loader_code.push_str(&loader);
+                wasm_loader_code.push_str("\n\n");
+
+                // Copy WASM file to output directory
+                let wasm_filename = wasm_path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("module.wasm");
+                let output_wasm_path = config.outdir.join(wasm_filename);
+
+                // Use tokio::fs for async file copy
+                tokio::fs::copy(wasm_path, &output_wasm_path).await
+                    .map_err(|e| crate::utils::UltraError::Io(e))?;
+
+                Logger::debug(&format!("  ✓ {} → {}", wasm_filename, output_wasm_path.display()));
+            }
+        }
+
+        // Append WASM loader code to JS bundle
+        let final_js_content = if !wasm_loader_code.is_empty() {
+            format!("{}\n\n// === WASM Loaders ===\n{}", js_content, wasm_loader_code)
+        } else {
+            js_content.clone()
+        };
+
         // 💾 WRITE FILES
-        let output_files = self.write_output_files(config, &js_content, &css_content, source_map).await?;
+        let output_files = self.write_output_files(config, &final_js_content, &css_content, source_map).await?;
 
         let build_time = build_start.elapsed();
 

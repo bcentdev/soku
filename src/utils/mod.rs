@@ -19,3 +19,4 @@ pub use incremental::*;
 pub use watch::*;
 pub use bundle_analysis::*;
 pub use css_modules::*;
+pub use wasm_support::*;

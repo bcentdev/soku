@@ -46,6 +46,12 @@ impl UltraFileSystemService {
         // Aggregate results
         let mut structure = ProjectStructure::default();
         for (file_path, result) in all_files.iter().zip(results.iter()) {
+            // Check for WASM files by extension (binary files can't be classified by content)
+            if file_path.extension().and_then(|e| e.to_str()) == Some("wasm") {
+                structure.wasm_files.push(file_path.clone());
+                continue;
+            }
+
             match result {
                 Ok(file_type) => {
                     match file_type {
@@ -57,6 +63,9 @@ impl UltraFileSystemService {
                         }
                         FileType::Html => {
                             structure.html_files.push(file_path.clone());
+                        }
+                        FileType::Wasm => {
+                            structure.wasm_files.push(file_path.clone());
                         }
                         FileType::Other => {
                             structure.other_files.push(file_path.clone());
@@ -203,6 +212,7 @@ enum FileType {
     TypeScript,
     Css,
     Html,
+    Wasm,
     Other,
 }
 

@@ -121,6 +121,7 @@ pub struct ProjectStructure {
     pub js_modules: Vec<PathBuf>,
     pub css_files: Vec<PathBuf>,
     pub html_files: Vec<PathBuf>,
+    pub wasm_files: Vec<PathBuf>,
     pub other_files: Vec<PathBuf>,
 }
 

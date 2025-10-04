@@ -19,7 +19,7 @@ impl UltraUI {
     }
 
 
-    pub fn show_file_discovery(&self, _js_count: usize, _css_count: usize) {}
+    pub fn show_file_discovery(&self, _js_count: usize, _css_count: usize, _wasm_count: usize) {}
 
     pub fn show_processing_phase(&self, _modules: &[String], _phase: &str) {}
 
