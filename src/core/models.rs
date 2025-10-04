@@ -28,6 +28,8 @@ pub struct BuildConfig {
     #[serde(default = "default_chunk_size")]
     #[allow(dead_code)] // Maximum chunk size in bytes
     pub max_chunk_size: Option<usize>,
+    #[serde(default = "default_mode")]
+    pub mode: String,
 }
 
 fn default_root() -> PathBuf {
@@ -46,6 +48,10 @@ fn default_chunk_size() -> Option<usize> {
     Some(250_000)
 }
 
+fn default_mode() -> String {
+    "production".to_string()
+}
+
 impl Default for BuildConfig {
     fn default() -> Self {
         Self {
@@ -56,6 +62,7 @@ impl Default for BuildConfig {
             enable_source_maps: false,
             enable_code_splitting: false, // Disabled by default for now
             max_chunk_size: Some(250_000), // 250KB default
+            mode: "production".to_string(),
         }
     }
 }

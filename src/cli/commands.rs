@@ -85,6 +85,9 @@ pub enum Commands {
         /// Generate bundle analysis report
         #[arg(long)]
         analyze: bool,
+        /// Build mode (development or production, affects env variables)
+        #[arg(long, default_value = "production")]
+        mode: String,
     },
     /// Preview production build
     Preview {
@@ -155,8 +158,9 @@ impl CliHandler {
                 no_cache,
                 code_splitting,
                 analyze,
+                mode,
             } => {
-                self.handle_build_command(&root, outdir.as_deref(), !no_tree_shaking, !no_minify, source_maps, strategy, ultra_mode, normal_mode, no_cache, code_splitting, analyze).await
+                self.handle_build_command(&root, outdir.as_deref(), !no_tree_shaking, !no_minify, source_maps, strategy, ultra_mode, normal_mode, no_cache, code_splitting, analyze, &mode).await
             }
             Commands::Preview { dir, port } => {
                 self.handle_preview_command(&dir, port).await
@@ -201,6 +205,7 @@ impl CliHandler {
         _disable_cache: bool,
         enable_code_splitting: bool,
         enable_analysis: bool,
+        mode: &str,
     ) -> Result<()> {
         use crate::utils::ConfigLoader;
 
@@ -222,6 +227,7 @@ impl CliHandler {
             Some(enable_source_maps),
             Some(enable_code_splitting),
             Some(250_000), // max_chunk_size
+            mode.to_string(),
         );
 
         if enable_code_splitting {
@@ -463,6 +469,7 @@ impl CliHandler {
             enable_source_maps,
             enable_code_splitting: false, // Disable for watch mode for faster rebuilds
             max_chunk_size: None,
+            mode: "development".to_string(), // Watch mode is for development
         };
 
         // Create watch config
@@ -553,6 +560,7 @@ impl CliHandler {
             enable_source_maps: true,   // Enabled for debugging
             enable_code_splitting: false, // Disabled for dev
             max_chunk_size: Some(250_000), // 250KB default
+            mode: "development".to_string(), // Dev server with HMR
         };
 
         // Create services

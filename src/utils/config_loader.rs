@@ -94,6 +94,7 @@ impl ConfigLoader {
         enable_source_maps: Option<bool>,
         enable_code_splitting: Option<bool>,
         max_chunk_size: Option<usize>,
+        mode: String,
     ) -> BuildConfig {
         let base = file_config.unwrap_or_default();
 
@@ -125,6 +126,7 @@ impl ConfigLoader {
                 base.code_splitting.unwrap_or(false)
             }),
             max_chunk_size: max_chunk_size.or(base.max_chunk_size).or(Some(250_000)),
+            mode,
         }
     }
 
@@ -197,10 +199,12 @@ mod tests {
             None,
             None,
             None,
+            "production".to_string(),
         );
 
         assert_eq!(merged.outdir, PathBuf::from("dist-override"));
         assert_eq!(merged.enable_minification, true); // CLI wins
+        assert_eq!(merged.mode, "production");
     }
 
     #[test]

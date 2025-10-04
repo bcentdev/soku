@@ -699,6 +699,14 @@ impl BuildService for UltraBuildService {
             tracing::info!("🗜️  {}", stats);
         }
 
+        // 🌍 ENVIRONMENT VARIABLES REPLACEMENT
+        let env_manager = crate::utils::EnvVarsManager::load_from_files(&config.root, &config.mode)?;
+        let env_count = env_manager.get_all().len();
+        if env_count > 0 {
+            Logger::debug(&format!("🌍 Replacing {} environment variables", env_count));
+            js_content = env_manager.replace_in_code(&js_content);
+        }
+
         // 🎨 CSS PROCESSING WITH INTELLIGENT CACHING
         // Include both original CSS files and CSS modules found through imports
         let mut all_css_files = structure.css_files.clone();
