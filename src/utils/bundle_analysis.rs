@@ -294,6 +294,7 @@ mod tests {
             tree_shaking_stats: None,
             build_time: std::time::Duration::from_millis(50),
             output_files: vec![],
+            modules: modules.clone(),
         };
 
         let analysis = BundleAnalysis::analyze(&modules, &result);

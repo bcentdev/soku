@@ -8,6 +8,7 @@ pub mod profiler;
 pub mod incremental;
 pub mod watch;
 pub mod bundle_analysis;
+pub mod css_modules;
 
 pub use errors::*;
 pub use logging::*;
@@ -18,3 +19,4 @@ pub use profiler::*;
 pub use incremental::*;
 pub use watch::*;
 pub use bundle_analysis::*;
+pub use css_modules::*;

@@ -210,6 +210,7 @@ impl CliHandler {
             enable_source_maps,
             enable_code_splitting,
             max_chunk_size: Some(250_000), // 250KB default
+            enable_css_modules: false, // TODO: Add CLI flag
         };
 
         if enable_code_splitting {
@@ -431,6 +432,7 @@ impl CliHandler {
             enable_source_maps,
             enable_code_splitting: false, // Disable for watch mode for faster rebuilds
             max_chunk_size: None,
+            enable_css_modules: false, // TODO: Add to watch mode
         };
 
         // Create watch config
@@ -521,6 +523,7 @@ impl CliHandler {
             enable_source_maps: true,   // Enabled for debugging
             enable_code_splitting: false, // Disabled for dev
             max_chunk_size: Some(250_000), // 250KB default
+            enable_css_modules: false, // TODO: Add to dev mode
         };
 
         // Create services
