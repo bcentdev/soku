@@ -3,9 +3,21 @@ name = "ultra"
 version = "0.3.0"
 edition = "2021"
 
+[profile.release]
+# Enable Link Time Optimization for smaller binary and better performance
+lto = "fat"
+# Use single codegen unit for maximum optimization
+codegen-units = 1
+# Strip symbols for smaller binary
+strip = true
+# Optimize for size while maintaining performance
+opt-level = "z"
+# Enable panic abort for smaller binary
+panic = "abort"
+
 [dependencies]
-# Core async runtime
-tokio = { version = "1.0", features = ["full"] }
+# Core async runtime - optimized features (reduced from "full")
+tokio = { version = "1.0", features = ["rt-multi-thread", "macros", "fs", "sync", "time", "signal", "net"] }
 
 # Error handling
 anyhow = "1.0"
