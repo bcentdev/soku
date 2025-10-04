@@ -189,7 +189,9 @@ impl EnhancedJsProcessor {
                 };
 
                 let replacement = format!("React.createElement(\"{}\", {}{children_str})", element, props_obj);
-                Logger::debug(&format!("JSX transform: {} -> {}", caps.get(0).unwrap().as_str(), replacement));
+                if let Some(original) = caps.get(0) {
+                    Logger::debug(&format!("JSX transform: {} -> {}", original.as_str(), replacement));
+                }
                 replacement
             };
             result = re.replace_all(&result, callback).to_string();
@@ -325,11 +327,12 @@ impl EnhancedJsProcessor {
             for caps in re.captures_iter(props) {
                 let prop_name = &caps[1];
                 // Check if this prop is followed by '=' in original string
-                let full_match = caps.get(0).unwrap();
-                let after_match = &props[full_match.end()..];
-                if !after_match.trim_start().starts_with('=')
-                   && !prop_pairs.iter().any(|p| p.starts_with(&format!("{}:", prop_name))) {
-                    prop_pairs.push(format!("{}: true", prop_name));
+                if let Some(full_match) = caps.get(0) {
+                    let after_match = &props[full_match.end()..];
+                    if !after_match.trim_start().starts_with('=')
+                       && !prop_pairs.iter().any(|p| p.starts_with(&format!("{}:", prop_name))) {
+                        prop_pairs.push(format!("{}: true", prop_name));
+                    }
                 }
             }
         }

@@ -296,7 +296,26 @@ impl CliHandler {
         }
 
         // Execute build
-        let result = build_service.build(&config).await?;
+        let result = match build_service.build(&config).await {
+            Ok(r) => r,
+            Err(e) => {
+                // Provide user-friendly error context
+                Logger::error("❌ Build failed");
+                Logger::error(&format!("   Reason: {}", e));
+
+                // Add helpful hints based on error type
+                let error_str = e.to_string();
+                if error_str.contains("No such file or directory") {
+                    Logger::error("   💡 Tip: Check that the entry file exists in the project root");
+                } else if error_str.contains("Invalid UTF-8") {
+                    Logger::error("   💡 Tip: Ensure all source files are valid UTF-8 encoded");
+                } else if error_str.contains("parse") || error_str.contains("syntax") {
+                    Logger::error("   💡 Tip: Check for syntax errors in your JavaScript/TypeScript files");
+                }
+
+                return Err(e);
+            }
+        };
 
         // Generate bundle analysis if requested
         if enable_analysis && result.success {
@@ -315,9 +334,11 @@ impl CliHandler {
         }
 
         if !result.success {
-            for error in &result.errors {
-                Logger::error(error);
+            Logger::error("❌ Build completed with errors:");
+            for (i, error) in result.errors.iter().enumerate() {
+                Logger::error(&format!("   {}. {}", i + 1, error));
             }
+            return Err(crate::utils::UltraError::build("Build failed with errors".to_string()));
         }
 
         Ok(())

@@ -654,7 +654,11 @@ impl BuildService for UltraBuildService {
 
         // ⚡ JAVASCRIPT PROCESSING WITH INTELLIGENT CACHING
         let js_module_names: Vec<String> = js_only_modules.iter()
-            .map(|m| m.path.file_name().unwrap().to_str().unwrap().to_string())
+            .filter_map(|m| {
+                m.path.file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|s| s.to_string())
+            })
             .collect();
         self.ui.show_processing_phase(&js_module_names, "⚡ JS");
 
@@ -703,7 +707,11 @@ impl BuildService for UltraBuildService {
         }
 
         let css_names: Vec<String> = all_css_files.iter()
-            .map(|p| p.file_name().unwrap().to_str().unwrap().to_string())
+            .filter_map(|p| {
+                p.file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|s| s.to_string())
+            })
             .collect();
         self.ui.show_processing_phase(&css_names, "🎨 CSS");
 
@@ -796,9 +804,13 @@ impl BuildService for UltraBuildService {
             .count();
 
         let completion_stats = CompletionStats {
-            output_files: output_files.iter().map(|f| OutputFileInfo {
-                name: f.path.file_name().unwrap().to_str().unwrap().to_string(),
-                size: f.size,
+            output_files: output_files.iter().filter_map(|f| {
+                f.path.file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|name| OutputFileInfo {
+                        name: name.to_string(),
+                        size: f.size,
+                    })
             }).collect(),
             node_modules_optimized: if node_modules_count > 0 { Some(node_modules_count) } else { None },
             timing_breakdown: Some(TimingBreakdown {
