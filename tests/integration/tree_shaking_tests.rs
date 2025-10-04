@@ -4,7 +4,9 @@ use ultra::core::interfaces::BuildService;
 use ultra::infrastructure::{TokioFileSystemService, UnifiedJsProcessor, LightningCssProcessor, RegexTreeShaker};
 use ultra::infrastructure::processors::ProcessingStrategy;
 
-// TODO: Fix tree shaking stats - currently not reporting removed exports correctly
+// TODO: Fix tree shaking stats reporting - removed_exports count is 0
+// Issue: Tree shaking is working but stats.removed_exports is not being populated
+// Likely in RegexTreeShaker::shake() or AstTreeShaker::shake() methods
 #[tokio::test]
 #[ignore]
 async fn test_tree_shaking_removes_unused_code() {
@@ -91,7 +93,9 @@ async fn test_tree_shaking_preserves_used_code() {
     let _ = std::fs::remove_dir_all(config.outdir);
 }
 
-// TODO: Fix TypeScript tree shaking - currently failing during build
+// TODO: Fix TypeScript tree shaking with Enhanced strategy
+// Issue: EnhancedJsProcessor doesn't properly handle tree shaking
+// Needs integration between TypeScript processing and tree shaking passes
 #[tokio::test]
 #[ignore]
 async fn test_tree_shaking_with_typescript() {

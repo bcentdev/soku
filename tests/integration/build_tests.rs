@@ -86,7 +86,9 @@ async fn test_typescript_project_build() {
     let _ = std::fs::remove_dir_all(config.outdir);
 }
 
-// TODO: Fix source map generation - currently not generating .map file
+// TODO: Fix source map caching - cache doesn't include source maps, causing test failures
+// Issue: When build is cached (line 660-663 in services.rs), source_map is None
+// Solution: Either disable caching for source maps builds or include source_map in cache
 #[tokio::test]
 #[ignore]
 async fn test_source_maps_generation() {
