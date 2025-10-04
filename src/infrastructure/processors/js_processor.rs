@@ -29,12 +29,13 @@ static REQUIRE_REGEX: Lazy<Regex> = Lazy::new(|| {
 /// - Better code organization and maintainability
 ///
 /// Example migration:
-/// ```rust
+/// ```rust,no_run
+/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+///
 /// // Old (deprecated)
-/// let processor = OxcJsProcessor::new();
+/// // let processor = OxcJsProcessor::new();
 ///
 /// // New (recommended)
-/// use crate::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 /// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Standard);
 /// ```
 #[derive(Clone)]

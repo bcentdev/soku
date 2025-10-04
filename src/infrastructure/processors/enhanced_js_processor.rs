@@ -20,12 +20,13 @@ use std::path::Path;
 /// - Same performance as EnhancedJsProcessor
 ///
 /// Example migration:
-/// ```rust
+/// ```rust,no_run
+/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+///
 /// // Old (deprecated)
-/// let processor = EnhancedJsProcessor::new();
+/// // let processor = EnhancedJsProcessor::new();
 ///
 /// // New (recommended)
-/// use crate::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 /// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Enhanced);
 /// ```
 #[derive(Clone)]

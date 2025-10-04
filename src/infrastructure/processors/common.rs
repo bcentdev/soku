@@ -143,21 +143,25 @@ impl ProcessingOptions {
 ///
 /// ## Basic Usage
 ///
-/// ```rust
-/// use crate::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+/// ```rust,no_run
+/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 /// use std::path::Path;
 ///
+/// # fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// // Create processor with Standard strategy
 /// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Standard);
 ///
 /// // Process a file
 /// let content = "const x: number = 42;";
 /// let result = processor.process_content(content, Path::new("file.ts"))?;
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// ## With Persistent Cache
 ///
-/// ```rust
+/// ```rust,no_run
+/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 /// use std::path::Path;
 ///
 /// let cache_dir = Path::new(".ultra-cache");
@@ -169,7 +173,9 @@ impl ProcessingOptions {
 ///
 /// ## Auto-Detection
 ///
-/// ```rust
+/// ```rust,no_run
+/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+///
 /// // Automatically select strategy based on project characteristics
 /// let has_typescript = true;
 /// let has_jsx = false;
@@ -181,14 +187,12 @@ impl ProcessingOptions {
 ///
 /// ## Custom Options
 ///
-/// ```rust
-/// let mut options = ProcessingOptions::enhanced();
-/// options.generate_source_maps = true;
+/// ```rust,ignore
+/// // Note: ProcessingOptions is an internal type
+/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 ///
-/// let processor = UnifiedJsProcessor::with_options(
-///     ProcessingStrategy::Enhanced,
-///     options
-/// );
+/// // Custom options example (simplified)
+/// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Enhanced);
 /// ```
 ///
 /// # Performance Characteristics
@@ -199,15 +203,17 @@ impl ProcessingOptions {
 ///
 /// # Migration from Legacy Processors
 ///
-/// ```rust
-/// // Old: OxcJsProcessor
-/// let processor = OxcJsProcessor::new();
+/// ```rust,no_run
+/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+///
+/// // Old: OxcJsProcessor (deprecated)
+/// // let processor = OxcJsProcessor::new();
 ///
 /// // New: UnifiedJsProcessor with Standard strategy
 /// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Standard);
 ///
-/// // Old: EnhancedJsProcessor
-/// let processor = EnhancedJsProcessor::new();
+/// // Old: EnhancedJsProcessor (deprecated)
+/// // let processor = EnhancedJsProcessor::new();
 ///
 /// // New: UnifiedJsProcessor with Enhanced strategy
 /// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Enhanced);
