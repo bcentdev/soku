@@ -103,6 +103,9 @@ ultra build
 - **🎯 Smart Caching**: Persistent cache with content-based invalidation
 - **⚡ Parallel Processing**: Multi-core utilization for large projects
 - **🧠 AST-First**: Intelligent parsing with robust fallback systems
+- **🌐 WebAssembly**: Auto-generated JavaScript loaders for .wasm files
+- **🎨 CSS Modules**: Scoped CSS with automatic class name hashing
+- **👀 Watch Mode**: File watching with intelligent debouncing
 
 ### 📦 **Node.js Ecosystem**
 
@@ -384,14 +387,14 @@ Ultra Bundler is built on the shoulders of giants:
 ### 🎯 **Version 0.4.0** (Next Release)
 - **🔌 Plugin System**: Extensible architecture
 - **📱 Asset Optimization**: Image compression, font subsetting
-- **🎨 CSS Modules**: Scoped CSS support
-- **⚡ Code Splitting**: Automatic bundle splitting
+- **⚡ Advanced Minification**: oxc-based optimizations
+- **🔧 Advanced Config**: Complex project setups
 
 ### 🚀 **Version 1.0.0** (Stable Release)
-- **🌐 WebAssembly**: WASM module support
-- **📊 Bundle Analyzer**: Visual bundle analysis
-- **🔧 Advanced Config**: Complex project setups
 - **🏢 Enterprise Features**: Monorepo support, advanced caching
+- **🌍 Multi-target Builds**: Support for multiple output formats
+- **📦 Enhanced npm Integration**: Better package optimization
+- **🎯 Production-ready**: Comprehensive testing and stability
 
 ---
 
