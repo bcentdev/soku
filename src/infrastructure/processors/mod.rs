@@ -8,6 +8,7 @@ pub mod enhanced_js_processor;
 pub mod minifier;
 pub mod code_splitter;
 pub mod asset_processor;
+pub mod dynamic_import_splitter;
 
 // Re-export unified processing components (recommended for new code)
 pub use common::{
@@ -23,3 +24,4 @@ pub use ast_tree_shaker::*;
 pub use minifier::*;
 pub use code_splitter::*;
 pub use asset_processor::*;
+// dynamic_import_splitter available via mod but not re-exported (future integration)
