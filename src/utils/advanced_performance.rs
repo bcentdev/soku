@@ -199,7 +199,7 @@ pub mod simd_strings {
         // For very short needles, use simple byte comparison
         if needle.len() == 1 {
             let needle_byte = needle.as_bytes()[0];
-            return haystack.as_bytes().iter().any(|&b| b == needle_byte);
+            return haystack.as_bytes().contains(&needle_byte);
         }
 
         // Use standard contains for general case (still very fast)

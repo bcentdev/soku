@@ -275,8 +275,7 @@ impl EnhancedJsProcessor {
         let cleaned_props = props
             .replace("={", ": ")
             .replace("}", "")
-            .replace("=\"", ": \"")
-            .replace("\"", "\"");
+            .replace("=\"", ": \"");
 
         format!("{{{}}}", cleaned_props)
     }
@@ -379,8 +378,7 @@ impl EnhancedJsProcessor {
 
         // Use the fast regex-based approach which is more robust
         // TODO: Implement proper AST-based transformation later
-        let result = self.fast_typescript_strip(original_content);
-        result
+        self.fast_typescript_strip(original_content)
     }
 
     /// Parse JSX props into JavaScript object notation
@@ -611,11 +609,7 @@ impl EnhancedJsProcessor {
                             // Handle optional parameters: "x?" -> "x"
                             let clean_name = param_name.trim_end_matches('?');
                             // Handle default values: "disabled = false" -> keep as is
-                            if clean_name.contains('=') {
-                                clean_name.to_string()
-                            } else {
-                                clean_name.to_string()
-                            }
+                            clean_name.to_string()
                         } else {
                             // Keep parameters that don't have types
                             trimmed.trim_end_matches('?').to_string()

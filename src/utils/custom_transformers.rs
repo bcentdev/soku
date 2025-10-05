@@ -7,13 +7,16 @@ use async_trait::async_trait;
 use regex::Regex;
 use std::sync::Arc;
 
+/// Type alias for transformer functions to reduce complexity
+type TransformerFn = Arc<dyn Fn(&str) -> Result<String> + Send + Sync>;
+
 /// Transformer type - defines how the transformation is applied
 #[derive(Clone)]
 pub enum TransformerType {
     /// Simple regex-based replacement
     Regex { pattern: String, replacement: String },
     /// Custom function transformer
-    Function(Arc<dyn Fn(&str) -> Result<String> + Send + Sync>),
+    Function(TransformerFn),
     /// Conditional transformer with file pattern matching
     Conditional {
         file_pattern: String,
@@ -167,6 +170,7 @@ impl TransformerBuilder {
     }
 
     /// Add a custom transformer
+    #[allow(clippy::should_implement_trait)]
     pub fn add(mut self, transformer: CustomTransformer) -> Self {
         self.transformers.push(transformer);
         self

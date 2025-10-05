@@ -216,7 +216,7 @@ impl CodeSplitter {
 
             // Add to chunk
             self.chunks.entry(chunk_name.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(module.clone());
 
             self.module_chunk_map.insert(module_key, chunk_name);
@@ -488,7 +488,7 @@ mod tests {
         let chunks = splitter.analyze_and_split(&modules, &["main.js".to_string()]).unwrap();
 
         // Should split the large module
-        assert!(chunks.len() >= 1);
+        assert!(!chunks.is_empty());
         for chunk in &chunks {
             assert!(chunk.size_bytes <= 200); // Some flexibility for chunk overhead
         }

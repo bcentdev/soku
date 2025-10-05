@@ -686,7 +686,7 @@ impl SokuBuildService {
         }
 
         let env_manager = crate::utils::EnvVarsManager::load_from_files(&config.root, &config.mode)?;
-        if env_manager.get_all().len() > 0 {
+        if !env_manager.get_all().is_empty() {
             app_content = env_manager.replace_in_code(&app_content);
         }
 
@@ -1184,7 +1184,7 @@ impl BuildService for SokuBuildService {
 
                 // Use tokio::fs for async file copy
                 tokio::fs::copy(wasm_path, &output_wasm_path).await
-                    .map_err(|e| crate::utils::SokuError::Io(e))?;
+                    .map_err(crate::utils::SokuError::Io)?;
 
                 Logger::debug(&format!("  ✓ {} → {}", wasm_filename, output_wasm_path.display()));
             }
@@ -1249,10 +1249,6 @@ impl BuildService for SokuBuildService {
         self.ui.show_epic_completion(completion_stats);
 
         // End total timing and report bottlenecks
-
-        // Report performance bottlenecks in debug mode
-        if std::env::var("RUST_LOG").unwrap_or_default().contains("debug") {
-        }
 
         // Update file metadata for incremental builds (after successful build)
         Logger::debug(&format!("Updating file metadata for {} modules", js_modules.len()));

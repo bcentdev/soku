@@ -94,7 +94,7 @@ impl ConfigLoader {
         Logger::debug(&format!("Loading config from {}", config_path.display()));
 
         let content = std::fs::read_to_string(&config_path)
-            .map_err(|e| SokuError::Io(e))?;
+            .map_err(SokuError::Io)?;
 
         let config: SokuConfig = serde_json::from_str(&content)
             .map_err(|e| SokuError::config(format!(
@@ -107,6 +107,7 @@ impl ConfigLoader {
     }
 
     /// Merge file config with CLI arguments (CLI takes precedence)
+    #[allow(clippy::too_many_arguments)]
     pub fn merge_with_cli(
         file_config: Option<SokuConfig>,
         root: PathBuf,
@@ -255,7 +256,7 @@ mod tests {
         );
 
         assert_eq!(merged.outdir, PathBuf::from("./dist-override")); // Resolved relative to root
-        assert_eq!(merged.enable_minification, true); // CLI wins
+        assert!(merged.enable_minification); // CLI wins
         assert_eq!(merged.mode, "production");
     }
 

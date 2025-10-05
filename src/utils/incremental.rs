@@ -71,6 +71,12 @@ pub struct DependencyGraph {
     dependents: HashMap<PathBuf, HashSet<PathBuf>>,
 }
 
+impl Default for DependencyGraph {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DependencyGraph {
     pub fn new() -> Self {
         Self {
@@ -84,13 +90,13 @@ impl DependencyGraph {
         // Add to forward map
         self.dependencies
             .entry(from.clone())
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(to.clone());
 
         // Add to reverse map
         self.dependents
             .entry(to)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(from);
     }
 
@@ -233,7 +239,7 @@ impl IncrementalBuildState {
 
         // Serialize state to JSON
         let json = serde_json::to_string_pretty(self)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            .map_err(std::io::Error::other)?;
 
         // Write to file
         std::fs::write(state_path, json)?;
@@ -253,7 +259,7 @@ impl IncrementalBuildState {
         // Read and deserialize
         let json = std::fs::read_to_string(state_path)?;
         let state: Self = serde_json::from_str(&json)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            .map_err(std::io::Error::other)?;
 
         Ok(state)
     }

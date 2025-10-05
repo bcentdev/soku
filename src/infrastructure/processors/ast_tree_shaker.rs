@@ -158,7 +158,7 @@ impl AstTreeShaker {
         }
 
         // Phase 2: Count actual usage across modules
-        for (_module_path, imports) in &self.imports {
+        for imports in self.imports.values() {
             for import in imports {
                 if let Some(count) = self.usage_counts.get_mut(import) {
                     *count += 1;
@@ -248,7 +248,7 @@ impl AstTreeShaker {
                 .map(|d| d.symbol_name.clone())
                 .collect();
 
-            for (_line_num, line) in lines.iter().enumerate() {
+            for line in lines.iter() {
                 let line_content = line.trim();
 
                 // Skip lines that export dead symbols
@@ -291,7 +291,7 @@ impl AstTreeShaker {
                     if module_exports.contains(symbol) {
                         used_exports_map
                             .entry(module_path.clone())
-                            .or_insert_with(HashSet::new)
+                            .or_default()
                             .insert(symbol.clone());
                         break;
                     }

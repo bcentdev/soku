@@ -7,6 +7,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
+/// Type alias for transform functions to reduce complexity
+type TransformFn = Arc<dyn Fn(&str) -> Result<String> + Send + Sync>;
+
 /// HMR update information passed to hooks
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HmrHookContext {
@@ -359,7 +362,7 @@ impl HmrHook for ThrottleHook {
 /// Transform hook
 pub struct TransformHook {
     name: String,
-    transform_fn: Arc<dyn Fn(&str) -> Result<String> + Send + Sync>,
+    transform_fn: TransformFn,
 }
 
 #[async_trait]

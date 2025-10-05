@@ -192,6 +192,7 @@ impl CliHandler {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn handle_build_command(
         &self,
         root: &str,
@@ -444,6 +445,7 @@ impl CliHandler {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn handle_watch_command(
         &self,
         root: &str,
@@ -608,11 +610,11 @@ impl CliHandler {
         for output_file in &result.output_files {
             if let Some(parent) = output_file.path.parent() {
                 tokio::fs::create_dir_all(parent).await
-                    .map_err(|e| crate::utils::SokuError::Io(e))?;
+                    .map_err(crate::utils::SokuError::Io)?;
             }
 
             tokio::fs::write(&output_file.path, &output_file.content).await
-                .map_err(|e| crate::utils::SokuError::Io(e))?;
+                .map_err(crate::utils::SokuError::Io)?;
         }
 
         Ok(())
@@ -645,14 +647,15 @@ impl CliHandler {
     }
 
     /// Recursively scan directory for all relevant files
+    #[allow(clippy::only_used_in_recursion)]
     fn scan_directory_recursive<'a>(&'a self, dir: &'a Path) -> std::pin::Pin<std::boxed::Box<dyn std::future::Future<Output = Result<Vec<PathBuf>>> + 'a>> {
         Box::pin(async move {
             let mut files = Vec::new();
             let mut entries = tokio::fs::read_dir(dir).await
-                .map_err(|e| crate::utils::SokuError::Io(e))?;
+                .map_err(crate::utils::SokuError::Io)?;
 
             while let Some(entry) = entries.next_entry().await
-                .map_err(|e| crate::utils::SokuError::Io(e))? {
+                .map_err(crate::utils::SokuError::Io)? {
 
                 let path = entry.path();
 

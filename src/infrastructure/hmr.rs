@@ -97,7 +97,7 @@ impl SokuHmrService {
                     let client_id = entry.key().clone();
                     let client = entry.value();
 
-                    if let Err(_) = client.sender.send(message.clone()) {
+                    if client.sender.send(message.clone()).is_err() {
                         // Client channel closed, mark for removal
                         clients_to_remove.push(client_id);
                     }

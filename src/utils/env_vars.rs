@@ -57,7 +57,7 @@ impl EnvVarsManager {
     /// Load variables from a specific .env file
     fn load_env_file(&mut self, path: &PathBuf) -> Result<()> {
         let content = std::fs::read_to_string(path)
-            .map_err(|e| SokuError::Io(e))?;
+            .map_err(SokuError::Io)?;
 
         Logger::debug(&format!("Loading env file: {}", path.display()));
 
@@ -251,7 +251,7 @@ mod tests {
         writeln!(file, "# Comment line").unwrap();
         writeln!(file, "API_KEY=secret123").unwrap();
         writeln!(file, "DEBUG=true").unwrap();
-        writeln!(file, "").unwrap();
+        writeln!(file).unwrap();
         writeln!(file, "PORT=8080").unwrap();
 
         let manager = EnvVarsManager::load_from_files(temp_dir.path(), "development").unwrap();

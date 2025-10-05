@@ -127,7 +127,7 @@ impl RegexTreeShaker {
     fn analyze_text_based(&mut self, source: &str, analysis: &mut ModuleAnalysis, module_path: &str) -> Result<()> {
         let lines: Vec<&str> = source.lines().collect();
 
-        for (_line_num, line) in lines.iter().enumerate() {
+        for line in lines.iter() {
             let trimmed = line.trim();
 
             // Parse import statements
@@ -308,7 +308,7 @@ impl RegexTreeShaker {
                 let (module_path, export_name) = (parts[0], parts[1]);
                 used_exports_map
                     .entry(module_path.to_string())
-                    .or_insert_with(HashSet::new)
+                    .or_default()
                     .insert(export_name.to_string());
             }
         }

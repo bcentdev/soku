@@ -213,8 +213,8 @@ impl DeadCodeEliminator {
         let mut depth = 1;
         let bytes = code.as_bytes();
 
-        for i in (open_pos + 1)..bytes.len() {
-            match bytes[i] {
+        for (i, &byte) in bytes.iter().enumerate().skip(open_pos + 1) {
+            match byte {
                 b'{' => depth += 1,
                 b'}' => {
                     depth -= 1;
@@ -234,8 +234,8 @@ impl DeadCodeEliminator {
         let bytes = code.as_bytes();
         let mut paren_depth = 0;
 
-        for i in start..bytes.len() {
-            match bytes[i] {
+        for (i, &byte) in bytes.iter().enumerate().skip(start) {
+            match byte {
                 b'(' => paren_depth += 1,
                 b')' => {
                     if paren_depth == 0 {

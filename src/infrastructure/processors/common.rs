@@ -1,7 +1,6 @@
 /// Shared functionality between JS processors
 /// This module contains common code extracted from js_processor.rs and enhanced_js_processor.rs
 /// to eliminate duplication and provide a single source of truth.
-
 use std::path::Path;
 use std::sync::Arc;
 use once_cell::sync::Lazy;
@@ -514,7 +513,7 @@ impl JsProcessor for UnifiedJsProcessor {
                 bundle.push('\n');
             }
 
-            bundle.push_str("\n");
+            bundle.push('\n');
         }
 
         bundle.push_str("})();\n");
@@ -601,7 +600,7 @@ impl ParsingConfig {
     }
 
     /// Convert config to OXC SourceType
-    pub fn to_source_type(&self) -> SourceType {
+    pub fn to_source_type(self) -> SourceType {
         let mut source_type = SourceType::default();
 
         if self.typescript {

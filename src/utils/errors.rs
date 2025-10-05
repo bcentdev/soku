@@ -10,6 +10,12 @@ pub struct ErrorContext {
     pub code_snippet: Option<String>,
 }
 
+impl Default for ErrorContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ErrorContext {
     pub fn new() -> Self {
         Self {

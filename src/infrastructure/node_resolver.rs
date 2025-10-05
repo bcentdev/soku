@@ -102,8 +102,8 @@ impl NodeModuleResolver {
         }
 
         // Handle absolute imports starting with /
-        if import_path.starts_with('/') {
-            let resolved = project_root.join(&import_path[1..]);
+        if let Some(stripped) = import_path.strip_prefix('/') {
+            let resolved = project_root.join(stripped);
             return self.resolve_file_or_directory(&resolved).await;
         }
 
@@ -159,8 +159,8 @@ impl NodeModuleResolver {
     /// Parse package specifier into package name and subpath
     fn parse_package_specifier(&self, specifier: &str) -> (String, Option<String>) {
         // Handle scoped packages like @babel/core
-        if specifier.starts_with('@') {
-            if let Some(slash_pos) = specifier[1..].find('/') {
+        if let Some(stripped) = specifier.strip_prefix('@') {
+            if let Some(slash_pos) = stripped.find('/') {
                 let second_slash = specifier[slash_pos + 2..].find('/');
                 if let Some(pos) = second_slash {
                     let pkg_name = specifier[..slash_pos + 2 + pos].to_string();
@@ -475,10 +475,10 @@ impl NodeModuleResolver {
 
         let mut packages = Vec::new();
         let mut entries = tokio::fs::read_dir(&node_modules).await
-            .map_err(|e| SokuError::Io(e))?;
+            .map_err(SokuError::Io)?;
 
         while let Some(entry) = entries.next_entry().await
-            .map_err(|e| SokuError::Io(e))? {
+            .map_err(SokuError::Io)? {
 
             let path = entry.path();
             if path.is_dir() {
@@ -487,10 +487,10 @@ impl NodeModuleResolver {
                     if name.starts_with('@') {
                         // Read subdirectories for scoped packages
                         let mut scoped_entries = tokio::fs::read_dir(&path).await
-                            .map_err(|e| SokuError::Io(e))?;
+                            .map_err(SokuError::Io)?;
 
                         while let Some(scoped_entry) = scoped_entries.next_entry().await
-                            .map_err(|e| SokuError::Io(e))? {
+                            .map_err(SokuError::Io)? {
 
                             if scoped_entry.path().is_dir() {
                                 if let Some(pkg_name) = scoped_entry.path().file_name()

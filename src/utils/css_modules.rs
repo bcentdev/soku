@@ -131,8 +131,7 @@ impl CssModulesProcessor {
             .map(|s| {
                 // Remove .module suffix if present
                 s.trim_end_matches(".module")
-                    .replace('-', "_")
-                    .replace('.', "_")
+                    .replace(['-', '.'], "_")
             })
             .unwrap_or_else(|| "Module".to_string())
     }

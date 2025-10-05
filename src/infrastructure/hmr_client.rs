@@ -1,7 +1,6 @@
 /// HMR Client-side JavaScript runtime
 /// This generates the JavaScript code that gets injected into the bundle
 /// to enable hot reloading in the browser
-
 pub fn generate_hmr_client_code(port: u16) -> String {
     format!(r#"
 // Soku Bundler HMR Client Runtime

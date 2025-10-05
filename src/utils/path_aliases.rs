@@ -65,8 +65,8 @@ impl PathAliasResolver {
             path.to_path_buf()
         } else {
             // Remove leading "./" if present
-            let target = if target.starts_with("./") {
-                &target[2..]
+            let target = if let Some(stripped) = target.strip_prefix("./") {
+                stripped
             } else {
                 target
             };

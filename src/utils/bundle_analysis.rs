@@ -134,11 +134,11 @@ impl BundleAnalysis {
     pub fn generate_report(&self) -> String {
         let mut report = String::new();
 
-        report.push_str("\n");
+        report.push('\n');
         report.push_str("╔════════════════════════════════════════════════════════════╗\n");
         report.push_str("║              📊 BUNDLE ANALYSIS REPORT                    ║\n");
         report.push_str("╚════════════════════════════════════════════════════════════╝\n");
-        report.push_str("\n");
+        report.push('\n');
 
         // Overview
         report.push_str("📦 OVERVIEW\n");
@@ -146,7 +146,7 @@ impl BundleAnalysis {
         report.push_str(&format!("  Total Size:      {}\n", Self::format_size(self.total_size)));
         report.push_str(&format!("  Total Modules:   {}\n", self.total_modules));
         report.push_str(&format!("  Dependencies:    {}\n", self.total_dependencies));
-        report.push_str("\n");
+        report.push('\n');
 
         // By Type
         report.push_str("📂 BY FILE TYPE\n");
@@ -162,7 +162,7 @@ impl BundleAnalysis {
                 bar
             ));
         }
-        report.push_str("\n");
+        report.push('\n');
 
         // Top 10 Largest Modules
         report.push_str("🔝 TOP 10 LARGEST MODULES\n");
@@ -181,7 +181,7 @@ impl BundleAnalysis {
                 bar
             ));
         }
-        report.push_str("\n");
+        report.push('\n');
 
         report
     }
@@ -195,7 +195,7 @@ impl BundleAnalysis {
             })?;
 
         std::fs::write(path, json)
-            .map_err(|e| crate::utils::SokuError::Io(e))?;
+            .map_err(crate::utils::SokuError::Io)?;
 
         Ok(())
     }

@@ -106,8 +106,7 @@ export const {} = {{
             .and_then(|s| s.to_str())
             .map(|s| {
                 // Convert to camelCase identifier
-                s.replace('-', "_")
-                    .replace('.', "_")
+                s.replace(['-', '.'], "_")
             })
             .unwrap_or_else(|| "wasmModule".to_string())
     }

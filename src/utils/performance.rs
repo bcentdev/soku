@@ -339,6 +339,11 @@ pub mod memory {
         pub fn len(&self) -> usize {
             self.strings.len()
         }
+
+        /// Check if empty
+        pub fn is_empty(&self) -> bool {
+            self.strings.is_empty()
+        }
     }
 
     impl Default for StringInterner {
