@@ -2,6 +2,7 @@
 pub mod common;  // Shared functionality between processors
 pub mod js_processor;
 pub mod css_processor;
+pub mod scss_processor;
 pub mod tree_shaker;
 pub mod ast_tree_shaker;
 pub mod enhanced_js_processor;
@@ -19,6 +20,7 @@ pub use common::{
 // Re-export processors
 pub use js_processor::*;
 pub use css_processor::*;
+pub use scss_processor::*;
 pub use tree_shaker::*;
 pub use ast_tree_shaker::*;
 pub use minifier::*;

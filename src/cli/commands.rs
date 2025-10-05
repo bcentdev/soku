@@ -1,7 +1,7 @@
 use crate::core::{models::*, services::*, interfaces::*};
 use crate::infrastructure::{
     TokioFileSystemService, UltraFileSystemService,
-    LightningCssProcessor, RegexTreeShaker, UltraHmrService, generate_hmr_client_code,
+    LightningCssProcessor, ScssProcessor, RegexTreeShaker, UltraHmrService, generate_hmr_client_code,
     ProcessingStrategy, UnifiedJsProcessor
 };
 use crate::utils::{Result, Logger};
@@ -293,7 +293,10 @@ impl CliHandler {
         ));
 
         let js_processor: Arc<dyn JsProcessor> = Arc::new(UnifiedJsProcessor::new(selected_strategy));
-        let css_processor = Arc::new(LightningCssProcessor::new(enable_minification));
+
+        // Create CSS processor with SCSS/SASS support
+        let lightning_css = Arc::new(LightningCssProcessor::new(enable_minification));
+        let css_processor = Arc::new(ScssProcessor::with_css_processor(enable_minification, lightning_css));
 
         if should_use_ultra_mode {
             Logger::info("🔥 Ultra Mode: SIMD optimizations and advanced caching enabled");
@@ -502,7 +505,10 @@ impl CliHandler {
         // Create build service
         let fs_service = Arc::new(TokioFileSystemService);
         let js_processor = Arc::new(UnifiedJsProcessor::new(processing_strategy));
-        let css_processor = Arc::new(LightningCssProcessor::new(enable_minification));
+
+        // Create CSS processor with SCSS/SASS support
+        let lightning_css = Arc::new(LightningCssProcessor::new(enable_minification));
+        let css_processor = Arc::new(ScssProcessor::with_css_processor(enable_minification, lightning_css));
 
         let mut build_service = UltraBuildService::new(
             fs_service,
@@ -574,7 +580,10 @@ impl CliHandler {
         // Create services
         let fs_service = Arc::new(TokioFileSystemService);
         let js_processor = Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
-        let css_processor = Arc::new(LightningCssProcessor::new(false));
+
+        // Create CSS processor with SCSS/SASS support
+        let lightning_css = Arc::new(LightningCssProcessor::new(false));
+        let css_processor = Arc::new(ScssProcessor::with_css_processor(false, lightning_css));
 
         // Create build service
         let mut build_service = UltraBuildService::new(

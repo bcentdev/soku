@@ -54,6 +54,9 @@ oxc_diagnostics = "0.90.0"
 # CSS processing with lightningcss - Keep alpha version
 lightningcss = "1.0.0-alpha.67"
 
+# SCSS/SASS preprocessing
+grass = "0.13"
+
 # Regex for parsing - Updated
 regex = "1.11"
 

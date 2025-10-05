@@ -29,7 +29,7 @@ impl FileSystemService for TokioFileSystemService {
                 "js" | "jsx" | "ts" | "tsx" => {
                     structure.js_modules.push(path);
                 }
-                "css" => {
+                "css" | "scss" | "sass" => {
                     structure.css_files.push(path);
                 }
                 "html" | "htm" => {
