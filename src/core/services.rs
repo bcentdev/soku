@@ -1058,17 +1058,17 @@ impl BuildService for UltraBuildService {
         // Generate cache key based on modules content and config
         let cache_key = self.generate_js_cache_key(&js_only_modules, config, tree_shaking_stats.as_ref());
 
-        let (mut js_content, source_map) = if let Some(cached_result) = self.cache.get_js(&cache_key, &cache_key) {
+        // Skip cache when source maps are enabled since source maps aren't cached
+        let (mut js_content, source_map) = if config.enable_source_maps {
+            Logger::debug("🔄 Processing JS modules with source maps (cache disabled)");
+            let bundle_output = self.js_processor.bundle_modules_with_source_maps(&js_only_modules, config).await?;
+            (bundle_output.code, bundle_output.source_map)
+        } else if let Some(cached_result) = self.cache.get_js(&cache_key, &cache_key) {
             Logger::debug("✅ Using cached JS bundle");
-            // Parse cached result - for simplicity, assume no source map in cache for now
             (cached_result, None)
         } else {
             Logger::debug("🔄 Processing JS modules (cache miss)");
-            let result = if config.enable_source_maps {
-                // Use source maps bundling
-                let bundle_output = self.js_processor.bundle_modules_with_source_maps(&js_only_modules, config).await?;
-                (bundle_output.code, bundle_output.source_map)
-            } else if tree_shaking_stats.is_some() {
+            let result = if tree_shaking_stats.is_some() {
                 // Use tree shaking bundling
                 let js_content = self.js_processor.bundle_modules_with_tree_shaking(&js_only_modules, tree_shaking_stats.as_ref()).await?;
                 (js_content, None)
