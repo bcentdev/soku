@@ -838,10 +838,37 @@ pub fn strip_typescript_block_constructs(content: &str) -> String {
     let mut in_interface = false;
     let mut in_type_alias = false;
     let mut in_enum = false;
+    let mut in_decorator = false;
     let mut brace_depth = 0;
+    let mut paren_depth = 0;
 
     for line in content.lines() {
         let trimmed = line.trim();
+
+        // Handle multiline decorator arguments
+        if in_decorator {
+            result.push_str(&format!("// {}\n", line));
+            // Track parentheses for multiline decorators
+            paren_depth += trimmed.matches('(').count();
+            paren_depth = paren_depth.saturating_sub(trimmed.matches(')').count());
+            if paren_depth == 0 {
+                in_decorator = false;
+            }
+            continue;
+        }
+
+        // Skip decorators (@Decorator or @Decorator(...))
+        if trimmed.starts_with('@') {
+            Logger::debug(&format!("Stripping decorator: {}", trimmed));
+            result.push_str(&format!("// {}\n", line));
+            // Check if decorator has arguments spanning multiple lines
+            paren_depth = trimmed.matches('(').count();
+            paren_depth = paren_depth.saturating_sub(trimmed.matches(')').count());
+            if paren_depth > 0 {
+                in_decorator = true;
+            }
+            continue;
+        }
 
         // Skip interface declarations
         if trimmed.starts_with("interface ") || trimmed.starts_with("export interface ") {
@@ -928,6 +955,16 @@ pub fn strip_typescript_block_constructs(content: &str) -> String {
 /// Removes type annotations like `: Type`, return types, etc.
 pub fn clean_typescript_inline_annotations(content: &str) -> String {
     let mut result = content.to_string();
+
+    // Remove class property type annotations: propertyName: Type; -> propertyName;
+    if let Ok(re) = Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]+;") {
+        result = re.replace_all(&result, "$1;").to_string();
+    }
+
+    // Remove method/function return types: methodName(): Type { -> methodName() {
+    if let Ok(re) = Regex::new(r"\)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]+\s*\{") {
+        result = re.replace_all(&result, ") {").to_string();
+    }
 
     // Remove simple type annotations: name: Type -> name
     result = TYPE_ANNOTATION_REGEX.replace_all(&result, "$1$2").to_string();

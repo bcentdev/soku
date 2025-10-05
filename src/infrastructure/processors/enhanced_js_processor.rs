@@ -422,6 +422,12 @@ impl EnhancedJsProcessor {
         for line in content.lines() {
             let trimmed = line.trim();
 
+            // Skip decorators (both @Decorator and @Decorator())
+            if trimmed.starts_with('@') {
+                Logger::debug(&format!("Stripping decorator: {}", trimmed));
+                continue;
+            }
+
             // Skip import statements
             if trimmed.starts_with("import ") {
                 continue;
@@ -960,5 +966,61 @@ const Counter = ({ title, count }: Props) => {
         // We verify it processes without errors and preserves JavaScript logic
         assert!(result.contains("Counter"));
         assert!(!result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_decorator_stripping() {
+        let processor = EnhancedJsProcessor::new();
+
+        let module = ModuleInfo {
+            path: PathBuf::from("decorators.ts"),
+            content: r#"
+@Component({
+    selector: 'app-root',
+    template: './app.component.html'
+})
+class AppComponent {
+    @Input()
+    title: string;
+
+    @Output()
+    change = new EventEmitter();
+
+    @ViewChild('myDiv')
+    divRef: ElementRef;
+
+    @HostListener('click')
+    onClick() {
+        console.log('clicked');
+    }
+}
+
+@Injectable()
+class MyService {
+    constructor() {}
+}
+"#.to_string(),
+            module_type: ModuleType::TypeScript,
+            dependencies: vec![],
+            exports: vec![],
+        };
+
+        let result = processor.process_module(&module).await.unwrap();
+
+        println!("Decorator Result: {}", result); // Debug output
+
+        // Should strip all decorators
+        assert!(!result.contains("@Component"));
+        assert!(!result.contains("@Input"));
+        assert!(!result.contains("@Output"));
+        assert!(!result.contains("@ViewChild"));
+        assert!(!result.contains("@HostListener"));
+        assert!(!result.contains("@Injectable"));
+
+        // Should keep JavaScript logic
+        assert!(result.contains("class AppComponent"));
+        assert!(result.contains("class MyService"));
+        assert!(result.contains("onClick"));
+        assert!(result.contains("console.log"));
     }
 }
