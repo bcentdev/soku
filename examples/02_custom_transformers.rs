@@ -3,7 +3,7 @@
 // This example shows how to use custom transformers to modify
 // code during the build process.
 
-use soku::utils::{CustomTransformer, BuiltInTransformers, TransformerBuilder, Result};
+use soku::utils::{CustomTransformer, BuiltInTransformers, Result};
 use soku::core::interfaces::BuildService;
 use std::sync::Arc;
 
@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
     );
 
     // Example 6: Conditional transformer - only for test files
-    let test_transformer = BuiltInTransformers::test_only(
+    let _test_transformer = BuiltInTransformers::test_only(
         soku::utils::TransformerType::Regex {
             pattern: "describe\\(".to_string(),
             replacement: "test(".to_string(),

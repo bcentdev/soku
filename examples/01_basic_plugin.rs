@@ -39,7 +39,7 @@ impl Plugin for TimingPlugin {
         Ok(())
     }
 
-    async fn after_build(&self, context: &PluginContext, result: &soku::core::models::BuildResult) -> Result<()> {
+    async fn after_build(&self, _context: &PluginContext, result: &soku::core::models::BuildResult) -> Result<()> {
         if let Some(start) = *self.start_time.lock().unwrap() {
             let duration = start.elapsed();
             println!("🔌 [{}] Build completed in {:?}", self.name, duration);

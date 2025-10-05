@@ -21,7 +21,7 @@ async fn test_simple_project_build() {
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
-        outdir: fixtures_dir.join("dist"),
+        outdir: fixtures_dir.join("dist-simple"),
         enable_tree_shaking: false,
         enable_minification: false,
         enable_source_maps: false,
@@ -64,7 +64,7 @@ async fn test_typescript_project_build() {
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
-        outdir: fixtures_dir.join("dist"),
+        outdir: fixtures_dir.join("dist-typescript"),
         enable_tree_shaking: false,
         enable_minification: false,
         enable_source_maps: false,
@@ -111,7 +111,7 @@ async fn test_source_maps_generation() {
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
-        outdir: fixtures_dir.join("dist"),
+        outdir: fixtures_dir.join("dist-sourcemaps"),
         enable_tree_shaking: false,
         enable_minification: false,
         enable_source_maps: true,
@@ -162,7 +162,7 @@ async fn test_demo_project_build() {
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
-        outdir: fixtures_dir.join("dist"),
+        outdir: fixtures_dir.join("dist-demo"),
         enable_tree_shaking: false,
         enable_minification: false,
         enable_source_maps: false,

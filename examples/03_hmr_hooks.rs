@@ -3,7 +3,7 @@
 // This example shows how to use HMR hooks to customize
 // Hot Module Replacement behavior.
 
-use soku::infrastructure::{SokuHmrService, HmrHook, HmrHookContext, HmrHookUpdateKind, BuiltInHmrHooks};
+use soku::infrastructure::{SokuHmrService, HmrHook, HmrHookContext, BuiltInHmrHooks};
 use soku::utils::Result;
 use async_trait::async_trait;
 use std::sync::Arc;

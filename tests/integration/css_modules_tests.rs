@@ -21,7 +21,7 @@ async fn test_css_modules_detection() {
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
-        outdir: fixtures_dir.join("dist"),
+        outdir: fixtures_dir.join("dist-detection"),
         enable_tree_shaking: false,
         enable_minification: false,
         enable_source_maps: false,
@@ -65,7 +65,7 @@ async fn test_css_modules_scoping() {
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
-        outdir: fixtures_dir.join("dist"),
+        outdir: fixtures_dir.join("dist-scoping"),
         enable_tree_shaking: false,
         enable_minification: false,
         enable_source_maps: false,
