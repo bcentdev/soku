@@ -1,7 +1,7 @@
 # Ultra Bundler - Roadmap
 
 > Última actualización: 2025-10-05
-> Estado: 11,270+ líneas Rust | 55 unit tests | 6 integration tests | 0 warnings | Sprint 9B al 50% 🔄
+> Estado: 11,590+ líneas Rust | 69 unit tests | 6 integration tests | 0 warnings | Sprint 9B al 75% 🔄
 
 ## ✅ Completado
 
@@ -105,18 +105,19 @@
 
 ## 🎯 Próximos Sprints
 
-### Sprint 9B: Optimization (En progreso - 50%)
+### Sprint 9B: Optimization (En progreso - 75%)
 **Objetivo**: Performance y code splitting avanzado
 
 **Tareas**:
 - ✅ Asset Handling (JSON imports completado)
 - ✅ Conditional Exports (dead code elimination completado)
+- ✅ Manual Chunks/Vendor Splitting (configuración explícita completado)
 - 📅 Dynamic Imports (lazy loading, code splitting automático)
-- 📅 Manual Chunks/Vendor Splitting (configuración explícita)
 
 **Resultados parciales**:
 - JSON Imports: AssetProcessor con conversión automática JSON → ES module, 6 tests pasando
 - Dead Code Elimination: Eliminación de código muerto basado en condiciones constantes, 23.5% reducción de bundle, 6 tests pasando
+- Manual Chunks/Vendor Splitting: Separación automática node_modules → vendor.js + app → app.js, optimización completa en ambos bundles, mejora caching y parallel loading
 
 **Impacto**: ALTO - Bundle size y performance
 **Tiempo**: 1-2 días
