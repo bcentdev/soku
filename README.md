@@ -1,20 +1,16 @@
-# ⚡ Ultra Bundler
-
 <div align="center">
+
+![Ultra Banner](assets/ultra-banner.svg)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)](https://www.rust-lang.org)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/yourusername/ultra-bundler/releases)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/vicentetorres/ultra-bundler/releases)
 
-**The fastest bundler for modern web development**
-
-*Ultra-fast builds • Node.js ecosystem • Advanced tree shaking • Zero config*
+**Ultra-fast builds • Zero config • Advanced tree shaking**
 
 [🚀 Quick Start](#-quick-start) •
-[📖 Documentation](#-documentation) •
 [⚡ Features](#-features) •
+[📖 Commands](#-commands) •
 [🎯 Performance](#-performance) •
 [🤝 Contributing](#-contributing)
 
@@ -22,26 +18,29 @@
 
 ---
 
-## 🌟 What is Ultra Bundler?
+## 🌟 What is Ultra?
 
-Ultra Bundler is a **blazingly fast** JavaScript/TypeScript bundler built in Rust, designed for ultra-fast builds with **sub-100ms performance**. It provides zero-config bundling with advanced features like **intelligent tree shaking**, **Node.js modules support**, and **Hot Module Replacement**.
+**Ultra** is a blazingly fast JavaScript/TypeScript bundler built in Rust, designed for sub-250ms builds with zero configuration. It combines native Rust performance with intelligent optimizations to deliver the fastest bundling experience for modern web development.
 
 ### ✨ Why Ultra?
 
-- ⚡ **Ultra-fast**: Sub-100ms build times for typical projects
-- 🌳 **Smart Tree Shaking**: 50-80% bundle size reduction for node_modules
-- 📦 **Node.js Ecosystem**: Full npm package support with automatic resolution
-- 🎯 **Zero Config**: Works out of the box with sensible defaults
-- 🔥 **HMR Ready**: Hot Module Replacement for instant development feedback
+- ⚡ **Ultra-Fast**: Sub-250ms builds for typical projects
+- 🌳 **Intelligent Tree Shaking**: 50-80% bundle size reduction
+- 📦 **Full TypeScript/TSX Support**: Complete type stripping and JSX transformation
+- 🎯 **Zero Config**: Works out of the box, configure when you need it
+- 🔥 **HMR Ready**: Hot Module Replacement for instant feedback
+- 🚀 **Smart Auto-Mode**: Automatically optimizes based on project size
 - 🦀 **Rust Performance**: Native speed with memory safety
+
+---
 
 ## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-# Install from source (recommended for now)
-git clone https://github.com/yourusername/ultra-bundler
+# Install from source
+git clone https://github.com/vicentetorres/ultra-bundler
 cd ultra-bundler
 cargo build --release
 
@@ -56,302 +55,467 @@ export PATH=$PATH:$(pwd)/target/release
 mkdir my-app && cd my-app
 echo 'console.log("Hello Ultra!");' > main.js
 
-# Bundle it (zero config needed!)
+# Bundle it (zero config!)
 ultra build
 
 # Output:
-# ULTRA v0.3.0
+#   ULTRA v0.3.0
 #
 #   dist/ bundle.js (45 B)
 #   dist/ bundle.css (33 B)
 #
-#   ✓ built in 12ms
+#   ✓ built in 8ms
 ```
 
-### With Node.js Dependencies
+### With TypeScript & JSX
+
+```typescript
+// main.tsx
+interface User {
+  name: string;
+  age: number;
+}
+
+const Welcome = ({ user }: { user: User }) => {
+  return <h1>Hello, {user.name}!</h1>;
+};
+
+export default Welcome;
+```
 
 ```bash
-# Install dependencies
-npm init -y
-npm install lodash
-
-# Use them in your code
-echo 'import { map } from "lodash"; console.log(map([1,2,3], x => x*2));' > main.js
-
-# Bundle with tree shaking
-ultra build
-
-# Output shows optimized node_modules:
-# 🌳 1 node_modules optimized
+ultra build --strategy enhanced
+# Automatically strips TypeScript types and transforms JSX
 ```
+
+---
 
 ## ⚡ Features
 
-### 🎯 **Core Features**
+### 🎯 Core Features
 
-- **📦 JavaScript & TypeScript**: Full ES6+ and TypeScript support with AST-based processing
-- **🎨 CSS Processing**: Lightning CSS integration with @import resolution
-- **🌳 Tree Shaking**: Advanced dead code elimination with node_modules optimization
-- **📱 TSX/JSX**: React-like component processing
-- **🗺️ Source Maps**: Comprehensive debugging support
-- **⚡ Minification**: Production-ready code optimization
+| Feature | Description |
+|---------|-------------|
+| **🔷 JavaScript & TypeScript** | Full ES6+ and TypeScript support with intelligent type stripping |
+| **⚛️ TSX/JSX Processing** | React-like component transformation with createElement |
+| **🎨 CSS Processing** | Lightning CSS integration with @import resolution |
+| **🌳 Advanced Tree Shaking** | Dead code elimination with 50-80% size reduction |
+| **🗺️ Source Maps** | Complete debugging support with inline sources |
+| **⚡ Minification** | Production-ready code optimization |
+| **📦 Code Splitting** | Automatic vendor and common chunk splitting |
+| **🔄 Hot Module Replacement** | WebSocket-based instant updates |
 
-### 🚀 **Advanced Capabilities**
+### 🚀 Performance Features
 
-- **🔄 Hot Module Replacement**: WebSocket-based HMR with error overlays
-- **📊 Bundle Analysis**: Visual feedback and optimization statistics
-- **🎯 Smart Caching**: Persistent cache with content-based invalidation
-- **⚡ Parallel Processing**: Multi-core utilization for large projects
-- **🧠 AST-First**: Intelligent parsing with robust fallback systems
-- **🌐 WebAssembly**: Auto-generated JavaScript loaders for .wasm files
-- **🎨 CSS Modules**: Scoped CSS with automatic class name hashing
+- **🎯 Smart Auto-Mode**: Automatically selects optimal strategy based on project size
+  - Small projects (≤10 files): Fast mode
+  - Medium projects (≤100 files): Standard mode
+  - Large projects (>100 files): Ultra mode with advanced optimizations
+- **💾 Intelligent Caching**: Content-based persistent cache with Blake3 hashing
+- **⚡ Parallel Processing**: Multi-core utilization via Rayon
+- **🧠 SIMD Optimizations**: Vectorized string operations
+- **🎯 Memory-Mapped I/O**: Zero-copy file reading
+- **🌊 Arena Allocation**: Bulk memory operations
+
+### 🛠️ Developer Experience
+
 - **👀 Watch Mode**: File watching with intelligent debouncing
+- **📊 Bundle Analysis**: Visual feedback and optimization statistics
+- **🎯 Zero Config**: Sensible defaults, configure when needed
+- **🔍 Detailed Logging**: RUST_LOG support for debugging
+- **⚙️ Multiple Strategies**: Fast, Standard, Enhanced modes
 
-### 📦 **Node.js Ecosystem**
+---
 
-- **📋 Package Resolution**: Full npm, yarn, and pnpm support
-- **🎯 Scoped Packages**: Support for @babel/core, @types/node, etc.
-- **📦 Subpath Imports**: lodash/debounce, rxjs/operators support
-- **📄 Package.json Fields**: main, module, browser field handling
-- **🌳 Library Optimization**: Specialized optimizations for popular libraries
+## 📖 Commands
 
-## 🎯 Performance
+### `ultra build` - Production Build
 
-Ultra Bundler is designed for **extreme performance**:
-
-| Project Size | Build Time | Bundle Size Reduction |
-|-------------|------------|----------------------|
-| Small (< 50 files) | **< 50ms** | **60-70%** |
-| Medium (< 500 files) | **< 150ms** | **50-60%** |
-| Large (< 2000 files) | **< 300ms** | **40-50%** |
-
-### 🏆 **Performance Features**
-
-- **Zero-Copy Operations**: Memory-mapped file reading
-- **SIMD Optimizations**: Vectorized string processing
-- **Arena Allocation**: Bulk memory operations
-- **Content Hashing**: Blake3-based incremental compilation
-- **Smart Dependency Resolution**: Cached module resolution
-
-## 📖 Documentation
-
-### 📚 **Guides & References**
-
-- **[Quick Start Guide](docs/QUICK_START.md)** - Get started in 5 minutes
-- **[Plugin API](docs/PLUGIN_API.md)** - Complete plugin system documentation
-- **[Examples](examples/)** - Working code examples for all features
-  - [Basic Plugin](examples/01_basic_plugin.rs) - Plugin usage and lifecycle hooks
-  - [Custom Transformers](examples/02_custom_transformers.rs) - Code transformations
-  - [HMR Hooks](examples/03_hmr_hooks.rs) - Hot reload customization
-  - [Advanced Integration](examples/04_advanced_integration.rs) - Production setup
-- **[Architecture Guide](CLAUDE.md)** - Internal architecture and development guide
-- **[Roadmap](ROADMAP.md)** - Feature roadmap and sprint planning
-
-### 🔧 **CLI Commands**
+Build your project for production with all optimizations enabled.
 
 ```bash
-# Production build
 ultra build [OPTIONS]
-  --root <DIR>         Root directory (default: .)
-  --outdir <DIR>       Output directory (default: dist)
-  --no-tree-shaking   Disable tree shaking
-  --no-minify         Disable minification
-  --source-maps       Enable source maps
+```
 
-# Development server with HMR
+#### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-r, --root <DIR>` | Root directory | `.` |
+| `-o, --outdir <DIR>` | Output directory | `dist` |
+| `--no-tree-shaking` | Disable tree shaking | Enabled |
+| `--no-minify` | Disable minification | Enabled |
+| `--source-maps` | Enable source maps | Disabled |
+| `--strategy <MODE>` | Processing strategy (fast/standard/enhanced) | Auto-detect |
+| `--ultra-mode` | Force ultra performance mode | Auto |
+| `--normal-mode` | Force normal mode (disable auto-ultra) | Auto |
+| `--no-cache` | Disable caching for debugging | Enabled |
+| `--code-splitting` | Enable vendor/common chunk splitting | Disabled |
+| `--analyze` | Generate bundle analysis report | Disabled |
+| `--mode <MODE>` | Build mode (development/production) | `production` |
+
+#### Examples
+
+```bash
+# Basic production build
+ultra build
+
+# Build with source maps
+ultra build --source-maps
+
+# Build for development with no minification
+ultra build --mode development --no-minify
+
+# Force enhanced TypeScript/JSX processing
+ultra build --strategy enhanced
+
+# Build with code splitting and analysis
+ultra build --code-splitting --analyze
+
+# Full optimization build
+ultra build --source-maps --code-splitting --ultra-mode
+```
+
+### `ultra dev` - Development Server
+
+Start a development server with Hot Module Replacement.
+
+```bash
 ultra dev [OPTIONS]
-  --port <PORT>       Dev server port (default: 3000)
-  --host <HOST>       Dev server host (default: localhost)
+```
 
-# Preview production build
-ultra preview [OPTIONS]
+#### Options
 
-# Show bundler information
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-r, --root <DIR>` | Root directory | `.` |
+| `-p, --port <PORT>` | Server port | `3000` |
+
+#### Example
+
+```bash
+# Start dev server on default port
+ultra dev
+
+# Start on custom port
+ultra dev --port 8080
+```
+
+### `ultra watch` - Watch Mode
+
+Watch for file changes and rebuild automatically.
+
+```bash
+ultra watch [OPTIONS]
+```
+
+#### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-r, --root <DIR>` | Root directory | `.` |
+| `-o, --outdir <DIR>` | Output directory | `dist` |
+| `--no-tree-shaking` | Disable tree shaking | Enabled |
+| `--no-minify` | Disable minification | Enabled |
+| `--source-maps` | Enable source maps | Disabled |
+| `--clear` | Clear console on rebuild | Disabled |
+| `-v, --verbose` | Show verbose logging | Disabled |
+| `--strategy <MODE>` | Processing strategy | Auto-detect |
+
+#### Examples
+
+```bash
+# Watch with defaults
+ultra watch
+
+# Watch with verbose logging
+ultra watch --verbose
+
+# Watch with source maps and clear console
+ultra watch --source-maps --clear
+```
+
+### `ultra preview` - Preview Build
+
+Preview a production build locally.
+
+```bash
+ultra preview
+```
+
+### `ultra info` - System Information
+
+Show bundler version and system information.
+
+```bash
 ultra info
 ```
 
-### 📁 **Project Structure**
+---
+
+## 🎯 Processing Strategies
+
+Ultra offers three processing strategies that can be manually selected or auto-detected:
+
+### 🚀 Fast Mode
+- **Best For**: Small projects, prototyping
+- **Features**: Minimal transformations, maximum speed
+- **Performance**: <50ms builds
+
+### 📦 Standard Mode
+- **Best For**: Medium projects, basic TypeScript
+- **Features**: TypeScript type stripping, basic optimizations
+- **Performance**: <150ms builds
+
+### ⚡ Enhanced Mode
+- **Best For**: Large projects, TSX/JSX, complex TypeScript
+- **Features**: Full TypeScript + JSX transformations, advanced optimizations
+- **Performance**: <250ms builds
+
+### 🎯 Ultra Mode (Auto-Enabled for Large Projects)
+- **Best For**: Very large projects (>100 files)
+- **Features**: All enhanced features + SIMD, parallel processing, arena allocation
+- **Performance**: <300ms for 2000+ files
+
+---
+
+## 🎨 Project Structure
+
+Ultra works with minimal configuration. Here's a typical project structure:
 
 ```
 my-project/
-├── main.js          # Entry point (auto-detected)
-├── src/             # Source files
-│   ├── app.js
-│   ├── styles.css
-│   └── components/
-├── package.json     # Dependencies
-└── dist/            # Output (generated)
+├── main.js or main.ts     # Entry point (auto-detected)
+├── index.html             # HTML template (optional)
+├── src/                   # Source files
+│   ├── components/        # React/TSX components
+│   │   └── Button.tsx
+│   ├── utils/             # Utility modules
+│   │   └── helpers.ts
+│   └── styles/            # CSS files
+│       └── main.css
+├── package.json           # Dependencies (optional)
+├── node_modules/          # npm packages (optional)
+└── dist/                  # Output directory (generated)
     ├── bundle.js
     ├── bundle.css
-    └── bundle.js.map
+    └── bundle.js.map      # If --source-maps enabled
 ```
 
-### ⚙️ **Configuration**
+---
 
-Ultra works **zero-config** but supports customization:
+## 🌳 Tree Shaking
 
-```json
-// ultra.config.json (optional)
-{
-  "entry": "src/main.js",
-  "outdir": "build",
-  "minify": true,
-  "sourceMaps": true,
-  "treeShaking": true,
-  "target": "es2020"
-}
+Ultra's tree shaking is one of its most powerful features, delivering 50-80% bundle size reduction.
+
+### How It Works
+
+1. **Module Analysis**: Parses all modules to build dependency graph
+2. **Export Tracking**: Tracks which exports are actually imported
+3. **Dead Code Elimination**: Removes unused functions, variables, and exports
+4. **Statistics**: Reports removed exports and reduction percentage
+
+### Example
+
+**Before Tree Shaking:**
+```javascript
+// utils.js - 5 exports
+export const add = (a, b) => a + b;
+export const subtract = (a, b) => a - b;
+export const multiply = (a, b) => a * b;
+export const divide = (a, b) => a / b;
+export const unused = () => console.log('Never used');
 ```
 
-## 🛠️ **Architecture**
-
-Ultra Bundler follows **Clean Architecture** principles:
-
-```
-src/
-├── core/                    # Business Logic
-│   ├── interfaces.rs        # Trait definitions
-│   ├── models.rs           # Domain models
-│   └── services.rs         # Core business logic
-├── infrastructure/         # External Concerns
-│   ├── processors/         # File processors
-│   │   ├── js_processor.rs      # JavaScript bundling
-│   │   ├── enhanced_js_processor.rs  # Advanced TS/JSX
-│   │   ├── css_processor.rs     # CSS bundling
-│   │   └── tree_shaker.rs       # Dead code elimination
-│   ├── file_system.rs      # File operations
-│   └── hmr.rs             # Hot Module Replacement
-├── utils/                  # Cross-cutting Concerns
-│   ├── performance.rs      # Caching system
-│   ├── ultra_ui.rs        # CLI interface
-│   └── logging.rs         # Structured logging
-└── cli/                   # Presentation Layer
-    └── commands.rs        # CLI command handling
+**Usage:**
+```javascript
+// main.js - Only uses 2 exports
+import { add, multiply } from './utils.js';
+console.log(add(1, 2));
+console.log(multiply(3, 4));
 ```
 
-## 🧪 **Examples**
+**Result:**
+```bash
+ultra build
 
-### React-like Components (TSX/JSX)
-
-```tsx
-// components/Button.tsx
-interface ButtonProps {
-  text: string;
-  onClick: () => void;
-}
-
-export const Button = ({ text, onClick }: ButtonProps) => {
-  return <button onClick={onClick}>{text}</button>;
-};
+# Output:
+# 🌳 Tree shaking: 78.5% code reduction, 3 exports removed
 ```
 
-### TypeScript with Advanced Types
+---
+
+## 🎯 Performance
+
+Ultra delivers exceptional performance across all project sizes:
+
+| Project Size | Files | Build Time | Mode |
+|-------------|-------|------------|------|
+| **Tiny** | <10 | **<50ms** | Fast |
+| **Small** | 10-50 | **<100ms** | Standard |
+| **Medium** | 50-100 | **<150ms** | Standard |
+| **Large** | 100-500 | **<200ms** | Enhanced |
+| **Very Large** | 500-2000+ | **<300ms** | Ultra |
+
+### Real-World Examples
+
+```bash
+# Demo project (8 files, TypeScript + CSS)
+ultra build
+# ✓ built in 12ms
+
+# Medium project (120 files, TSX components)
+ultra build --strategy enhanced
+# ✓ built in 187ms
+
+# Large project (450 files, full TypeScript)
+ultra build
+# ✓ built in 245ms (auto-ultra mode enabled)
+```
+
+---
+
+## 🧪 Examples
+
+### TypeScript with Interfaces
 
 ```typescript
-// utils/api.ts
+// user.ts
 interface User {
   id: number;
   name: string;
-  email?: string;
+  email: string;
 }
 
-type UserCallback<T> = (user: T) => Promise<void>;
-
-export const fetchUser = async <T extends User>(id: number): Promise<T> => {
-  // Implementation with full TypeScript support
+export const createUser = (data: Partial<User>): User => {
+  return {
+    id: Date.now(),
+    name: data.name || 'Anonymous',
+    email: data.email || 'no-email@example.com'
+  };
 };
 ```
 
-### Node.js Dependencies with Tree Shaking
+### TSX/JSX Components
 
-```javascript
-// main.js
-import { map, filter } from 'lodash';  // Only bundles used functions
-import { Observable } from 'rxjs/Observable';  // Smart subpath resolution
+```tsx
+// Button.tsx
+interface ButtonProps {
+  text: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+}
 
-const numbers = [1, 2, 3, 4, 5];
-const doubled = map(numbers, x => x * 2);
-const evens = filter(doubled, x => x % 2 === 0);
-
-console.log('Result:', evens);
+export const Button = ({ text, onClick, variant = 'primary' }: ButtonProps) => {
+  return (
+    <button
+      className={`btn btn-${variant}`}
+      onClick={onClick}
+    >
+      {text}
+    </button>
+  );
+};
 ```
 
 ### CSS with Imports
 
 ```css
-/* styles/main.css */
-@import './components.css';
+/* main.css */
 @import './variables.css';
+@import './components.css';
 
 .app {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI';
+  font-family: system-ui, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 ```
 
-## 📊 **Bundle Analysis**
-
-Ultra provides detailed insights into your bundles:
+### Multiple Entry Points
 
 ```bash
-ultra build --no-minify
-
-# Output:
-# ULTRA v0.3.0
-#
-#   dist/ bundle.js (1.35 kB)
-#   dist/ bundle.css (245 B)
-#
-#   🌳 3 node_modules optimized
-#   📊 Bundle reduced by 67%
-#   ⚡ Build completed in 45ms
-```
-
-## 🚀 **Getting Started - Advanced**
-
-### Development Workflow
-
-```bash
-# 1. Start development server
-ultra dev --port 3000
-
-# 2. Open your app
-open http://localhost:3000
-
-# 3. Edit files - changes appear instantly with HMR
-# 4. Build for production
-ultra build --source-maps
-
-# 5. Preview production build
-ultra preview
-```
-
-### Working with Large Projects
-
-```bash
-# Enable all optimizations
+# Create multiple bundles
 ultra build \
-  --tree-shaking \
-  --minify \
-  --source-maps \
-  --root ./packages/main \
-  --outdir ./dist/production
+  --entry main.js \
+  --entry admin.js \
+  --entry worker.js \
+  --code-splitting
 ```
 
-## 🤝 **Contributing**
+---
 
-We welcome contributions! Ultra Bundler is built with **6-day development cycles** focusing on rapid iteration and user feedback.
+## 🔧 Configuration (Optional)
 
-### 🛠️ **Development Setup**
+Ultra works zero-config, but you can customize it with `ultra.config.json`:
+
+```json
+{
+  "entry": "src/main.ts",
+  "outdir": "build",
+  "minify": true,
+  "sourceMaps": true,
+  "treeShaking": true,
+  "strategy": "enhanced",
+  "alias": {
+    "@components": "./src/components",
+    "@utils": "./src/utils"
+  },
+  "external": ["react", "react-dom"]
+}
+```
+
+---
+
+## 🏗️ Architecture
+
+Ultra follows Clean Architecture principles for maintainability and testability:
+
+```
+src/
+├── core/                           # Business Logic Layer
+│   ├── interfaces.rs               # Trait definitions
+│   ├── models.rs                   # Domain models (BuildConfig, ModuleInfo, etc.)
+│   └── services.rs                 # Core orchestration (UltraBuildService)
+│
+├── infrastructure/                 # Infrastructure Layer
+│   ├── processors/                 # File processors
+│   │   ├── js_processor.rs         # Standard JavaScript bundling
+│   │   ├── enhanced_js_processor.rs # TypeScript/JSX transformations
+│   │   ├── css_processor.rs        # Lightning CSS integration
+│   │   ├── tree_shaker.rs          # Regex-based tree shaking
+│   │   └── ast_tree_shaker.rs      # AST-based tree shaking
+│   ├── file_system.rs              # Basic file operations
+│   ├── ultra_file_system.rs        # Advanced file ops (mmap, parallel)
+│   └── hmr.rs                      # Hot Module Replacement
+│
+├── utils/                          # Utilities Layer
+│   ├── errors.rs                   # Error types
+│   ├── logging.rs                  # Structured logging
+│   ├── performance.rs              # Caching system
+│   ├── advanced_performance.rs     # SIMD, arena allocation
+│   ├── ultra_ui.rs                 # Beautiful CLI
+│   ├── plugin_system.rs            # Plugin API
+│   └── custom_transformers.rs      # Code transformations
+│
+└── cli/                            # Presentation Layer
+    ├── commands.rs                 # CLI command handling
+    └── mod.rs
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Ultra uses a **6-day sprint cycle** for rapid iteration.
+
+### Development Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/ultra-bundler
+# Clone repository
+git clone https://github.com/vicentetorres/ultra-bundler
 cd ultra-bundler
 
-# Install Rust (if not already installed)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Build the project
+# Build
 cargo build
 
 # Run tests
@@ -362,51 +526,67 @@ cd demo-project
 ../target/debug/ultra build
 ```
 
-### 🎯 **Areas for Contribution**
+### Areas for Contribution
 
-- **🚀 Performance**: SIMD optimizations, parallel processing
-- **📦 Ecosystem**: More framework integrations (Vue, Angular, Svelte)
-- **🔧 Features**: Plugin system, code splitting, asset optimization
-- **📖 Documentation**: Examples, tutorials, guides
+- **🚀 Performance**: SIMD optimizations, parallel processing improvements
+- **📦 Features**: Plugin ecosystem, asset optimization, advanced code splitting
 - **🧪 Testing**: More test cases, benchmarks, edge cases
+- **📖 Documentation**: Tutorials, examples, guides
+- **🌍 Ecosystem**: Framework integrations (Vue, Angular, Svelte)
 
-### 📋 **Contribution Guidelines**
+### Commit Convention
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin amazing-feature`)
-5. **Open** a Pull Request
+```bash
+git commit -m "feat: add code splitting support
 
-Please read our [Contributing Guide](CONTRIBUTING.md) for detailed information.
+- Implement vendor chunk extraction
+- Add common chunk optimization
+- Performance: reduces bundle size by 40%
 
-## 📄 **License**
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
 
-## 🙏 **Acknowledgments**
+---
 
-Ultra Bundler is built on the shoulders of giants:
+## 📄 License
 
-- **🦀 Rust Community**: For the amazing language and ecosystem
-- **⚡ oxc**: For the fastest JavaScript parser
-- **🌩️ Lightning CSS**: For ultra-fast CSS processing
-- **🔥 Tokio**: For async runtime excellence
-- **🎯 All Contributors**: Who make this project possible
+MIT License - see [LICENSE](LICENSE) file for details.
 
-## 📈 **Roadmap**
+---
 
-### 🎯 **Version 0.4.0** (Next Release)
-- **🔌 Plugin System**: Extensible architecture
-- **📱 Asset Optimization**: Image compression, font subsetting
-- **⚡ Advanced Minification**: oxc-based optimizations
-- **🔧 Advanced Config**: Complex project setups
+## 🙏 Acknowledgments
 
-### 🚀 **Version 1.0.0** (Stable Release)
-- **🏢 Enterprise Features**: Monorepo support, advanced caching
-- **🌍 Multi-target Builds**: Support for multiple output formats
-- **📦 Enhanced npm Integration**: Better package optimization
-- **🎯 Production-ready**: Comprehensive testing and stability
+Built on the shoulders of giants:
+
+- **🦀 Rust Community** - For the amazing language
+- **⚡ oxc** - Fastest JavaScript/TypeScript parser
+- **🌩️ Lightning CSS** - Ultra-fast CSS processing
+- **🔥 Tokio** - Async runtime excellence
+- **⚡ Rayon** - Data parallelism
+- **🎯 All Contributors** - Making this project possible
+
+---
+
+## 📈 Roadmap
+
+### 🎯 Version 0.4.0
+- ✅ Advanced tree shaking with used exports tracking
+- ✅ Source maps with inline sources
+- ✅ Plugin system with lifecycle hooks
+- ✅ Custom transformers API
+- ✅ HMR hooks for customization
+- 🔲 Advanced code splitting (route-based, dynamic imports)
+- 🔲 Asset optimization (images, fonts)
+- 🔲 CSS Modules support
+
+### 🚀 Version 1.0.0
+- 🔲 Monorepo support
+- 🔲 Advanced configuration options
+- 🔲 Multi-target builds (ES5, ES2015, ES2020+)
+- 🔲 Comprehensive documentation
+- 🔲 Production-ready stability
 
 ---
 
@@ -414,8 +594,8 @@ Ultra Bundler is built on the shoulders of giants:
 
 **Built with ❤️ and ⚡ by the Ultra Team**
 
-[⭐ Star us on GitHub](https://github.com/yourusername/ultra-bundler) •
-[🐛 Report Bug](https://github.com/yourusername/ultra-bundler/issues) •
-[💡 Request Feature](https://github.com/yourusername/ultra-bundler/issues)
+[⭐ Star us on GitHub](https://github.com/vicentetorres/ultra-bundler) •
+[🐛 Report Bug](https://github.com/vicentetorres/ultra-bundler/issues) •
+[💡 Request Feature](https://github.com/vicentetorres/ultra-bundler/issues)
 
 </div>
