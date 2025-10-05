@@ -707,6 +707,181 @@ impl UltraBuildService {
             modules: js_modules.to_vec(),
         })
     }
+
+    /// Build with multiple entry points - generate separate bundle for each entry
+    async fn build_with_multiple_entries(
+        &mut self,
+        config: &BuildConfig,
+        js_modules: &[ModuleInfo],
+        css_modules: &[ModuleInfo],
+        structure: &ProjectStructure,
+        tree_shaking_stats: Option<&TreeShakingStats>,
+    ) -> Result<BuildResult> {
+        let build_start = std::time::Instant::now();
+
+        Logger::info(&format!("📦 Multiple entry points: {} entries configured", config.entries.len()));
+
+        let mut output_files = Vec::new();
+        let mut all_processed_modules = Vec::new();
+
+        // Process each entry point separately
+        for (entry_name, entry_path) in &config.entries {
+            Logger::info(&format!("🔨 Building entry: {}", entry_name));
+
+            // Find modules reachable from this entry point
+            let entry_modules = self.find_reachable_modules(entry_path, js_modules)?;
+
+            if entry_modules.is_empty() {
+                Logger::warn(&format!("⚠️  No modules found for entry '{}'", entry_name));
+                continue;
+            }
+
+            Logger::debug(&format!("  Entry '{}' includes {} modules", entry_name, entry_modules.len()));
+
+            // Bundle this entry's modules
+            let mut entry_content = self.js_processor.bundle_modules(&entry_modules).await?;
+
+            // Apply optimizations
+            if config.enable_minification {
+                let bundle_name = format!("{}.js", entry_name);
+                entry_content = MinificationService::new().minify_bundle(entry_content, &bundle_name).await?;
+            }
+
+            // Environment variable replacement
+            let env_manager = crate::utils::EnvVarsManager::load_from_files(&config.root, &config.mode)?;
+            if !env_manager.get_all().is_empty() {
+                entry_content = env_manager.replace_in_code(&entry_content);
+            }
+
+            // Dead code elimination
+            let eliminator = crate::utils::DeadCodeEliminator::new();
+            entry_content = eliminator.eliminate(&entry_content);
+
+            // Write entry bundle
+            let entry_file_name = format!("{}.js", entry_name);
+            let entry_output_path = config.outdir.join(&entry_file_name);
+            self.fs_service.write_file(&entry_output_path, &entry_content).await?;
+
+            output_files.push(OutputFile {
+                path: entry_output_path,
+                content: entry_content.clone(),
+                size: entry_content.len(),
+            });
+
+            all_processed_modules.extend(entry_modules);
+        }
+
+        // Process CSS (shared across all entries)
+        let mut all_css_files = structure.css_files.clone();
+        for css_module in css_modules {
+            all_css_files.push(css_module.path.clone());
+        }
+
+        if !all_css_files.is_empty() {
+            Logger::debug("🎨 Bundling CSS...");
+            let css_content = self.css_processor.bundle_css(&all_css_files).await?;
+            let css_path = config.outdir.join("bundle.css");
+            self.fs_service.write_file(&css_path, &css_content).await?;
+
+            output_files.push(OutputFile {
+                path: css_path,
+                content: css_content.clone(),
+                size: css_content.len(),
+            });
+        }
+
+        // Update incremental state
+        for module in js_modules {
+            let _ = self.incremental_state.update_file(&module.path);
+        }
+        self.incremental_state.mark_build_complete();
+
+        Ok(BuildResult {
+            success: true,
+            errors: Vec::new(),
+            warnings: Vec::new(),
+            js_modules_processed: all_processed_modules.len(),
+            css_files_processed: all_css_files.len(),
+            tree_shaking_stats: tree_shaking_stats.cloned(),
+            build_time: build_start.elapsed(),
+            output_files,
+            modules: all_processed_modules,
+        })
+    }
+
+    /// Find all modules reachable from an entry point
+    fn find_reachable_modules(
+        &self,
+        entry_path: &Path,
+        all_modules: &[ModuleInfo],
+    ) -> Result<Vec<ModuleInfo>> {
+        let mut reachable = Vec::new();
+        let mut visited = std::collections::HashSet::new();
+        let mut to_visit = Vec::new();
+
+        // Normalize entry path for comparison
+        let entry_file_name = entry_path.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+
+        // Find the entry module - match by filename or full path
+        let entry_module = all_modules.iter()
+            .find(|m| {
+                // Try exact match first
+                if m.path == entry_path {
+                    return true;
+                }
+
+                // Try filename match
+                if let Some(m_file_name) = m.path.file_name().and_then(|n| n.to_str()) {
+                    if m_file_name == entry_file_name {
+                        return true;
+                    }
+                }
+
+                // Try ends_with for relative paths
+                m.path.ends_with(entry_path)
+            })
+            .ok_or_else(|| crate::utils::UltraError::Build {
+                message: format!("Entry point not found: {} (available modules: {})",
+                    entry_path.display(),
+                    all_modules.iter()
+                        .take(3)
+                        .map(|m| m.path.display().to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")),
+                context: None,
+            })?;
+
+        to_visit.push(entry_module.clone());
+
+        // BFS traversal of dependencies
+        while let Some(module) = to_visit.pop() {
+            let module_path = module.path.to_string_lossy().to_string();
+
+            if visited.contains(&module_path) {
+                continue;
+            }
+
+            visited.insert(module_path.clone());
+            reachable.push(module.clone());
+
+            // Find dependencies
+            for dep in &module.dependencies {
+                // Try to find the dependency module
+                if let Some(dep_module) = all_modules.iter().find(|m| {
+                    let m_name = m.path.file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("");
+                    m_name == dep || m.path.to_string_lossy().contains(dep)
+                }) {
+                    to_visit.push(dep_module.clone());
+                }
+            }
+        }
+
+        Ok(reachable)
+    }
 }
 
 #[async_trait::async_trait]
@@ -823,6 +998,11 @@ impl BuildService for UltraBuildService {
         // 📦 VENDOR CHUNK SPLITTING (if enabled)
         if config.vendor_chunk {
             return self.build_with_vendor_splitting(config, &js_only_modules, &css_modules, &structure, tree_shaking_stats.as_ref()).await;
+        }
+
+        // 📦 MULTIPLE ENTRY POINTS (if configured)
+        if !config.entries.is_empty() {
+            return self.build_with_multiple_entries(config, &js_only_modules, &css_modules, &structure, tree_shaking_stats.as_ref()).await;
         }
 
         // ⚡ JAVASCRIPT PROCESSING WITH INTELLIGENT CACHING
