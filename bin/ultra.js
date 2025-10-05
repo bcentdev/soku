@@ -5,12 +5,10 @@ const { join } = require('path');
 const { platform, arch } = require('os');
 
 // Detect package scope from current package.json
-let packageScope = '@ultra-bundler';
+let packageScope = '@bcentdev/ultra';
 try {
   const pkg = require('../package.json');
-  if (pkg.name.startsWith('@bcentdev/')) {
-    packageScope = '@bcentdev/ultra';
-  }
+  // packageScope is already set correctly
 } catch (e) {
   // Use default if package.json not found
 }

@@ -1,125 +1,63 @@
-# Publishing Ultra: npm vs GitHub Packages
+# Publishing Ultra: npmjs.org vs GitHub Packages
 
-Ultra puede publicarse en **dos registros diferentes**. Esta guía te ayuda a elegir el mejor para ti.
+Ultra usa **GitHub Packages** por defecto con el nombre `@bcentdev/ultra`.
+
+Opcionalmente, también puedes publicar en **npmjs.org** (pero requiere cambiar el scope).
 
 ## 📊 Comparación Rápida
 
-| Característica | npmjs.org | GitHub Packages |
-|----------------|-----------|-----------------|
-| **Visibilidad** | Público por defecto | Privado por defecto (puede ser público) |
-| **Autenticación** | Token npm | Token GitHub (PAT) |
-| **Costo** | Gratis para públicos | Gratis (límites según plan) |
-| **Nombre del paquete** | `ultra-bundler` | `@bcentdev/ultra` |
-| **Descubrimiento** | ⭐⭐⭐⭐⭐ Muy alto | ⭐⭐⭐ Moderado |
-| **Integración GitHub** | No integrado | ✅ Totalmente integrado |
-| **Facilidad instalación** | `npm install ultra-bundler` | Requiere `.npmrc` extra |
+| Característica | GitHub Packages | npmjs.org (alternativa) |
+|----------------|-----------------|------------------------|
+| **Nombre del paquete** | `@bcentdev/ultra` | Requiere scope diferente |
+| **Visibilidad** | Privado por defecto (puede ser público) | Público por defecto |
+| **Autenticación** | Token GitHub (PAT) | Token npm |
+| **Costo** | Gratis (límites según plan) | Gratis para públicos |
+| **Descubrimiento** | ⭐⭐⭐ Moderado | ⭐⭐⭐⭐⭐ Muy alto |
+| **Integración GitHub** | ✅ Totalmente integrado | No integrado |
+| **Facilidad instalación** | `npm install @bcentdev/ultra` | Similar con scope |
 
-## 🎯 ¿Cuál elegir?
+## 🎯 Configuración Actual
 
-### Elige **npmjs.org** si:
-- ✅ Quieres máxima visibilidad y descubrimiento
-- ✅ Quieres instalación más simple para usuarios
-- ✅ Es tu primer paquete público
-- ✅ Quieres aparecer en búsquedas npm
+Ultra está configurado para **GitHub Packages** por defecto:
 
-### Elige **GitHub Packages** si:
-- ✅ Quieres mantener todo en GitHub
-- ✅ Ya tienes organización en GitHub
-- ✅ Quieres aprovechar permisos de GitHub
-- ✅ Planeas paquetes privados futuros
+✅ **Ventajas**:
+- Todo integrado en GitHub (código, releases, paquetes)
+- Permisos basados en GitHub
+- Gratis para paquetes públicos
+- No requiere cuenta npm separada
 
-### ¿Por qué no ambos? 🤷‍♂️
-Puedes publicar en ambos, pero:
-- Requiere mantener dos configuraciones
-- Los nombres deben ser diferentes
-- Más complejo para usuarios (confusión sobre dónde instalarlo)
+**Instalación para usuarios**:
+```bash
+npm install @bcentdev/ultra
+```
 
-**Recomendación**: Empieza con **npmjs.org** para máximo alcance.
+Si quieres máximo descubrimiento en npm, puedes publicar en **npmjs.org** como alternativa (ver sección abajo).
 
 ---
 
-## 📦 Opción A: Publicar en npmjs.org
+## 🚀 Cómo Publicar en GitHub Packages
 
-### 1. Configuración (Ya está lista)
+### 1. Verificar configuración
 
-El `package.json` actual ya está configurado para npmjs.org:
-
-```json
-{
-  "name": "ultra-bundler",
-  "optionalDependencies": {
-    "@ultra-bundler/darwin-arm64": "0.3.0",
-    "@ultra-bundler/darwin-x64": "0.3.0",
-    // ...
-  }
-}
-```
-
-### 2. Autenticación
-
-```bash
-# Login a npm
-npm login
-
-# Verificar login
-npm whoami
-```
-
-### 3. Publicar
-
-```bash
-# 1. Preparar paquetes de plataforma
-./scripts/prepare-npm-packages.sh
-
-# 2. Publicar cada paquete de plataforma
-cd npm-packages/darwin-arm64
-npm publish --access public
-
-# Repetir para cada plataforma...
-
-# 3. Publicar paquete principal
-cd ../..
-npm publish --access public
-```
-
-### 4. Instalación para usuarios
-
-```bash
-npm install -g ultra-bundler
-yarn global add ultra-bundler
-pnpm add -g ultra-bundler
-
-# O sin instalar
-npx ultra-bundler build
-```
-
----
-
-## 🐙 Opción B: Publicar en GitHub Packages
-
-### 1. Cambiar configuración
-
-```bash
-# Usar el package.json para GitHub
-cp package.github.json package.json
-
-# Copiar configuración de npm
-cp .npmrc.github .npmrc
-```
-
-Tu `package.json` ahora tiene:
+El `package.json` ya está configurado correctamente:
 
 ```json
 {
   "name": "@bcentdev/ultra",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "optionalDependencies": {
     "@bcentdev/ultra-darwin-arm64": "0.3.0",
-    // ...
+    "@bcentdev/ultra-darwin-x64": "0.3.0",
+    "@bcentdev/ultra-linux-x64": "0.3.0",
+    "@bcentdev/ultra-linux-arm64": "0.3.0",
+    "@bcentdev/ultra-win32-x64": "0.3.0"
   }
 }
+```
+
+Para publicar en GitHub Packages, añade `.npmrc` con:
+
+```
+@bcentdev:registry=https://npm.pkg.github.com
 ```
 
 ### 2. Crear Personal Access Token (PAT)
