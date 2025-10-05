@@ -1,11 +1,11 @@
 use colored::*;
 use std::time::Instant;
 
-pub struct UltraUI {
+pub struct SokuUI {
     start_time: Instant,
 }
 
-impl UltraUI {
+impl SokuUI {
     pub fn new() -> Self {
         Self {
             start_time: Instant::now(),
@@ -14,7 +14,7 @@ impl UltraUI {
 
     pub fn show_epic_banner(&self) {
         // Simple, clean output like Vite
-        println!("\n  {} {}", "ULTRA".bright_cyan().bold(), "v0.3.0".bright_white());
+        println!("\n  {} {} {}", "SOKU".bright_cyan().bold(), "(速)".bright_white(), "v0.3.0".bright_white());
         println!();
     }
 
@@ -117,7 +117,7 @@ pub struct TimingBreakdown {
     pub output_write_ms: u64,
 }
 
-impl Default for UltraUI {
+impl Default for SokuUI {
     fn default() -> Self {
         Self::new()
     }

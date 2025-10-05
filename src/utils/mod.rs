@@ -1,7 +1,7 @@
 // Shared utilities module
 pub mod errors;
 pub mod logging;
-pub mod ultra_ui;
+pub mod soku_ui;
 pub mod performance;
 pub mod advanced_performance;
 pub mod incremental;
@@ -19,7 +19,7 @@ pub mod custom_transformers;
 
 pub use errors::*;
 pub use logging::*;
-pub use ultra_ui::*;
+pub use soku_ui::*;
 pub use performance::*;
 pub use advanced_performance::*;
 pub use incremental::*;

@@ -1,5 +1,5 @@
 use crate::core::{interfaces::*, models::*};
-use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraCache, performance::parallel, IncrementalBuildState, PluginManager, PluginContext, PluginEvent, TransformerChain, CustomTransformer, AdvancedSourceMapGenerator, SourceMapUtils};
+use crate::utils::{Result, Logger, Timer, SokuUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraCache, performance::parallel, IncrementalBuildState, PluginManager, PluginContext, PluginEvent, TransformerChain, CustomTransformer, AdvancedSourceMapGenerator, SourceMapUtils};
 use crate::infrastructure::{NodeModuleResolver, MinificationService, CodeSplitter, CodeSplitConfig};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
@@ -18,7 +18,7 @@ pub struct UltraBuildService {
     js_processor: Arc<dyn JsProcessor>,
     css_processor: Arc<dyn CssProcessor>,
     tree_shaker: Option<Arc<dyn TreeShaker>>,
-    ui: UltraUI,
+    ui: SokuUI,
     node_resolver: NodeModuleResolver,
     cache: Arc<UltraCache>,
     incremental_state: IncrementalBuildState,
@@ -51,7 +51,7 @@ impl UltraBuildService {
             js_processor,
             css_processor,
             tree_shaker: None,
-            ui: UltraUI::new(),
+            ui: SokuUI::new(),
             node_resolver: NodeModuleResolver::new(),
             cache,
             incremental_state,

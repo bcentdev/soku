@@ -6,9 +6,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use dashmap::DashMap;
 
-/// Ultra-performance file system service with memory mapping and caching
+/// Soku ultra-performance file system service with memory mapping and caching
 #[allow(dead_code)]
-pub struct UltraFileSystemService {
+pub struct SokuFileSystemService {
     incremental_cache: Arc<IncrementalCache>,
     file_metadata: Arc<DashMap<PathBuf, FileMetadata>>,
 }
@@ -21,7 +21,7 @@ struct FileMetadata {
     size: u64,
 }
 
-impl UltraFileSystemService {
+impl SokuFileSystemService {
     pub fn new() -> Self {
         Self {
             incremental_cache: Arc::new(IncrementalCache::new()),
@@ -224,14 +224,14 @@ pub struct UltraFileSystemStats {
     pub metadata_entries: usize,
 }
 
-impl Default for UltraFileSystemService {
+impl Default for SokuFileSystemService {
     fn default() -> Self {
         Self::new()
     }
 }
 
 #[async_trait::async_trait]
-impl FileSystemService for UltraFileSystemService {
+impl FileSystemService for SokuFileSystemService {
     async fn scan_directory(&self, path: &Path) -> Result<ProjectStructure> {
         self.scan_directory_ultra(path).await
     }
@@ -277,7 +277,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_ultra_file_system_operations() {
-        let fs = UltraFileSystemService::new();
+        let fs = SokuFileSystemService::new();
         let temp_dir = tempdir().unwrap();
         let test_file = temp_dir.path().join("test.js");
 
@@ -301,7 +301,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_ultra_directory_scan() {
-        let fs = UltraFileSystemService::new();
+        let fs = SokuFileSystemService::new();
         let temp_dir = tempdir().unwrap();
 
         // Create test files
@@ -322,7 +322,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_parallel_file_reading() {
-        let fs = UltraFileSystemService::new();
+        let fs = SokuFileSystemService::new();
         let temp_dir = tempdir().unwrap();
 
         // Create multiple test files

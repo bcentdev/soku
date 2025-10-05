@@ -1,6 +1,6 @@
 use crate::core::{models::*, services::*, interfaces::*};
 use crate::infrastructure::{
-    TokioFileSystemService, UltraFileSystemService,
+    TokioFileSystemService, SokuFileSystemService,
     LightningCssProcessor, ScssProcessor, RegexTreeShaker, UltraHmrService, generate_hmr_client_code,
     ProcessingStrategy, UnifiedJsProcessor
 };
@@ -267,7 +267,7 @@ impl CliHandler {
         // Create services based on determined mode
         let fs_service: Arc<dyn FileSystemService> = if should_use_ultra_mode {
             Logger::info("🚀 Ultra Mode: Using advanced file system with memory mapping and parallel processing");
-            Arc::new(UltraFileSystemService::new())
+            Arc::new(SokuFileSystemService::new())
         } else {
             Arc::new(TokioFileSystemService)
         };
