@@ -13,6 +13,7 @@ pub mod config_loader;
 pub mod env_vars;
 pub mod path_aliases;
 pub mod dead_code_eliminator;
+pub mod advanced_source_maps;
 
 pub use errors::*;
 pub use logging::*;
@@ -28,3 +29,4 @@ pub use config_loader::*;
 pub use env_vars::*;
 pub use path_aliases::*;
 pub use dead_code_eliminator::*;
+pub use advanced_source_maps::*;
