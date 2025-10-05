@@ -472,6 +472,7 @@ impl CliHandler {
             mode: "development".to_string(), // Watch mode is for development
             alias: std::collections::HashMap::new(), // No aliases in watch mode
             external: Vec::new(), // No external deps in watch mode
+            vendor_chunk: false, // No vendor splitting in watch mode
         };
 
         // Create watch config
@@ -565,6 +566,7 @@ impl CliHandler {
             mode: "development".to_string(), // Dev server with HMR
             alias: std::collections::HashMap::new(), // No aliases in dev mode
             external: Vec::new(), // No external deps in dev mode
+            vendor_chunk: false, // No vendor splitting in dev mode
         };
 
         // Create services

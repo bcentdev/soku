@@ -595,6 +595,118 @@ impl UltraBuildService {
 
         Ok(build_result)
     }
+
+    /// Build with vendor chunk splitting (node_modules → vendor.js, app → app.js)
+    async fn build_with_vendor_splitting(
+        &mut self,
+        config: &BuildConfig,
+        js_modules: &[ModuleInfo],
+        css_modules: &[ModuleInfo],
+        structure: &ProjectStructure,
+        tree_shaking_stats: Option<&TreeShakingStats>,
+    ) -> Result<BuildResult> {
+        let build_start = std::time::Instant::now();
+
+        // Separate modules into vendor (node_modules) and app (local code)
+        let (vendor_modules, app_modules): (Vec<ModuleInfo>, Vec<ModuleInfo>) = js_modules.iter()
+            .cloned()
+            .partition(|m| {
+                m.path.to_string_lossy().contains("node_modules")
+            });
+
+        Logger::info(&format!("📦 Vendor splitting: {} vendor modules, {} app modules",
+            vendor_modules.len(), app_modules.len()));
+
+        let mut output_files = Vec::new();
+
+        // Bundle vendor.js if there are vendor modules
+        if !vendor_modules.is_empty() {
+            Logger::debug("🔨 Bundling vendor modules...");
+            let vendor_content = self.js_processor.bundle_modules(&vendor_modules).await?;
+
+            // Minify vendor
+            let vendor_content = if config.enable_minification {
+                MinificationService::new().minify_bundle(vendor_content, "vendor.js").await?
+            } else {
+                vendor_content
+            };
+
+            let vendor_path = config.outdir.join("vendor.js");
+            self.fs_service.write_file(&vendor_path, &vendor_content).await?;
+
+            output_files.push(OutputFile {
+                path: vendor_path,
+                content: vendor_content.clone(),
+                size: vendor_content.len(),
+            });
+        }
+
+        // Bundle app.js
+        Logger::debug("🔨 Bundling app modules...");
+        let mut app_content = if !app_modules.is_empty() {
+            self.js_processor.bundle_modules(&app_modules).await?
+        } else {
+            String::from("// No app modules\n")
+        };
+
+        // Minify, env vars, dead code
+        if config.enable_minification {
+            app_content = MinificationService::new().minify_bundle(app_content, "app.js").await?;
+        }
+
+        let env_manager = crate::utils::EnvVarsManager::load_from_files(&config.root, &config.mode)?;
+        if env_manager.get_all().len() > 0 {
+            app_content = env_manager.replace_in_code(&app_content);
+        }
+
+        let eliminator = crate::utils::DeadCodeEliminator::new();
+        app_content = eliminator.eliminate(&app_content);
+
+        let app_path = config.outdir.join("app.js");
+        self.fs_service.write_file(&app_path, &app_content).await?;
+
+        output_files.push(OutputFile {
+            path: app_path,
+            content: app_content.clone(),
+            size: app_content.len(),
+        });
+
+        // Process CSS
+        let mut all_css_files = structure.css_files.clone();
+        for css_module in css_modules {
+            all_css_files.push(css_module.path.clone());
+        }
+
+        if !all_css_files.is_empty() {
+            let css_content = self.css_processor.bundle_css(&all_css_files).await?;
+            let css_path = config.outdir.join("bundle.css");
+            self.fs_service.write_file(&css_path, &css_content).await?;
+
+            output_files.push(OutputFile {
+                path: css_path,
+                content: css_content.clone(),
+                size: css_content.len(),
+            });
+        }
+
+        // Update incremental state
+        for module in js_modules {
+            let _ = self.incremental_state.update_file(&module.path);
+        }
+        self.incremental_state.mark_build_complete();
+
+        Ok(BuildResult {
+            success: true,
+            errors: Vec::new(),
+            warnings: Vec::new(),
+            js_modules_processed: js_modules.len(),
+            css_files_processed: all_css_files.len(),
+            tree_shaking_stats: tree_shaking_stats.cloned(),
+            build_time: build_start.elapsed(),
+            output_files,
+            modules: js_modules.to_vec(),
+        })
+    }
 }
 
 #[async_trait::async_trait]
@@ -706,6 +818,11 @@ impl BuildService for UltraBuildService {
         // 📦 CODE SPLITTING (if enabled)
         if config.enable_code_splitting {
             return self.build_with_code_splitting(config, &js_only_modules, &structure, tree_shaking_stats.as_ref()).await;
+        }
+
+        // 📦 VENDOR CHUNK SPLITTING (if enabled)
+        if config.vendor_chunk {
+            return self.build_with_vendor_splitting(config, &js_only_modules, &css_modules, &structure, tree_shaking_stats.as_ref()).await;
         }
 
         // ⚡ JAVASCRIPT PROCESSING WITH INTELLIGENT CACHING

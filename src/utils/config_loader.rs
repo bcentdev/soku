@@ -47,6 +47,10 @@ pub struct UltraConfig {
     /// External dependencies to exclude from bundle (e.g., ["react", "vue"])
     #[serde(skip_serializing_if = "Option::is_none")]
     pub external: Option<Vec<String>>,
+
+    /// Enable automatic vendor chunk splitting (node_modules → vendor.js)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vendor_chunk: Option<bool>,
 }
 
 impl Default for UltraConfig {
@@ -62,6 +66,7 @@ impl Default for UltraConfig {
             max_chunk_size: Some(250_000),
             alias: None,
             external: None,
+            vendor_chunk: Some(false),
         }
     }
 }
@@ -140,6 +145,7 @@ impl ConfigLoader {
             mode,
             alias: base.alias.unwrap_or_default(),
             external: base.external.unwrap_or_default(),
+            vendor_chunk: base.vendor_chunk.unwrap_or(false),
         }
     }
 
@@ -214,7 +220,7 @@ mod tests {
             "production".to_string(),
         );
 
-        assert_eq!(merged.outdir, PathBuf::from("dist-override"));
+        assert_eq!(merged.outdir, PathBuf::from("./dist-override")); // Resolved relative to root
         assert_eq!(merged.enable_minification, true); // CLI wins
         assert_eq!(merged.mode, "production");
     }

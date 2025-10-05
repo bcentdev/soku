@@ -254,6 +254,7 @@ mod tests {
             mode: "development".to_string(),
             alias: std::collections::HashMap::new(),
             external: Vec::new(),
+            vendor_chunk: false,
         };
         let watcher = UltraWatcher::new(config, build_config);
 

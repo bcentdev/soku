@@ -27,6 +27,10 @@ async fn test_css_modules_detection() {
         enable_source_maps: false,
         enable_code_splitting: false,
         max_chunk_size: None,
+        mode: "development".to_string(),
+        alias: std::collections::HashMap::new(),
+        external: Vec::new(),
+        vendor_chunk: false,
     };
 
     let result = build_service.build(&config).await;
@@ -67,6 +71,10 @@ async fn test_css_modules_scoping() {
         enable_source_maps: false,
         enable_code_splitting: false,
         max_chunk_size: None,
+        mode: "development".to_string(),
+        alias: std::collections::HashMap::new(),
+        external: Vec::new(),
+        vendor_chunk: false,
     };
 
     let result = build_service.build(&config).await;

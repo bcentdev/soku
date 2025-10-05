@@ -32,6 +32,10 @@ async fn test_tree_shaking_removes_unused_code() {
         enable_source_maps: false,
         enable_code_splitting: false,
         max_chunk_size: None,
+        mode: "development".to_string(),
+        alias: std::collections::HashMap::new(),
+        external: Vec::new(),
+        vendor_chunk: false,
     };
 
     let result = build_service.build(&config).await;
@@ -77,6 +81,10 @@ async fn test_tree_shaking_preserves_used_code() {
         enable_source_maps: false,
         enable_code_splitting: false,
         max_chunk_size: None,
+        mode: "development".to_string(),
+        alias: std::collections::HashMap::new(),
+        external: Vec::new(),
+        vendor_chunk: false,
     };
 
     let result = build_service.build(&config).await;
@@ -121,6 +129,10 @@ async fn test_tree_shaking_with_typescript() {
         enable_source_maps: false,
         enable_code_splitting: false,
         max_chunk_size: None,
+        mode: "development".to_string(),
+        alias: std::collections::HashMap::new(),
+        external: Vec::new(),
+        vendor_chunk: false,
     };
 
     let result = build_service.build(&config).await;
