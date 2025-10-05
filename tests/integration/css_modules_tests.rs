@@ -1,8 +1,8 @@
 use std::path::PathBuf;
-use ultra::core::models::BuildConfig;
-use ultra::core::interfaces::BuildService;
-use ultra::infrastructure::{TokioFileSystemService, UnifiedJsProcessor, LightningCssProcessor};
-use ultra::infrastructure::processors::ProcessingStrategy;
+use soku::core::models::BuildConfig;
+use soku::core::interfaces::BuildService;
+use soku::infrastructure::{TokioFileSystemService, UnifiedJsProcessor, LightningCssProcessor};
+use soku::infrastructure::processors::ProcessingStrategy;
 
 #[tokio::test]
 async fn test_css_modules_detection() {
@@ -13,7 +13,7 @@ async fn test_css_modules_detection() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(true)); // CSS Modules enabled
 
-    let mut build_service = ultra::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::UltraBuildService::new(
         fs_service,
         js_processor,
         css_processor,
@@ -57,7 +57,7 @@ async fn test_css_modules_scoping() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(true));
 
-    let mut build_service = ultra::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::UltraBuildService::new(
         fs_service,
         js_processor,
         css_processor,

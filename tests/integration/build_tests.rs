@@ -1,8 +1,8 @@
 use std::path::PathBuf;
-use ultra::core::models::BuildConfig;
-use ultra::core::interfaces::BuildService;
-use ultra::infrastructure::{TokioFileSystemService, UnifiedJsProcessor, LightningCssProcessor};
-use ultra::infrastructure::processors::ProcessingStrategy;
+use soku::core::models::BuildConfig;
+use soku::core::interfaces::BuildService;
+use soku::infrastructure::{TokioFileSystemService, UnifiedJsProcessor, LightningCssProcessor};
+use soku::infrastructure::processors::ProcessingStrategy;
 
 #[tokio::test]
 async fn test_simple_project_build() {
@@ -13,7 +13,7 @@ async fn test_simple_project_build() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = ultra::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::UltraBuildService::new(
         fs_service,
         js_processor,
         css_processor,
@@ -56,7 +56,7 @@ async fn test_typescript_project_build() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Enhanced));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = ultra::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::UltraBuildService::new(
         fs_service,
         js_processor,
         css_processor,
@@ -103,7 +103,7 @@ async fn test_source_maps_generation() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = ultra::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::UltraBuildService::new(
         fs_service,
         js_processor,
         css_processor,
@@ -154,7 +154,7 @@ async fn test_demo_project_build() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = ultra::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::UltraBuildService::new(
         fs_service,
         js_processor,
         css_processor,
