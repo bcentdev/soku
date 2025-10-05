@@ -36,7 +36,7 @@ async fn test_tree_shaking_removes_unused_code() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-    };
+        entries: std::collections::HashMap::new(),    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "Tree shaking build should succeed");
@@ -85,7 +85,7 @@ async fn test_tree_shaking_preserves_used_code() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-    };
+        entries: std::collections::HashMap::new(),    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "Build should succeed");
@@ -133,7 +133,7 @@ async fn test_tree_shaking_with_typescript() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-    };
+        entries: std::collections::HashMap::new(),    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "TypeScript tree shaking should succeed");

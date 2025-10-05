@@ -8,9 +8,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UltraConfig {
-    /// Entry point file (e.g., "src/main.js")
+    /// Entry point file (e.g., "src/main.js") - single entry (backward compatible)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entry: Option<String>,
+
+    /// Multiple entry points (e.g., {"main": "src/main.js", "admin": "src/admin.js"})
+    /// Takes precedence over `entry` if both are specified
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub entries: Option<HashMap<String, String>>,
 
     /// Output directory (default: "dist")
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -57,6 +62,7 @@ impl Default for UltraConfig {
     fn default() -> Self {
         Self {
             entry: None,
+            entries: None,
             outdir: Some("dist".to_string()),
             minify: Some(true),
             source_maps: Some(false),
@@ -126,6 +132,33 @@ impl ConfigLoader {
             root.join(outdir_str)
         };
 
+        // Process entries: entries takes precedence over entry
+        let entries = if let Some(entries_map) = base.entries {
+            // Multiple entries from config
+            entries_map.into_iter()
+                .map(|(name, path_str)| {
+                    let entry_path = if Path::new(&path_str).is_absolute() {
+                        PathBuf::from(path_str)
+                    } else {
+                        root.join(&path_str)
+                    };
+                    (name, entry_path)
+                })
+                .collect()
+        } else if let Some(entry_str) = base.entry {
+            // Single entry from config (backward compatible)
+            let entry_path = if Path::new(&entry_str).is_absolute() {
+                PathBuf::from(entry_str)
+            } else {
+                root.join(&entry_str)
+            };
+            let mut map = HashMap::new();
+            map.insert("main".to_string(), entry_path);
+            map
+        } else {
+            HashMap::new()
+        };
+
         BuildConfig {
             root,
             outdir: resolved_outdir,
@@ -146,6 +179,7 @@ impl ConfigLoader {
             alias: base.alias.unwrap_or_default(),
             external: base.external.unwrap_or_default(),
             vendor_chunk: base.vendor_chunk.unwrap_or(false),
+            entries,
         }
     }
 

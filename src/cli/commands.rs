@@ -473,6 +473,7 @@ impl CliHandler {
             alias: std::collections::HashMap::new(), // No aliases in watch mode
             external: Vec::new(), // No external deps in watch mode
             vendor_chunk: false, // No vendor splitting in watch mode
+            entries: std::collections::HashMap::new(), // No multiple entries in watch mode
         };
 
         // Create watch config
@@ -567,6 +568,7 @@ impl CliHandler {
             alias: std::collections::HashMap::new(), // No aliases in dev mode
             external: Vec::new(), // No external deps in dev mode
             vendor_chunk: false, // No vendor splitting in dev mode
+            entries: std::collections::HashMap::new(), // No multiple entries in dev mode
         };
 
         // Create services

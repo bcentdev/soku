@@ -31,7 +31,7 @@ async fn test_simple_project_build() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-    };
+        entries: std::collections::HashMap::new(),    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "Build should succeed");
@@ -74,7 +74,7 @@ async fn test_typescript_project_build() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-    };
+        entries: std::collections::HashMap::new(),    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "TypeScript build should succeed");
@@ -125,7 +125,7 @@ async fn test_source_maps_generation() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-    };
+        entries: std::collections::HashMap::new(),    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "Build with source maps should succeed");
@@ -176,7 +176,7 @@ async fn test_demo_project_build() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-    };
+        entries: std::collections::HashMap::new(),    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "Demo project build should succeed");

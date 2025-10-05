@@ -31,7 +31,7 @@ async fn test_css_modules_detection() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-    };
+        entries: std::collections::HashMap::new(),    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "CSS Modules build should succeed");
@@ -75,7 +75,7 @@ async fn test_css_modules_scoping() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-    };
+        entries: std::collections::HashMap::new(),    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "Build should succeed");

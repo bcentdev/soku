@@ -37,6 +37,10 @@ pub struct BuildConfig {
     pub external: Vec<String>,
     #[serde(default)]
     pub vendor_chunk: bool,
+    /// Multiple entry points: bundle_name -> entry_path
+    /// Example: {"main": "src/main.js", "admin": "src/admin.js"}
+    #[serde(default)]
+    pub entries: HashMap<String, PathBuf>,
 }
 
 fn default_root() -> PathBuf {
@@ -73,6 +77,7 @@ impl Default for BuildConfig {
             alias: HashMap::new(),
             external: Vec::new(),
             vendor_chunk: false,
+            entries: HashMap::new(),
         }
     }
 }

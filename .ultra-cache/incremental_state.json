@@ -1,22 +1,40 @@
 {
   "file_metadata": {
-    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/utils.js": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/utils.js",
-      "content_hash": 12891957701049207123,
+    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/calculator.ts": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/calculator.ts",
+      "content_hash": 12134128014656219427,
       "modified_time": {
-        "secs_since_epoch": 1758747507,
-        "nanos_since_epoch": 658024110
+        "secs_since_epoch": 1759427859,
+        "nanos_since_epoch": 25377865
       },
-      "size": 1127
+      "size": 374
     },
-    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/styles.css": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/styles.css",
-      "content_hash": 8293811090183165173,
+    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/main.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/main.js",
+      "content_hash": 13391133932910462052,
       "modified_time": {
-        "secs_since_epoch": 1758747383,
-        "nanos_since_epoch": 447825569
+        "secs_since_epoch": 1759427837,
+        "nanos_since_epoch": 793006677
       },
-      "size": 1493
+      "size": 136
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js",
+      "content_hash": 15055844669294771726,
+      "modified_time": {
+        "secs_since_epoch": 1758748226,
+        "nanos_since_epoch": 224368518
+      },
+      "size": 815
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/typescript-test.ts": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/typescript-test.ts",
+      "content_hash": 2843773085786852958,
+      "modified_time": {
+        "secs_since_epoch": 1759607340,
+        "nanos_since_epoch": 818673442
+      },
+      "size": 206
     },
     "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/styles.css": {
       "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/styles.css",
@@ -36,14 +54,14 @@
       },
       "size": 166
     },
-    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/utils.js": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/utils.js",
-      "content_hash": 7942300515149983986,
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/helpers.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/helpers.js",
+      "content_hash": 6896596851391614162,
       "modified_time": {
-        "secs_since_epoch": 1759427844,
-        "nanos_since_epoch": 448164711
+        "secs_since_epoch": 1758748146,
+        "nanos_since_epoch": 324075014
       },
-      "size": 132
+      "size": 987
     },
     "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/components.js": {
       "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/components.js",
@@ -54,6 +72,15 @@
       },
       "size": 1115
     },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/services.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/services.js",
+      "content_hash": 6655930992072049501,
+      "modified_time": {
+        "secs_since_epoch": 1758747361,
+        "nanos_since_epoch": 913781467
+      },
+      "size": 981
+    },
     "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/simple.js": {
       "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/simple.js",
       "content_hash": 5817091165783679804,
@@ -62,6 +89,15 @@
         "nanos_since_epoch": 818272897
       },
       "size": 84
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/utils.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/utils.js",
+      "content_hash": 7942300515149983986,
+      "modified_time": {
+        "secs_since_epoch": 1759427844,
+        "nanos_since_epoch": 448164711
+      },
+      "size": 132
     },
     "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/components.js": {
       "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/components.js",
@@ -72,6 +108,15 @@
       },
       "size": 944
     },
+    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/user.ts": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/user.ts",
+      "content_hash": 11408318012006175923,
+      "modified_time": {
+        "secs_since_epoch": 1759607366,
+        "nanos_since_epoch": 59667402
+      },
+      "size": 313
+    },
     "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/utils.js": {
       "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/utils.js",
       "content_hash": 10324262214634853399,
@@ -81,14 +126,32 @@
       },
       "size": 842
     },
-    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/main.js": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/main.js",
-      "content_hash": 16941956921298745142,
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/styles.css": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/styles.css",
+      "content_hash": 8293811090183165173,
       "modified_time": {
-        "secs_since_epoch": 1759607340,
-        "nanos_since_epoch": 818088020
+        "secs_since_epoch": 1758747383,
+        "nanos_since_epoch": 447825569
       },
-      "size": 235
+      "size": 1493
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/css-modules/main.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/css-modules/main.js",
+      "content_hash": 17696503996371300860,
+      "modified_time": {
+        "secs_since_epoch": 1759607349,
+        "nanos_since_epoch": 449987014
+      },
+      "size": 238
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/utils.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/utils.js",
+      "content_hash": 12891957701049207123,
+      "modified_time": {
+        "secs_since_epoch": 1758747507,
+        "nanos_since_epoch": 658024110
+      },
+      "size": 1127
     },
     "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/main.js": {
       "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/main.js",
@@ -98,78 +161,6 @@
         "nanos_since_epoch": 588135848
       },
       "size": 489
-    },
-    "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js",
-      "content_hash": 15055844669294771726,
-      "modified_time": {
-        "secs_since_epoch": 1758748226,
-        "nanos_since_epoch": 224368518
-      },
-      "size": 815
-    },
-    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/helpers.js": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/helpers.js",
-      "content_hash": 6896596851391614162,
-      "modified_time": {
-        "secs_since_epoch": 1758748146,
-        "nanos_since_epoch": 324075014
-      },
-      "size": 987
-    },
-    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/config.js": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/config.js",
-      "content_hash": 817023116470154385,
-      "modified_time": {
-        "secs_since_epoch": 1758748219,
-        "nanos_since_epoch": 824622641
-      },
-      "size": 604
-    },
-    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/calculator.ts": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/calculator.ts",
-      "content_hash": 12134128014656219427,
-      "modified_time": {
-        "secs_since_epoch": 1759427859,
-        "nanos_since_epoch": 25377865
-      },
-      "size": 374
-    },
-    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/services.js": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/services.js",
-      "content_hash": 6655930992072049501,
-      "modified_time": {
-        "secs_since_epoch": 1758747361,
-        "nanos_since_epoch": 913781467
-      },
-      "size": 981
-    },
-    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/main.js": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/main.js",
-      "content_hash": 13391133932910462052,
-      "modified_time": {
-        "secs_since_epoch": 1759427837,
-        "nanos_since_epoch": 793006677
-      },
-      "size": 136
-    },
-    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/typescript-test.ts": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/typescript-test.ts",
-      "content_hash": 2843773085786852958,
-      "modified_time": {
-        "secs_since_epoch": 1759607340,
-        "nanos_since_epoch": 818673442
-      },
-      "size": 206
-    },
-    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/user.ts": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/user.ts",
-      "content_hash": 11408318012006175923,
-      "modified_time": {
-        "secs_since_epoch": 1759607366,
-        "nanos_since_epoch": 59667402
-      },
-      "size": 313
     },
     "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/types.ts": {
       "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/types.ts",
@@ -189,34 +180,39 @@
       },
       "size": 325
     },
-    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/css-modules/main.js": {
-      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/css-modules/main.js",
-      "content_hash": 17696503996371300860,
+    "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/config.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/test-large/src/config.js",
+      "content_hash": 817023116470154385,
       "modified_time": {
-        "secs_since_epoch": 1759607349,
-        "nanos_since_epoch": 449987014
+        "secs_since_epoch": 1758748219,
+        "nanos_since_epoch": 824622641
       },
-      "size": 238
+      "size": 604
+    },
+    "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/main.js": {
+      "path": "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/main.js",
+      "content_hash": 16941956921298745142,
+      "modified_time": {
+        "secs_since_epoch": 1759607340,
+        "nanos_since_epoch": 818088020
+      },
+      "size": 235
     }
   },
   "graph": {
     "dependencies": {
-      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/main.js": [
-        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./utils.js",
-        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./styles.css",
-        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./components.js"
-      ],
-      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/main.js": [
-        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/./typescript-test.ts"
+      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/main.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/./utils.js",
+        "tests/fixtures/simple-project/./utils.js"
       ],
       "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js": [
-        "test-large/./src/services.js",
-        "test-large/./src/config.js",
-        "test-large/./src/helpers.js",
         "test-large/./src/types.ts",
-        "test-large/./src/components.js",
+        "test-large/./src/helpers.js",
         "test-large/./src/utils.js",
-        "test-large/./src/styles.css"
+        "test-large/./src/styles.css",
+        "test-large/./src/services.js",
+        "test-large/./src/components.js",
+        "test-large/./src/config.js"
       ],
       "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/css-modules/main.js": [
         "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/css-modules/./src/Button.module.css"
@@ -224,61 +220,65 @@
       "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/main.ts": [
         "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/./calculator.ts"
       ],
-      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/main.js": [
-        "tests/fixtures/simple-project/./utils.js",
-        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/./utils.js"
+      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/main.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./components.js",
+        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./utils.js",
+        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./styles.css"
+      ],
+      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/main.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/./typescript-test.ts"
       ]
     },
     "dependents": {
-      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./utils.js": [
-        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/main.js"
-      ],
       "test-large/./src/styles.css": [
         "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
       ],
-      "test-large/./src/types.ts": [
-        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
-      ],
-      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./styles.css": [
-        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/main.js"
-      ],
-      "test-large/./src/helpers.js": [
-        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
-      ],
-      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/css-modules/./src/Button.module.css": [
-        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/css-modules/main.js"
-      ],
-      "test-large/./src/components.js": [
+      "test-large/./src/utils.js": [
         "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
       ],
       "test-large/./src/services.js": [
         "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
       ],
+      "test-large/./src/types.ts": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
+      ],
       "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/./calculator.ts": [
         "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/typescript-project/main.ts"
-      ],
-      "test-large/./src/utils.js": [
-        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
       ],
       "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./components.js": [
         "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/main.js"
       ],
+      "test-large/./src/config.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
+      ],
+      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/css-modules/./src/Button.module.css": [
+        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/css-modules/main.js"
+      ],
       "tests/fixtures/simple-project/./utils.js": [
         "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/main.js"
       ],
-      "test-large/./src/config.js": [
+      "test-large/./src/helpers.js": [
         "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
+      ],
+      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/./typescript-test.ts": [
+        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/main.js"
+      ],
+      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./styles.css": [
+        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/main.js"
+      ],
+      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/./utils.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/demo-project/main.js"
       ],
       "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/./utils.js": [
         "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/simple-project/main.js"
       ],
-      "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/./typescript-test.ts": [
-        "/Users/vicentetorres/Projects/ultra-bundler/tests/fixtures/tree-shaking/main.js"
+      "test-large/./src/components.js": [
+        "/Users/vicentetorres/Projects/ultra-bundler/test-large/main.js"
       ]
     }
   },
   "last_build_time": {
-    "secs_since_epoch": 1759656297,
-    "nanos_since_epoch": 26201000
+    "secs_since_epoch": 1759657015,
+    "nanos_since_epoch": 497055000
   }
 }
