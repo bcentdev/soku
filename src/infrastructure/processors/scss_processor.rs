@@ -1,5 +1,5 @@
 use crate::core::interfaces::CssProcessor;
-use crate::utils::{Result, UltraError, Logger, UltraCache};
+use crate::utils::{Result, SokuError, Logger, SokuCache};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -9,7 +9,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct ScssProcessor {
     minify: bool,
-    cache: Arc<UltraCache>,
+    cache: Arc<SokuCache>,
     css_processor: Option<Arc<dyn CssProcessor>>,
 }
 
@@ -19,7 +19,7 @@ impl ScssProcessor {
     pub fn new(minify: bool) -> Self {
         Self {
             minify,
-            cache: Arc::new(UltraCache::new()),
+            cache: Arc::new(SokuCache::new()),
             css_processor: None,
         }
     }
@@ -28,7 +28,7 @@ impl ScssProcessor {
     pub fn with_css_processor(minify: bool, css_processor: Arc<dyn CssProcessor>) -> Self {
         Self {
             minify,
-            cache: Arc::new(UltraCache::new()),
+            cache: Arc::new(SokuCache::new()),
             css_processor: Some(css_processor),
         }
     }
@@ -87,7 +87,7 @@ impl ScssProcessor {
             Err(e) => {
                 let error_msg = format!("SCSS compilation error in {}: {}", path.display(), e);
                 Logger::error(&error_msg);
-                Err(UltraError::CssProcessing(error_msg))
+                Err(SokuError::CssProcessing(error_msg))
             }
         }
     }

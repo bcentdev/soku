@@ -7,7 +7,7 @@ mod infrastructure;
 mod cli;
 
 use cli::CliHandler;
-use utils::UltraError;
+use utils::SokuError;
 
 #[tokio::main]
 async fn main() {
@@ -16,7 +16,7 @@ async fn main() {
     if let Err(e) = handler.run().await {
         // Use enhanced error formatting if available
         match &e {
-            UltraError::Parse { .. } | UltraError::Build { .. } => {
+            SokuError::Parse { .. } | SokuError::Build { .. } => {
                 eprintln!("{}", e.format_detailed());
             }
             _ => {

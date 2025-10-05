@@ -1,4 +1,4 @@
-use crate::utils::{Result, UltraError};
+use crate::utils::{Result, SokuError};
 use crate::infrastructure::HmrHookManager;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -41,14 +41,14 @@ pub struct HmrClient {
 
 /// Ultra-fast Hot Module Replacement system
 #[derive(Clone)]
-pub struct UltraHmrService {
+pub struct SokuHmrService {
     clients: Arc<DashMap<String, HmrClient>>,
     update_sender: broadcast::Sender<HmrUpdate>,
     root_path: PathBuf,
     hook_manager: Arc<tokio::sync::Mutex<HmrHookManager>>,
 }
 
-impl UltraHmrService {
+impl SokuHmrService {
     pub fn new(root_path: PathBuf) -> Self {
         let (update_sender, _) = broadcast::channel(1000);
 
@@ -70,7 +70,7 @@ impl UltraHmrService {
     pub async fn start_server(&self, port: u16) -> Result<()> {
         let addr = format!("127.0.0.1:{}", port);
         let listener = tokio::net::TcpListener::bind(&addr).await
-            .map_err(|e| UltraError::build(format!("HMR server bind failed: {}", e)))?;
+            .map_err(|e| SokuError::build(format!("HMR server bind failed: {}", e)))?;
 
         tracing::info!("🔥 HMR server started on ws://{}", addr);
 
@@ -133,7 +133,7 @@ impl UltraHmrService {
         hook_manager: Arc<tokio::sync::Mutex<HmrHookManager>>,
     ) -> Result<()> {
         let ws_stream = accept_async(stream).await
-            .map_err(|e| UltraError::build(format!("WebSocket handshake failed: {}", e)))?;
+            .map_err(|e| SokuError::build(format!("WebSocket handshake failed: {}", e)))?;
 
         let (mut ws_sender, mut ws_receiver) = ws_stream.split();
         let client_id = Uuid::new_v4().to_string();
@@ -218,11 +218,11 @@ impl UltraHmrService {
                 }
             },
             Config::default(),
-        ).map_err(|e| UltraError::build(format!("File watcher setup failed: {}", e)))?;
+        ).map_err(|e| SokuError::build(format!("File watcher setup failed: {}", e)))?;
 
         // Watch the root directory
         watcher.watch(&root_path, RecursiveMode::Recursive)
-            .map_err(|e| UltraError::build(format!("Watch setup failed: {}", e)))?;
+            .map_err(|e| SokuError::build(format!("Watch setup failed: {}", e)))?;
 
         tracing::info!("👁️  File watcher started for: {}", root_path.display());
 
@@ -345,18 +345,18 @@ mod tests {
     #[tokio::test]
     async fn test_hmr_service_creation() {
         let temp_dir = tempdir().unwrap();
-        let _hmr = UltraHmrService::new(temp_dir.path().to_path_buf());
+        let _hmr = SokuHmrService::new(temp_dir.path().to_path_buf());
 
-        // TODO: Add stats() method to UltraHmrService
+        // TODO: Add stats() method to SokuHmrService
         // let stats = hmr.stats();
         // assert_eq!(stats.connected_clients, 0);
     }
 
     #[test]
     fn test_file_type_detection() {
-        assert!(UltraHmrService::is_js_file(&PathBuf::from("test.js")));
-        assert!(UltraHmrService::is_js_file(&PathBuf::from("test.ts")));
-        assert!(UltraHmrService::is_css_file(&PathBuf::from("test.css")));
-        assert!(!UltraHmrService::is_js_file(&PathBuf::from("test.txt")));
+        assert!(SokuHmrService::is_js_file(&PathBuf::from("test.js")));
+        assert!(SokuHmrService::is_js_file(&PathBuf::from("test.ts")));
+        assert!(SokuHmrService::is_css_file(&PathBuf::from("test.css")));
+        assert!(!SokuHmrService::is_js_file(&PathBuf::from("test.txt")));
     }
 }

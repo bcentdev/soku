@@ -4,7 +4,7 @@
 set -e
 
 VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-REPO="https://github.com/bcentdev/ultra"
+REPO="https://github.com/bcentdev/soku"
 
 echo "📦 Preparing npm packages for version $VERSION"
 echo "   Package: soku"

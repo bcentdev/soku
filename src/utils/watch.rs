@@ -3,7 +3,7 @@
 
 use crate::core::models::BuildConfig;
 use crate::core::interfaces::BuildService;
-use crate::utils::{Result, Logger, UltraError};
+use crate::utils::{Result, Logger, SokuError};
 use notify::{Watcher, RecursiveMode, Event, EventKind, RecommendedWatcher};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver};
@@ -69,7 +69,7 @@ impl UltraWatcher {
                 }
             },
             notify::Config::default(),
-        ).map_err(|e| UltraError::Build {
+        ).map_err(|e| SokuError::Build {
             message: format!("Failed to create watcher: {}", e),
             context: None,
         })?;
@@ -78,7 +78,7 @@ impl UltraWatcher {
         for path in &self.config.watch_paths {
             if path.exists() {
                 watcher.watch(path, RecursiveMode::Recursive)
-                    .map_err(|e| UltraError::Build {
+                    .map_err(|e| SokuError::Build {
                         message: format!("Failed to watch {}: {}", path.display(), e),
                         context: None,
                     })?;

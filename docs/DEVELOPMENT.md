@@ -16,7 +16,7 @@ cargo install flamegraph     # Performance profiling
 
 ### Building from Source
 ```bash
-git clone https://github.com/bcentdev/ultra
+git clone https://github.com/bcentdev/soku
 cd ultra
 
 # Development build

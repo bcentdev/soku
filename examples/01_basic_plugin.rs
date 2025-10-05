@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
     let css_processor = Arc::new(ultra::infrastructure::LightningCssProcessor::new(false));
 
     // Create and register plugin
-    let service = ultra::core::services::UltraBuildService::new(fs_service, js_processor, css_processor)
+    let service = ultra::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
         .with_plugin(Arc::new(TimingPlugin::new()));
 
     // Build configuration

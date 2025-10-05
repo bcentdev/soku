@@ -243,9 +243,9 @@ We use [Semantic Versioning](https://semver.org/):
 
 ## ❓ Questions?
 
-- Open a [Discussion](https://github.com/bcentdev/ultra/discussions) for questions
+- Open a [Discussion](https://github.com/bcentdev/soku/discussions) for questions
 - Join our [Discord](https://discord.gg/ultra) for real-time chat
-- Check existing [Issues](https://github.com/bcentdev/ultra/issues) and [PRs](https://github.com/bcentdev/ultra/pulls)
+- Check existing [Issues](https://github.com/bcentdev/soku/issues) and [PRs](https://github.com/bcentdev/soku/pulls)
 
 ---
 

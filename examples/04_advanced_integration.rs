@@ -108,7 +108,7 @@ async fn main() -> Result<()> {
     };
 
     // Create build service with all features
-    let service = ultra::core::services::UltraBuildService::new(fs_service, js_processor, css_processor)
+    let service = ultra::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
         // Add tree shaking
         .with_tree_shaker(tree_shaker)
         // Add production plugin

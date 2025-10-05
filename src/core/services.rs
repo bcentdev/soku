@@ -1,5 +1,5 @@
 use crate::core::{interfaces::*, models::*};
-use crate::utils::{Result, Logger, Timer, SokuUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraCache, performance::parallel, IncrementalBuildState, PluginManager, PluginContext, PluginEvent, TransformerChain, CustomTransformer, AdvancedSourceMapGenerator, SourceMapUtils};
+use crate::utils::{Result, Logger, Timer, SokuUI, CompletionStats, OutputFileInfo, TimingBreakdown, SokuCache, performance::parallel, IncrementalBuildState, PluginManager, PluginContext, PluginEvent, TransformerChain, CustomTransformer, AdvancedSourceMapGenerator, SourceMapUtils};
 use crate::infrastructure::{NodeModuleResolver, MinificationService, CodeSplitter, CodeSplitConfig};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
@@ -13,21 +13,21 @@ static CSS_IMPORT_REGEX: Lazy<Regex> = Lazy::new(|| {
 });
 
 /// Main build service implementation
-pub struct UltraBuildService {
+pub struct SokuBuildService {
     fs_service: Arc<dyn FileSystemService>,
     js_processor: Arc<dyn JsProcessor>,
     css_processor: Arc<dyn CssProcessor>,
     tree_shaker: Option<Arc<dyn TreeShaker>>,
     ui: SokuUI,
     node_resolver: NodeModuleResolver,
-    cache: Arc<UltraCache>,
+    cache: Arc<SokuCache>,
     incremental_state: IncrementalBuildState,
     cache_dir: PathBuf,
     plugin_manager: PluginManager,
     transformer_chain: TransformerChain,
 }
 
-impl UltraBuildService {
+impl SokuBuildService {
     pub fn new(
         fs_service: Arc<dyn FileSystemService>,
         js_processor: Arc<dyn JsProcessor>,
@@ -37,7 +37,7 @@ impl UltraBuildService {
         let cache_dir = std::env::current_dir()
             .unwrap_or_else(|_| PathBuf::from("."))
             .join(".soku-cache");
-        let cache = Arc::new(UltraCache::with_persistent_cache(&cache_dir));
+        let cache = Arc::new(SokuCache::with_persistent_cache(&cache_dir));
 
         // Load incremental state from disk if it exists
         let incremental_state = IncrementalBuildState::load_from_disk(&cache_dir)
@@ -264,7 +264,7 @@ impl UltraBuildService {
                         tokio::task::spawn_blocking(move || {
                             crate::infrastructure::processors::common::extract_dependencies(&content_clone)
                         }).await
-                        .map_err(|e| crate::utils::UltraError::build(format!("Dependency extraction failed: {}", e)))?
+                        .map_err(|e| crate::utils::SokuError::build(format!("Dependency extraction failed: {}", e)))?
                     }
                     ModuleType::Css => {
                         // Extract CSS imports (@import statements)
@@ -377,7 +377,7 @@ impl UltraBuildService {
                 })
                 .collect()
         }).await
-        .map_err(|e| crate::utils::UltraError::build(format!("Parallel processing failed: {}", e)))?;
+        .map_err(|e| crate::utils::SokuError::build(format!("Parallel processing failed: {}", e)))?;
 
         Logger::debug(&format!("✅ Parallel processing complete: {} modules processed", processed_modules.len()));
 
@@ -873,7 +873,7 @@ impl UltraBuildService {
                 // Try ends_with for relative paths
                 m.path.ends_with(entry_path)
             })
-            .ok_or_else(|| crate::utils::UltraError::Build {
+            .ok_or_else(|| crate::utils::SokuError::Build {
                 message: format!("Entry point not found: {} (available modules: {})",
                     entry_path.display(),
                     all_modules.iter()
@@ -916,7 +916,7 @@ impl UltraBuildService {
 }
 
 #[async_trait::async_trait]
-impl BuildService for UltraBuildService {
+impl BuildService for SokuBuildService {
     async fn build(&mut self, config: &BuildConfig) -> Result<BuildResult> {
         // 🚀 EPIC BANNER!
         self.ui.show_epic_banner();
@@ -1184,7 +1184,7 @@ impl BuildService for UltraBuildService {
 
                 // Use tokio::fs for async file copy
                 tokio::fs::copy(wasm_path, &output_wasm_path).await
-                    .map_err(|e| crate::utils::UltraError::Io(e))?;
+                    .map_err(|e| crate::utils::SokuError::Io(e))?;
 
                 Logger::debug(&format!("  ✓ {} → {}", wasm_filename, output_wasm_path.display()));
             }

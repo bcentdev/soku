@@ -3,7 +3,7 @@
 // This example shows how to use HMR hooks to customize
 // Hot Module Replacement behavior.
 
-use soku::infrastructure::{UltraHmrService, HmrHook, HmrHookContext, HmrHookUpdateKind, BuiltInHmrHooks};
+use soku::infrastructure::{SokuHmrService, HmrHook, HmrHookContext, HmrHookUpdateKind, BuiltInHmrHooks};
 use soku::utils::Result;
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
     let project_root = PathBuf::from("./demo-project");
 
     // Create HMR service with multiple hooks
-    let hmr_service = UltraHmrService::new(project_root.clone())
+    let hmr_service = SokuHmrService::new(project_root.clone())
         // Built-in logger hook
         .with_hook(Arc::new(BuiltInHmrHooks::logger().with_verbose(true)))
         .await

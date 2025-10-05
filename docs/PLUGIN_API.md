@@ -280,14 +280,14 @@ impl Plugin for TimingPlugin {
 ```rust
 use std::sync::Arc;
 
-let service = UltraBuildService::new(fs, js_proc, css_proc)
+let service = SokuBuildService::new(fs, js_proc, css_proc)
     .with_plugin(Arc::new(MyPlugin::new()));
 ```
 
 ### Multiple Plugins
 
 ```rust
-let service = UltraBuildService::new(fs, js_proc, css_proc)
+let service = SokuBuildService::new(fs, js_proc, css_proc)
     .with_plugin(Arc::new(TimingPlugin::new()))
     .with_plugin(Arc::new(LoggerPlugin::new()))
     .with_plugin(Arc::new(AnalyticsPlugin::new()));
@@ -296,7 +296,7 @@ let service = UltraBuildService::new(fs, js_proc, css_proc)
 ### Dynamic Registration
 
 ```rust
-let mut service = UltraBuildService::new(fs, js_proc, css_proc);
+let mut service = SokuBuildService::new(fs, js_proc, css_proc);
 
 // Register plugins conditionally
 if config.enable_analytics {

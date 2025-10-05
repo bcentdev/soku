@@ -39,7 +39,7 @@ impl ErrorContext {
 }
 
 #[derive(Error, Debug)]
-pub enum UltraError {
+pub enum SokuError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
@@ -80,7 +80,7 @@ pub enum UltraError {
     Other(String),
 }
 
-impl UltraError {
+impl SokuError {
     /// Create a simple parse error without context
     pub fn parse(message: String) -> Self {
         Self::Parse {
@@ -122,10 +122,10 @@ impl UltraError {
     /// Format error with enhanced context display
     pub fn format_detailed(&self) -> String {
         match self {
-            UltraError::Parse { message, context } => {
+            SokuError::Parse { message, context } => {
                 self.format_error_with_context("Parse Error", message, context)
             }
-            UltraError::Build { message, context } => {
+            SokuError::Build { message, context } => {
                 self.format_error_with_context("Build Error", message, context)
             }
             _ => self.to_string(),
@@ -177,16 +177,16 @@ impl UltraError {
     }
 }
 
-pub type Result<T> = std::result::Result<T, UltraError>;
+pub type Result<T> = std::result::Result<T, SokuError>;
 
-impl From<regex::Error> for UltraError {
+impl From<regex::Error> for SokuError {
     fn from(err: regex::Error) -> Self {
-        UltraError::parse(format!("Regex error: {}", err))
+        SokuError::parse(format!("Regex error: {}", err))
     }
 }
 
-impl From<anyhow::Error> for UltraError {
+impl From<anyhow::Error> for SokuError {
     fn from(err: anyhow::Error) -> Self {
-        UltraError::build(err.to_string())
+        SokuError::build(err.to_string())
     }
 }

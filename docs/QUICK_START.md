@@ -11,7 +11,7 @@ cargo add soku
 ## Basic Usage
 
 ```rust
-use soku::core::services::UltraBuildService;
+use soku::core::services::SokuBuildService;
 use soku::core::models::BuildConfig;
 use soku::infrastructure::{TokioFileSystemService, LightningCssProcessor};
 use soku::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let css = Arc::new(LightningCssProcessor::new(false)); // false = no minify for dev
 
     // Create build service
-    let mut service = UltraBuildService::new(fs, js, css);
+    let mut service = SokuBuildService::new(fs, js, css);
 
     // Configure build with current structure
     let config = BuildConfig {
@@ -146,9 +146,9 @@ let config = BuildConfig {
 ## Hot Module Replacement
 
 ```rust
-use soku::infrastructure::{UltraHmrService, BuiltInHmrHooks};
+use soku::infrastructure::{SokuHmrService, BuiltInHmrHooks};
 
-let hmr = UltraHmrService::new(PathBuf::from("./src"))
+let hmr = SokuHmrService::new(PathBuf::from("./src"))
     .with_hook(Arc::new(BuiltInHmrHooks::logger()))
     .await;
 
@@ -195,4 +195,4 @@ let config = BuildConfig {
 
 - Examples: `examples/` directory
 - Documentation: `docs/` directory
-- GitHub: https://github.com/bcentdev/ultra
+- GitHub: https://github.com/bcentdev/soku

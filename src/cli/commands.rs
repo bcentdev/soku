@@ -1,7 +1,7 @@
 use crate::core::{models::*, services::*, interfaces::*};
 use crate::infrastructure::{
     TokioFileSystemService, SokuFileSystemService,
-    LightningCssProcessor, ScssProcessor, RegexTreeShaker, UltraHmrService, generate_hmr_client_code,
+    LightningCssProcessor, ScssProcessor, RegexTreeShaker, SokuHmrService, generate_hmr_client_code,
     ProcessingStrategy, UnifiedJsProcessor
 };
 use crate::utils::{Result, Logger};
@@ -303,7 +303,7 @@ impl CliHandler {
         }
 
         // Create build service
-        let mut build_service = UltraBuildService::new(
+        let mut build_service = SokuBuildService::new(
             fs_service,
             js_processor,
             css_processor,
@@ -358,7 +358,7 @@ impl CliHandler {
             for (i, error) in result.errors.iter().enumerate() {
                 Logger::error(&format!("   {}. {}", i + 1, error));
             }
-            return Err(crate::utils::UltraError::build("Build failed with errors".to_string()));
+            return Err(crate::utils::SokuError::build("Build failed with errors".to_string()));
         }
 
         Ok(())
@@ -373,7 +373,7 @@ impl CliHandler {
         tracing::info!("");
 
         // Initialize HMR service
-        let hmr_service = UltraHmrService::new(PathBuf::from(root));
+        let hmr_service = SokuHmrService::new(PathBuf::from(root));
         let hmr_port = port + 1; // HMR on port+1
 
         // Start file watching
@@ -510,7 +510,7 @@ impl CliHandler {
         let lightning_css = Arc::new(LightningCssProcessor::new(enable_minification));
         let css_processor = Arc::new(ScssProcessor::with_css_processor(enable_minification, lightning_css));
 
-        let mut build_service = UltraBuildService::new(
+        let mut build_service = SokuBuildService::new(
             fs_service,
             js_processor,
             css_processor,
@@ -555,7 +555,7 @@ impl CliHandler {
         tracing::info!("  • Production builds");
         tracing::info!("");
         tracing::info!("🔗 Links:");
-        tracing::info!("  • GitHub: https://github.com/bcentdev/ultra");
+        tracing::info!("  • GitHub: https://github.com/bcentdev/soku");
         tracing::info!("  • Documentation: https://ultra-bundler.dev");
 
         Ok(())
@@ -586,7 +586,7 @@ impl CliHandler {
         let css_processor = Arc::new(ScssProcessor::with_css_processor(false, lightning_css));
 
         // Create build service
-        let mut build_service = UltraBuildService::new(
+        let mut build_service = SokuBuildService::new(
             fs_service,
             js_processor,
             css_processor,
@@ -608,11 +608,11 @@ impl CliHandler {
         for output_file in &result.output_files {
             if let Some(parent) = output_file.path.parent() {
                 tokio::fs::create_dir_all(parent).await
-                    .map_err(|e| crate::utils::UltraError::Io(e))?;
+                    .map_err(|e| crate::utils::SokuError::Io(e))?;
             }
 
             tokio::fs::write(&output_file.path, &output_file.content).await
-                .map_err(|e| crate::utils::UltraError::Io(e))?;
+                .map_err(|e| crate::utils::SokuError::Io(e))?;
         }
 
         Ok(())
@@ -649,10 +649,10 @@ impl CliHandler {
         Box::pin(async move {
             let mut files = Vec::new();
             let mut entries = tokio::fs::read_dir(dir).await
-                .map_err(|e| crate::utils::UltraError::Io(e))?;
+                .map_err(|e| crate::utils::SokuError::Io(e))?;
 
             while let Some(entry) = entries.next_entry().await
-                .map_err(|e| crate::utils::UltraError::Io(e))? {
+                .map_err(|e| crate::utils::SokuError::Io(e))? {
 
                 let path = entry.path();
 

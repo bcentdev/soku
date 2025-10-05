@@ -189,13 +189,13 @@ impl BundleAnalysis {
     /// Save analysis to JSON file
     pub fn save_json(&self, path: &Path) -> Result<()> {
         let json = serde_json::to_string_pretty(self)
-            .map_err(|e| crate::utils::UltraError::Build {
+            .map_err(|e| crate::utils::SokuError::Build {
                 message: format!("Failed to serialize analysis: {}", e),
                 context: None,
             })?;
 
         std::fs::write(path, json)
-            .map_err(|e| crate::utils::UltraError::Io(e))?;
+            .map_err(|e| crate::utils::SokuError::Io(e))?;
 
         Ok(())
     }

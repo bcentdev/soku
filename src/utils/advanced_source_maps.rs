@@ -1,7 +1,7 @@
 // Advanced Source Maps - Accurate mappings with inline sources support
 #![allow(dead_code)] // Public API - used via examples and external integrations
 
-use crate::utils::{Result, UltraError};
+use crate::utils::{Result, SokuError};
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use base64::{Engine as _, engine::general_purpose};
@@ -174,7 +174,7 @@ impl SourceMapUtils {
     /// Convert source map to JSON string
     pub fn to_json(source_map: &SourceMap) -> Result<String> {
         serde_json::to_string_pretty(source_map)
-            .map_err(|e| UltraError::Build {
+            .map_err(|e| SokuError::Build {
                 message: format!("Failed to serialize source map: {}", e),
                 context: None,
             })
@@ -183,7 +183,7 @@ impl SourceMapUtils {
     /// Generate inline source map (data URL)
     pub fn to_inline_data_url(source_map: &SourceMap) -> Result<String> {
         let json = serde_json::to_string(source_map)
-            .map_err(|e| UltraError::Build {
+            .map_err(|e| SokuError::Build {
                 message: format!("Failed to serialize source map: {}", e),
                 context: None,
             })?;

@@ -138,6 +138,6 @@ For complete API documentation, see:
 
 ## Need Help?
 
-- **Issues**: https://github.com/bcentdev/ultra/issues
-- **Discussions**: https://github.com/bcentdev/ultra/discussions
+- **Issues**: https://github.com/bcentdev/soku/issues
+- **Discussions**: https://github.com/bcentdev/soku/discussions
 - **Documentation**: See `docs/` directory

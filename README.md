@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)](https://www.rust-lang.org)
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/bcentdev/ultra/releases)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/bcentdev/soku/releases)
 
 **Ultra-fast builds • Zero config • Advanced tree shaking**
 
@@ -49,7 +49,7 @@ yarn global add soku
 pnpm add -g soku
 
 # Or install from source
-git clone https://github.com/bcentdev/ultra
+git clone https://github.com/bcentdev/soku
 cd ultra
 cargo build --release
 export PATH=$PATH:$(pwd)/target/release
@@ -482,7 +482,7 @@ src/
 ├── core/                           # Business Logic Layer
 │   ├── interfaces.rs               # Trait definitions
 │   ├── models.rs                   # Domain models (BuildConfig, ModuleInfo, etc.)
-│   └── services.rs                 # Core orchestration (UltraBuildService)
+│   └── services.rs                 # Core orchestration (SokuBuildService)
 │
 ├── infrastructure/                 # Infrastructure Layer
 │   ├── processors/                 # File processors
@@ -519,7 +519,7 @@ Contributions are welcome! Soku uses a **6-day sprint cycle** for rapid iteratio
 
 ```bash
 # Clone repository
-git clone https://github.com/bcentdev/ultra
+git clone https://github.com/bcentdev/soku
 cd ultra
 
 # Build
@@ -601,8 +601,8 @@ Built on the shoulders of giants:
 
 **Built with ❤️ and ⚡ by the Soku Team**
 
-[⭐ Star us on GitHub](https://github.com/bcentdev/ultra) •
-[🐛 Report Bug](https://github.com/bcentdev/ultra/issues) •
-[💡 Request Feature](https://github.com/bcentdev/ultra/issues)
+[⭐ Star us on GitHub](https://github.com/bcentdev/soku) •
+[🐛 Report Bug](https://github.com/bcentdev/soku/issues) •
+[💡 Request Feature](https://github.com/bcentdev/soku/issues)
 
 </div>

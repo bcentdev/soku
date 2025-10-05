@@ -1,5 +1,5 @@
 use crate::core::interfaces::CssProcessor;
-use crate::utils::{Result, UltraError, Logger, UltraCache, CssModulesProcessor};
+use crate::utils::{Result, SokuError, Logger, SokuCache, CssModulesProcessor};
 use lightningcss::{
     stylesheet::{StyleSheet, ParserOptions as CssParserOptions},
     printer::PrinterOptions,
@@ -10,14 +10,14 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct LightningCssProcessor {
     minify: bool,
-    cache: Arc<UltraCache>,
+    cache: Arc<SokuCache>,
 }
 
 impl LightningCssProcessor {
     pub fn new(minify: bool) -> Self {
         Self {
             minify,
-            cache: Arc::new(UltraCache::new()),
+            cache: Arc::new(SokuCache::new()),
         }
     }
 }
@@ -100,7 +100,7 @@ impl CssProcessor for LightningCssProcessor {
 
         for css_file in files {
             let content = tokio::fs::read_to_string(css_file).await
-                .map_err(UltraError::Io)?;
+                .map_err(SokuError::Io)?;
 
             let processed = self.process_css(&content, css_file).await?;
 

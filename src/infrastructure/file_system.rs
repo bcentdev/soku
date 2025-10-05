@@ -1,5 +1,5 @@
 use crate::core::{interfaces::FileSystemService, models::*};
-use crate::utils::{Result, UltraError};
+use crate::utils::{Result, SokuError};
 use std::path::Path;
 use tokio::fs;
 
@@ -10,10 +10,10 @@ impl FileSystemService for TokioFileSystemService {
     async fn scan_directory(&self, path: &Path) -> Result<ProjectStructure> {
         let mut structure = ProjectStructure::default();
         let mut entries = fs::read_dir(path).await
-            .map_err(UltraError::Io)?;
+            .map_err(SokuError::Io)?;
 
         while let Some(entry) = entries.next_entry().await
-            .map_err(UltraError::Io)? {
+            .map_err(SokuError::Io)? {
 
             let path = entry.path();
             if !path.is_file() {
@@ -46,7 +46,7 @@ impl FileSystemService for TokioFileSystemService {
 
     async fn read_file(&self, path: &Path) -> Result<String> {
         fs::read_to_string(path).await
-            .map_err(UltraError::Io)
+            .map_err(SokuError::Io)
     }
 
     async fn write_file(&self, path: &Path, content: &str) -> Result<()> {
@@ -56,12 +56,12 @@ impl FileSystemService for TokioFileSystemService {
         }
 
         fs::write(path, content).await
-            .map_err(UltraError::Io)
+            .map_err(SokuError::Io)
     }
 
     async fn create_directory(&self, path: &Path) -> Result<()> {
         fs::create_dir_all(path).await
-            .map_err(UltraError::Io)
+            .map_err(SokuError::Io)
     }
 
 }

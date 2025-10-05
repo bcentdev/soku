@@ -1,6 +1,6 @@
 
 use crate::core::{interfaces::FileSystemService, models::*};
-use crate::utils::{Result, UltraError, MmapFileReader, IncrementalCache, ContentHash};
+use crate::utils::{Result, SokuError, MmapFileReader, IncrementalCache, ContentHash};
 use crate::utils::parallel_files;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -149,10 +149,10 @@ impl SokuFileSystemService {
 
     async fn collect_files_recursive(&self, dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
         let mut entries = tokio::fs::read_dir(dir).await
-            .map_err(UltraError::Io)?;
+            .map_err(SokuError::Io)?;
 
         while let Some(entry) = entries.next_entry().await
-            .map_err(UltraError::Io)? {
+            .map_err(SokuError::Io)? {
 
             let path = entry.path();
             if path.is_file() {
@@ -247,7 +247,7 @@ impl FileSystemService for SokuFileSystemService {
         }
 
         tokio::fs::write(path, content).await
-            .map_err(UltraError::Io)?;
+            .map_err(SokuError::Io)?;
 
         // Update metadata after writing
         if let Ok(reader) = MmapFileReader::new(path) {
@@ -265,7 +265,7 @@ impl FileSystemService for SokuFileSystemService {
 
     async fn create_directory(&self, path: &Path) -> Result<()> {
         tokio::fs::create_dir_all(path).await
-            .map_err(UltraError::Io)
+            .map_err(SokuError::Io)
     }
 }
 

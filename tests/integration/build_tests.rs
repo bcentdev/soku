@@ -13,7 +13,7 @@ async fn test_simple_project_build() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = soku::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::SokuBuildService::new(
         fs_service,
         js_processor,
         css_processor,
@@ -56,7 +56,7 @@ async fn test_typescript_project_build() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Enhanced));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = soku::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::SokuBuildService::new(
         fs_service,
         js_processor,
         css_processor,
@@ -103,7 +103,7 @@ async fn test_source_maps_generation() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = soku::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::SokuBuildService::new(
         fs_service,
         js_processor,
         css_processor,
@@ -154,7 +154,7 @@ async fn test_demo_project_build() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = soku::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::SokuBuildService::new(
         fs_service,
         js_processor,
         css_processor,

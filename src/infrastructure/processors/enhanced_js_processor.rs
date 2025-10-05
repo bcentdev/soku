@@ -1,7 +1,7 @@
 #![allow(dead_code)] // Enhanced JS processor - advanced features, may not all be used yet
 
 use crate::core::{interfaces::JsProcessor, models::*};
-use crate::utils::{Result, UltraError, Logger, UltraCache};
+use crate::utils::{Result, SokuError, Logger, SokuCache};
 use oxc_allocator::Allocator;
 use oxc_ast::ast;
 use std::sync::Arc;
@@ -31,21 +31,21 @@ use std::path::Path;
 /// ```
 #[derive(Clone)]
 pub struct EnhancedJsProcessor {
-    cache: Arc<UltraCache>,
+    cache: Arc<SokuCache>,
     enable_cache: bool,
 }
 
 impl EnhancedJsProcessor {
     pub fn new() -> Self {
         Self {
-            cache: Arc::new(UltraCache::new()),
+            cache: Arc::new(SokuCache::new()),
             enable_cache: true,
         }
     }
 
     pub fn with_cache_disabled() -> Self {
         Self {
-            cache: Arc::new(UltraCache::new()),
+            cache: Arc::new(SokuCache::new()),
             enable_cache: false,
         }
     }
@@ -53,7 +53,7 @@ impl EnhancedJsProcessor {
 
     pub fn with_persistent_cache(cache_dir: &Path) -> Self {
         Self {
-            cache: Arc::new(UltraCache::with_persistent_cache(cache_dir)),
+            cache: Arc::new(SokuCache::with_persistent_cache(cache_dir)),
             enable_cache: true,
         }
     }
@@ -707,7 +707,7 @@ impl JsProcessor for EnhancedJsProcessor {
             ModuleType::JavaScript => {
                 self.process_javascript(module).await
             }
-            _ => Err(UltraError::build(format!(
+            _ => Err(SokuError::build(format!(
                 "Unsupported module type for enhanced processor: {:?}",
                 module.module_type
             ))),

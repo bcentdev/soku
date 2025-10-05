@@ -3,7 +3,7 @@ use std::fs::File;
 use memmap2::{Mmap, MmapOptions};
 use blake3::Hasher;
 use dashmap::DashMap;
-use crate::utils::{Result, UltraError};
+use crate::utils::{Result, SokuError};
 
 /// Content hash for incremental compilation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -30,12 +30,12 @@ impl MmapFileReader {
     /// Create a new memory-mapped file reader
     pub fn new(path: &Path) -> Result<Self> {
         let file = File::open(path)
-            .map_err(UltraError::Io)?;
+            .map_err(SokuError::Io)?;
 
         let mmap = unsafe {
             MmapOptions::new()
                 .map(&file)
-                .map_err(|e| UltraError::build(format!("Memory mapping failed: {}", e)))?
+                .map_err(|e| SokuError::build(format!("Memory mapping failed: {}", e)))?
         };
 
         Ok(Self {
@@ -47,7 +47,7 @@ impl MmapFileReader {
     /// Get the content as a string slice (zero-copy)
     pub fn as_str(&self) -> Result<&str> {
         std::str::from_utf8(&self.mmap)
-            .map_err(|e| UltraError::build(format!("Invalid UTF-8 in file: {}", e)))
+            .map_err(|e| SokuError::build(format!("Invalid UTF-8 in file: {}", e)))
     }
 
     /// Get the raw bytes

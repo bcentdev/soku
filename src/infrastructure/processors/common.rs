@@ -6,8 +6,8 @@ use std::path::Path;
 use std::sync::Arc;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use crate::utils::performance::UltraCache;
-use crate::utils::{Result, UltraError, ErrorContext, Logger};
+use crate::utils::performance::SokuCache;
+use crate::utils::{Result, SokuError, ErrorContext, Logger};
 use crate::core::{models::*, interfaces::JsProcessor};
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
@@ -215,7 +215,7 @@ impl ProcessingOptions {
 pub struct UnifiedJsProcessor {
     strategy: ProcessingStrategy,
     options: ProcessingOptions,
-    cache: Arc<UltraCache>,
+    cache: Arc<SokuCache>,
 }
 
 impl UnifiedJsProcessor {
@@ -224,7 +224,7 @@ impl UnifiedJsProcessor {
         Self {
             strategy,
             options: ProcessingOptions::from_strategy(strategy),
-            cache: Arc::new(UltraCache::new()),
+            cache: Arc::new(SokuCache::new()),
         }
     }
 
@@ -234,7 +234,7 @@ impl UnifiedJsProcessor {
         Self {
             strategy,
             options,
-            cache: Arc::new(UltraCache::new()),
+            cache: Arc::new(SokuCache::new()),
         }
     }
 
@@ -244,7 +244,7 @@ impl UnifiedJsProcessor {
         Self {
             strategy,
             options: ProcessingOptions::from_strategy(strategy),
-            cache: Arc::new(UltraCache::with_persistent_cache(cache_dir)),
+            cache: Arc::new(SokuCache::with_persistent_cache(cache_dir)),
         }
     }
 
@@ -530,7 +530,7 @@ impl JsProcessor for UnifiedJsProcessor {
         });
 
         let source_map_str = serde_json::to_string(&source_map_json)
-            .map_err(|e| crate::utils::UltraError::build(format!("Failed to generate source map: {}", e)))?;
+            .map_err(|e| crate::utils::SokuError::build(format!("Failed to generate source map: {}", e)))?;
 
         Ok(BundleOutput {
             code: bundle,
@@ -635,7 +635,7 @@ pub fn parse_with_oxc<'a>(
         let error_context = create_parse_error_context(&result.errors, content, file_path);
         let first_error = &result.errors[0];
 
-        let detailed_error = UltraError::parse_with_context(
+        let detailed_error = SokuError::parse_with_context(
             format!("{}: {}", error_prefix, first_error),
             error_context
         );
@@ -1010,7 +1010,7 @@ pub fn remove_generic_types(content: &str, max_iterations: usize) -> String {
 /// Check cache for processed JavaScript content
 /// Returns cached content if available and caching is enabled
 pub fn get_cached_js(
-    cache: &Arc<UltraCache>,
+    cache: &Arc<SokuCache>,
     path: &str,
     content: &str,
     enable_cache: bool,
@@ -1025,7 +1025,7 @@ pub fn get_cached_js(
 /// Store processed JavaScript content in cache
 /// Only stores if caching is enabled
 pub fn store_cached_js(
-    cache: &Arc<UltraCache>,
+    cache: &Arc<SokuCache>,
     path: &str,
     content: &str,
     processed: String,
@@ -1040,7 +1040,7 @@ pub fn store_cached_js(
 /// Returns cached content if available and caching is enabled
 #[allow(dead_code)]
 pub fn get_cached_css(
-    cache: &Arc<UltraCache>,
+    cache: &Arc<SokuCache>,
     path: &str,
     content: &str,
     enable_cache: bool,
@@ -1056,7 +1056,7 @@ pub fn get_cached_css(
 /// Only stores if caching is enabled
 #[allow(dead_code)]
 pub fn store_cached_css(
-    cache: &Arc<UltraCache>,
+    cache: &Arc<SokuCache>,
     path: &str,
     content: &str,
     processed: String,

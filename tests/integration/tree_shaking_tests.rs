@@ -14,7 +14,7 @@ async fn test_tree_shaking_removes_unused_code() {
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
     let tree_shaker = std::sync::Arc::new(RegexTreeShaker::new());
 
-    let mut build_service = soku::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::SokuBuildService::new(
         fs_service,
         js_processor,
         css_processor,
@@ -63,7 +63,7 @@ async fn test_tree_shaking_preserves_used_code() {
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
     let tree_shaker = std::sync::Arc::new(RegexTreeShaker::new());
 
-    let mut build_service = soku::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::SokuBuildService::new(
         fs_service,
         js_processor,
         css_processor,
@@ -107,7 +107,7 @@ async fn test_tree_shaking_with_typescript() {
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
     let tree_shaker = std::sync::Arc::new(RegexTreeShaker::new());
 
-    let mut build_service = soku::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::SokuBuildService::new(
         fs_service,
         js_processor,
         css_processor,

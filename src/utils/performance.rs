@@ -8,8 +8,8 @@ use std::path::Path;
 use sled::{Db, Tree};
 use string_interner::{StringInterner, DefaultSymbol, DefaultBackend};
 
-/// Ultra-fast caching system with persistent storage
-pub struct UltraCache {
+/// Soku-fast caching system with persistent storage
+pub struct SokuCache {
     // In-memory hot cache for ultra-speed
     js_cache: Arc<DashMap<String, String>>,
     css_cache: Arc<DashMap<String, String>>,
@@ -87,7 +87,7 @@ impl PersistentCache {
     }
 }
 
-impl UltraCache {
+impl SokuCache {
     pub fn new() -> Self {
         Self {
             js_cache: Arc::new(DashMap::new()),
@@ -247,7 +247,7 @@ impl UltraCache {
     }
 }
 
-impl Default for UltraCache {
+impl Default for SokuCache {
     fn default() -> Self {
         Self::new()
     }

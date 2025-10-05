@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     );
 
     // Example 7: Build a transformer chain
-    let service = ultra::core::services::UltraBuildService::new(fs_service, js_processor, css_processor)
+    let service = ultra::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
         .with_transformer(remove_logs)
         .with_transformer(remove_debugger)
         .with_transformer(add_strict)

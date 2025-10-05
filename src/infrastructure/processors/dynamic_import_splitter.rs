@@ -1,7 +1,7 @@
 // Dynamic Import Splitter - Detects and splits import() statements into lazy-loaded chunks
 // Currently infrastructure for future integration
 use crate::core::models::ModuleInfo;
-use crate::utils::{Result, UltraError};
+use crate::utils::{Result, SokuError};
 use std::collections::{HashMap, HashSet};
 use regex::Regex;
 
@@ -27,7 +27,7 @@ impl DynamicImportSplitter {
     pub fn analyze_dynamic_imports(&mut self, modules: &[ModuleInfo]) -> Result<()> {
         // Regex to match import('path') or import("path")
         let import_re = Regex::new(r#"import\s*\(\s*['"]([^'"]+)['"]\s*\)"#)
-            .map_err(|e| UltraError::Build {
+            .map_err(|e| SokuError::Build {
                 message: format!("Failed to create import regex: {}", e),
                 context: None,
             })?;

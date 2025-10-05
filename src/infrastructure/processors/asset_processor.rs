@@ -1,4 +1,4 @@
-use crate::utils::{Result, UltraError, Logger};
+use crate::utils::{Result, SokuError, Logger};
 use std::path::Path;
 
 /// Asset processor for handling non-JS assets (JSON, images, etc.)
@@ -13,7 +13,7 @@ impl AssetProcessor {
     pub fn process_json(&self, content: &str, file_path: &Path) -> Result<String> {
         // Validate JSON
         let _: serde_json::Value = serde_json::from_str(content)
-            .map_err(|e| UltraError::build(format!(
+            .map_err(|e| SokuError::build(format!(
                 "Invalid JSON in {}: {}",
                 file_path.display(),
                 e

@@ -43,7 +43,7 @@ jobs:
           ### 📦 Installation
           ```bash
           # Install from source
-          git clone https://github.com/bcentdev/ultra
+          git clone https://github.com/bcentdev/soku
           cd ultra
           git checkout v${{ steps.get_version.outputs.version }}
           cargo install --path .
@@ -54,7 +54,7 @@ jobs:
           - 3.3x faster than Vite
           - Zero-config bundling with oxc + Lightning CSS
 
-          **Full Changelog**: https://github.com/bcentdev/ultra/compare/v${{ steps.get_version.outputs.version }}...HEAD
+          **Full Changelog**: https://github.com/bcentdev/soku/compare/v${{ steps.get_version.outputs.version }}...HEAD
         draft: false
         prerelease: ${{ contains(steps.get_version.outputs.version, '-') }}
         generate_release_notes: true
@@ -198,7 +198,7 @@ jobs:
             "description": "Soku (速) bundler native binary for $platform",
             "repository": {
               "type": "git",
-              "url": "git+https://github.com/bcentdev/ultra.git"
+              "url": "git+https://github.com/bcentdev/soku.git"
             },
             "license": "MIT",
             "os": ["$os"],

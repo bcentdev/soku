@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use crate::utils::{Result, UltraError};
+use crate::utils::{Result, SokuError};
 
 /// Package.json structure for parsing npm packages
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -475,10 +475,10 @@ impl NodeModuleResolver {
 
         let mut packages = Vec::new();
         let mut entries = tokio::fs::read_dir(&node_modules).await
-            .map_err(|e| UltraError::Io(e))?;
+            .map_err(|e| SokuError::Io(e))?;
 
         while let Some(entry) = entries.next_entry().await
-            .map_err(|e| UltraError::Io(e))? {
+            .map_err(|e| SokuError::Io(e))? {
 
             let path = entry.path();
             if path.is_dir() {
@@ -487,10 +487,10 @@ impl NodeModuleResolver {
                     if name.starts_with('@') {
                         // Read subdirectories for scoped packages
                         let mut scoped_entries = tokio::fs::read_dir(&path).await
-                            .map_err(|e| UltraError::Io(e))?;
+                            .map_err(|e| SokuError::Io(e))?;
 
                         while let Some(scoped_entry) = scoped_entries.next_entry().await
-                            .map_err(|e| UltraError::Io(e))? {
+                            .map_err(|e| SokuError::Io(e))? {
 
                             if scoped_entry.path().is_dir() {
                                 if let Some(pkg_name) = scoped_entry.path().file_name()

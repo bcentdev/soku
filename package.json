@@ -20,13 +20,13 @@
     "esbuild-alternative",
     "webpack-alternative"
   ],
-  "homepage": "https://github.com/bcentdev/ultra#readme",
+  "homepage": "https://github.com/bcentdev/soku#readme",
   "bugs": {
-    "url": "https://github.com/bcentdev/ultra/issues"
+    "url": "https://github.com/bcentdev/soku/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bcentdev/ultra.git"
+    "url": "git+https://github.com/bcentdev/soku.git"
   },
   "license": "MIT",
   "author": "Soku Team",

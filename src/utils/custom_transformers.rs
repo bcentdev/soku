@@ -2,7 +2,7 @@
 #![allow(dead_code)] // Public API - used via examples and external integrations
 
 use crate::core::models::ModuleInfo;
-use crate::utils::{Result, UltraError, Plugin};
+use crate::utils::{Result, SokuError, Plugin};
 use async_trait::async_trait;
 use regex::Regex;
 use std::sync::Arc;
@@ -103,7 +103,7 @@ impl CustomTransformer {
         match &self.transformer_type {
             TransformerType::Regex { pattern, replacement } => {
                 let re = Regex::new(pattern)
-                    .map_err(|e| UltraError::Build {
+                    .map_err(|e| SokuError::Build {
                         message: format!("Invalid regex pattern in transformer '{}': {}", self.name, e),
                         context: None,
                     })?;

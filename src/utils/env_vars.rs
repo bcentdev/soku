@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use crate::utils::{Result, UltraError, Logger};
+use crate::utils::{Result, SokuError, Logger};
 
 /// Environment variables manager for build-time variable injection
 pub struct EnvVarsManager {
@@ -57,7 +57,7 @@ impl EnvVarsManager {
     /// Load variables from a specific .env file
     fn load_env_file(&mut self, path: &PathBuf) -> Result<()> {
         let content = std::fs::read_to_string(path)
-            .map_err(|e| UltraError::Io(e))?;
+            .map_err(|e| SokuError::Io(e))?;
 
         Logger::debug(&format!("Loading env file: {}", path.display()));
 

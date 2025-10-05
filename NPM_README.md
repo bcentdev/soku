@@ -145,17 +145,17 @@ The correct binary for your platform is automatically installed.
 
 ## 📚 Documentation
 
-- [Full Documentation](https://github.com/bcentdev/ultra#readme)
-- [Contributing Guide](https://github.com/bcentdev/ultra/blob/main/CONTRIBUTING.md)
-- [Changelog](https://github.com/bcentdev/ultra/blob/main/CHANGELOG.md)
+- [Full Documentation](https://github.com/bcentdev/soku#readme)
+- [Contributing Guide](https://github.com/bcentdev/soku/blob/main/CONTRIBUTING.md)
+- [Changelog](https://github.com/bcentdev/soku/blob/main/CHANGELOG.md)
 
 ## 🤝 Contributing
 
-Contributions are welcome! See our [Contributing Guide](https://github.com/bcentdev/ultra/blob/main/CONTRIBUTING.md).
+Contributions are welcome! See our [Contributing Guide](https://github.com/bcentdev/soku/blob/main/CONTRIBUTING.md).
 
 ## 📄 License
 
-MIT License - see [LICENSE](https://github.com/bcentdev/ultra/blob/main/LICENSE) file for details.
+MIT License - see [LICENSE](https://github.com/bcentdev/soku/blob/main/LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
@@ -169,6 +169,6 @@ Built with:
 
 **Made with ❤️ and ⚡ by the Soku Team**
 
-[⭐ Star us on GitHub](https://github.com/bcentdev/ultra) •
-[🐛 Report Bug](https://github.com/bcentdev/ultra/issues) •
-[💡 Request Feature](https://github.com/bcentdev/ultra/issues)
+[⭐ Star us on GitHub](https://github.com/bcentdev/soku) •
+[🐛 Report Bug](https://github.com/bcentdev/soku/issues) •
+[💡 Request Feature](https://github.com/bcentdev/soku/issues)

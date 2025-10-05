@@ -61,7 +61,7 @@ src/
 - `FileSystemService`: File operations
 
 #### `services.rs`
-- `UltraBuildService`: Main build orchestrator
+- `SokuBuildService`: Main build orchestrator
 - Implements dependency resolution
 - Coordinates processors and file operations
 - Generates build statistics
@@ -150,7 +150,7 @@ src/
 
 1. **Initialization**
    ```rust
-   UltraBuildService::new(fs_service, js_processor, css_processor)
+   SokuBuildService::new(fs_service, js_processor, css_processor)
        .with_tree_shaker(tree_shaker)
    ```
 

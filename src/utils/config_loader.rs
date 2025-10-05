@@ -1,5 +1,5 @@
 use crate::core::models::BuildConfig;
-use crate::utils::{Logger, UltraError, Result};
+use crate::utils::{Logger, SokuError, Result};
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
@@ -94,10 +94,10 @@ impl ConfigLoader {
         Logger::debug(&format!("Loading config from {}", config_path.display()));
 
         let content = std::fs::read_to_string(&config_path)
-            .map_err(|e| UltraError::Io(e))?;
+            .map_err(|e| SokuError::Io(e))?;
 
         let config: UltraConfig = serde_json::from_str(&content)
-            .map_err(|e| UltraError::config(format!(
+            .map_err(|e| SokuError::config(format!(
                 "Failed to parse ultra.config.json: {}",
                 e
             )))?;

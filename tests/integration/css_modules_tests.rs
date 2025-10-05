@@ -13,7 +13,7 @@ async fn test_css_modules_detection() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(true)); // CSS Modules enabled
 
-    let mut build_service = soku::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::SokuBuildService::new(
         fs_service,
         js_processor,
         css_processor,
@@ -57,7 +57,7 @@ async fn test_css_modules_scoping() {
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(true));
 
-    let mut build_service = soku::core::services::UltraBuildService::new(
+    let mut build_service = soku::core::services::SokuBuildService::new(
         fs_service,
         js_processor,
         css_processor,
