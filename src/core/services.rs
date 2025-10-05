@@ -1,5 +1,5 @@
 use crate::core::{interfaces::*, models::*};
-use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraCache, performance::parallel, IncrementalBuildState};
+use crate::utils::{Result, Logger, Timer, UltraUI, CompletionStats, OutputFileInfo, TimingBreakdown, UltraCache, performance::parallel, IncrementalBuildState, PluginManager, PluginContext, PluginEvent, TransformerChain, CustomTransformer, AdvancedSourceMapGenerator, SourceMapUtils};
 use crate::infrastructure::{NodeModuleResolver, MinificationService, CodeSplitter, CodeSplitConfig};
 use std::sync::Arc;
 use std::path::{Path, PathBuf};
@@ -23,6 +23,8 @@ pub struct UltraBuildService {
     cache: Arc<UltraCache>,
     incremental_state: IncrementalBuildState,
     cache_dir: PathBuf,
+    plugin_manager: PluginManager,
+    transformer_chain: TransformerChain,
 }
 
 impl UltraBuildService {
@@ -54,12 +56,32 @@ impl UltraBuildService {
             cache,
             incremental_state,
             cache_dir,
+            plugin_manager: PluginManager::new(),
+            transformer_chain: TransformerChain::new(),
         }
     }
 
     pub fn with_tree_shaker(mut self, tree_shaker: Arc<dyn TreeShaker>) -> Self {
         self.tree_shaker = Some(tree_shaker);
         self
+    }
+
+    pub fn with_plugin(mut self, plugin: Arc<dyn crate::utils::Plugin>) -> Self {
+        self.plugin_manager.register(plugin);
+        self
+    }
+
+    pub fn with_transformer(mut self, transformer: CustomTransformer) -> Self {
+        self.transformer_chain.add(transformer);
+        self
+    }
+
+    pub fn plugin_manager_mut(&mut self) -> &mut PluginManager {
+        &mut self.plugin_manager
+    }
+
+    pub fn transformer_chain_mut(&mut self) -> &mut TransformerChain {
+        &mut self.transformer_chain
     }
 
     async fn scan_and_analyze_with_ui(&self, config: &BuildConfig) -> Result<ProjectStructure> {
@@ -139,11 +161,17 @@ impl UltraBuildService {
 
         // Write JavaScript bundle (with source map reference if enabled)
         let js_path = config.outdir.join("bundle.js");
-        let js_with_source_map = if source_map.is_some() {
+        let mut js_with_source_map = if source_map.is_some() {
             format!("{}\n//# sourceMappingURL=bundle.js.map", js_content)
         } else {
             js_content.to_string()
         };
+
+        // 🔧 CUSTOM TRANSFORMERS: Apply code transformations
+        if !self.transformer_chain.is_empty() {
+            js_with_source_map = self.transformer_chain.transform(js_with_source_map, Some(js_path.to_str().unwrap_or("bundle.js")))?;
+        }
+
         self.fs_service.write_file(&js_path, &js_with_source_map).await?;
         output_files.push(OutputFile {
             path: js_path,
@@ -898,6 +926,14 @@ impl BuildService for UltraBuildService {
         // 🔍 FILE DISCOVERY
         let structure = self.scan_and_analyze_with_ui(config).await?;
 
+        // 🔌 PLUGIN: Before Build Hook
+        let plugin_context = PluginContext::new(
+            config.clone(),
+            Vec::new(), // Will be populated after module resolution
+            PluginEvent::BeforeBuild,
+        );
+        self.plugin_manager.trigger_before_build(&plugin_context).await?;
+
         // 🔄 CHECK IF FIRST BUILD (before resolving dependencies)
         let is_first_build = self.incremental_state.is_empty();
         Logger::debug(&format!("Is first build: {} (tracked files: {})", is_first_build, self.incremental_state.file_count()));
@@ -1158,8 +1194,27 @@ impl BuildService for UltraBuildService {
             js_content.clone()
         };
 
+        // 🗺️ ADVANCED SOURCE MAPS: Generate advanced source maps with inline content
+        let enhanced_source_map = if config.enable_source_maps && source_map.is_some() {
+            let mut generator = AdvancedSourceMapGenerator::new();
+
+            // Add sources with content from all JS modules
+            for module in &js_only_modules {
+                generator.add_source(
+                    module.path.to_string_lossy().to_string(),
+                    module.content.clone()
+                );
+            }
+
+            let map = generator.generate(Some("bundle.js".to_string()));
+            let map_json = SourceMapUtils::to_json(&map)?;
+            Some(map_json)
+        } else {
+            source_map
+        };
+
         // 💾 WRITE FILES
-        let output_files = self.write_output_files(config, &final_js_content, &css_content, source_map).await?;
+        let output_files = self.write_output_files(config, &final_js_content, &css_content, enhanced_source_map).await?;
 
         let build_time = build_start.elapsed();
 
@@ -1212,7 +1267,7 @@ impl BuildService for UltraBuildService {
             Logger::warn(&format!("Failed to save incremental state: {}", e));
         }
 
-        Ok(BuildResult {
+        let result = BuildResult {
             js_modules_processed: js_only_modules.len(),
             css_files_processed: all_css_files.len(),
             tree_shaking_stats,
@@ -1222,6 +1277,16 @@ impl BuildService for UltraBuildService {
             errors: Vec::new(),
             warnings: Vec::new(),
             modules: js_only_modules.clone(),
-        })
+        };
+
+        // 🔌 PLUGIN: After Build Hook
+        let plugin_context = PluginContext::new(
+            config.clone(),
+            js_only_modules.clone(),
+            PluginEvent::AfterBuild,
+        );
+        self.plugin_manager.trigger_after_build(&plugin_context, &result).await?;
+
+        Ok(result)
     }
 }

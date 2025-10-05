@@ -1,4 +1,5 @@
 use crate::utils::{Result, UltraError};
+use crate::infrastructure::HmrHookManager;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::broadcast;
@@ -44,6 +45,7 @@ pub struct UltraHmrService {
     clients: Arc<DashMap<String, HmrClient>>,
     update_sender: broadcast::Sender<HmrUpdate>,
     root_path: PathBuf,
+    hook_manager: Arc<tokio::sync::Mutex<HmrHookManager>>,
 }
 
 impl UltraHmrService {
@@ -54,7 +56,13 @@ impl UltraHmrService {
             clients: Arc::new(DashMap::new()),
             update_sender,
             root_path,
+            hook_manager: Arc::new(tokio::sync::Mutex::new(HmrHookManager::new())),
         }
+    }
+
+    pub async fn with_hook(self, hook: Arc<dyn crate::infrastructure::HmrHook>) -> Self {
+        self.hook_manager.lock().await.register(hook);
+        self
     }
 
     /// Start HMR server with WebSocket support
@@ -103,11 +111,13 @@ impl UltraHmrService {
         });
 
         // Handle WebSocket connections
+        let hook_manager = self.hook_manager.clone();
         while let Ok((stream, addr)) = listener.accept().await {
             let clients = clients.clone();
+            let hook_manager = hook_manager.clone();
 
             tokio::spawn(async move {
-                if let Err(e) = Self::handle_client(stream, clients).await {
+                if let Err(e) = Self::handle_client(stream, clients, hook_manager).await {
                     crate::utils::Logger::warn(&format!("HMR client error {}: {}", addr, e));
                 }
             });
@@ -119,6 +129,7 @@ impl UltraHmrService {
     async fn handle_client(
         stream: tokio::net::TcpStream,
         clients: Arc<DashMap<String, HmrClient>>,
+        hook_manager: Arc<tokio::sync::Mutex<HmrHookManager>>,
     ) -> Result<()> {
         let ws_stream = accept_async(stream).await
             .map_err(|e| UltraError::build(format!("WebSocket handshake failed: {}", e)))?;
@@ -137,6 +148,9 @@ impl UltraHmrService {
         clients.insert(client_id.clone(), client);
 
         tracing::info!("🔌 HMR client connected: {}", client_id);
+
+        // 🪝 HMR HOOK: Client connect
+        let _ = hook_manager.lock().await.trigger_client_connect(&client_id).await;
 
         // Send initial connection message
         let welcome = HmrUpdate {
@@ -181,6 +195,9 @@ impl UltraHmrService {
         // Remove client on disconnect
         clients.remove(&client_id);
         tracing::info!("🔌 HMR client disconnected: {}", client_id);
+
+        // 🪝 HMR HOOK: Client disconnect
+        let _ = hook_manager.lock().await.trigger_client_disconnect(&client_id).await;
 
         Ok(())
     }
