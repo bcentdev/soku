@@ -150,7 +150,8 @@ impl RegexTreeShaker {
 
             // Parse export statements
             if trimmed.starts_with("export ") {
-                if let Some(export_name) = self.parse_export_line(trimmed) {
+                let export_names = self.parse_export_line(trimmed);
+                for export_name in export_names {
                     analysis.exports.push(ExportInfo {
                         name: export_name,
                     });
@@ -194,27 +195,45 @@ impl RegexTreeShaker {
         None
     }
 
-    fn parse_export_line(&self, line: &str) -> Option<String> {
+    fn parse_export_line(&self, line: &str) -> Vec<String> {
+        let mut exports = Vec::new();
+
         // Handle: export default ...
         if line.starts_with("export default") {
-            return Some("default".to_string());
+            exports.push("default".to_string());
+            return exports;
         }
 
         // Handle: export const/function/let/var identifier
         if let Ok(re) = regex::Regex::new(r#"export\s+(?:const|let|var|function)\s+(\w+)"#) {
             if let Some(caps) = re.captures(line) {
-                return Some(caps[1].to_string());
+                exports.push(caps[1].to_string());
+                return exports;
             }
         }
 
-        // Handle: export { identifier }
-        if let Ok(re) = regex::Regex::new(r#"export\s+\{\s*(\w+)\s*\}"#) {
+        // Handle: export { identifier1, identifier2, ... }
+        if let Ok(re) = regex::Regex::new(r#"export\s+\{\s*([^}]+)\s*\}"#) {
             if let Some(caps) = re.captures(line) {
-                return Some(caps[1].to_string());
+                let exports_str = caps[1].to_string();
+                // Split by comma and trim each identifier
+                for export in exports_str.split(',') {
+                    let trimmed = export.trim();
+                    // Handle "identifier as alias" -> just take "identifier"
+                    let identifier = if let Some(pos) = trimmed.find(" as ") {
+                        &trimmed[..pos]
+                    } else {
+                        trimmed
+                    };
+                    if !identifier.is_empty() {
+                        exports.push(identifier.to_string());
+                    }
+                }
+                return exports;
             }
         }
 
-        None
+        exports
     }
 
     fn extract_identifier(&self, line: &str) -> Option<String> {
@@ -281,6 +300,19 @@ impl RegexTreeShaker {
         // Count node_modules packages that will be optimized
         let node_modules_count = self.node_modules_imports.len();
 
+        // Build used exports map: module_path -> {export1, export2, ...}
+        let mut used_exports_map: HashMap<String, HashSet<String>> = HashMap::new();
+        for used_export in &self.used_exports {
+            let parts: Vec<&str> = used_export.split("::").collect();
+            if parts.len() == 2 {
+                let (module_path, export_name) = (parts[0], parts[1]);
+                used_exports_map
+                    .entry(module_path.to_string())
+                    .or_insert_with(HashSet::new)
+                    .insert(export_name.to_string());
+            }
+        }
+
         Logger::debug(&format!(
             "Tree shaking results: {} modules, {} node_modules imports, {} exports removed",
             self.module_graph.len(),
@@ -296,6 +328,7 @@ impl RegexTreeShaker {
             } else {
                 0.0
             },
+            used_exports: used_exports_map,
         })
     }
 

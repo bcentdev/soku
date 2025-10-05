@@ -4,11 +4,7 @@ use ultra::core::interfaces::BuildService;
 use ultra::infrastructure::{TokioFileSystemService, UnifiedJsProcessor, LightningCssProcessor, RegexTreeShaker};
 use ultra::infrastructure::processors::ProcessingStrategy;
 
-// TODO: Fix tree shaking stats reporting - removed_exports count is 0
-// Issue: Tree shaking is working but stats.removed_exports is not being populated
-// Likely in RegexTreeShaker::shake() or AstTreeShaker::shake() methods
 #[tokio::test]
-#[ignore]
 async fn test_tree_shaking_removes_unused_code() {
     let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/tree-shaking");
@@ -26,7 +22,7 @@ async fn test_tree_shaking_removes_unused_code() {
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
-        outdir: fixtures_dir.join("dist"),
+        outdir: fixtures_dir.join("dist-removes-unused"),
         enable_tree_shaking: true,
         enable_minification: false,
         enable_source_maps: false,
@@ -75,7 +71,7 @@ async fn test_tree_shaking_preserves_used_code() {
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
-        outdir: fixtures_dir.join("dist"),
+        outdir: fixtures_dir.join("dist-preserves-used"),
         enable_tree_shaking: true,
         enable_minification: false,
         enable_source_maps: false,
@@ -101,11 +97,7 @@ async fn test_tree_shaking_preserves_used_code() {
     let _ = std::fs::remove_dir_all(config.outdir);
 }
 
-// TODO: Fix TypeScript tree shaking with Enhanced strategy
-// Issue: EnhancedJsProcessor doesn't properly handle tree shaking
-// Needs integration between TypeScript processing and tree shaking passes
 #[tokio::test]
-#[ignore]
 async fn test_tree_shaking_with_typescript() {
     let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/tree-shaking");
@@ -123,7 +115,7 @@ async fn test_tree_shaking_with_typescript() {
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
-        outdir: fixtures_dir.join("dist"),
+        outdir: fixtures_dir.join("dist-typescript"),
         enable_tree_shaking: true,
         enable_minification: false,
         enable_source_maps: false,

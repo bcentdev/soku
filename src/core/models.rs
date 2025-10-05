@@ -149,6 +149,9 @@ pub struct TreeShakingStats {
     pub total_modules: usize,
     pub removed_exports: usize,
     pub reduction_percentage: f64,
+    /// Map of module path -> set of used exports
+    /// Format: "module_path" -> {"export1", "export2", ...}
+    pub used_exports: std::collections::HashMap<String, std::collections::HashSet<String>>,
 }
 
 impl std::fmt::Display for TreeShakingStats {

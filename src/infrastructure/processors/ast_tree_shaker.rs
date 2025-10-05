@@ -281,6 +281,24 @@ impl AstTreeShaker {
         let unused_exports = self.usage_counts.values().filter(|&&count| count == 0).count();
         let total_dead_code_items: usize = self.dead_code.values().map(|v| v.len()).sum();
 
+        // Build used exports map: module_path -> {export1, export2, ...}
+        let mut used_exports_map: HashMap<String, HashSet<String>> = HashMap::new();
+        for (symbol, &count) in &self.usage_counts {
+            if count > 0 {
+                // Symbol format could be "module::export" or just "export"
+                // Try to find which module this symbol belongs to
+                for (module_path, module_exports) in &self.exports {
+                    if module_exports.contains(symbol) {
+                        used_exports_map
+                            .entry(module_path.clone())
+                            .or_insert_with(HashSet::new)
+                            .insert(symbol.clone());
+                        break;
+                    }
+                }
+            }
+        }
+
         TreeShakingStats {
             total_modules: self.exports.len(),
             removed_exports: unused_exports + total_dead_code_items,
@@ -289,6 +307,7 @@ impl AstTreeShaker {
             } else {
                 0.0
             },
+            used_exports: used_exports_map,
         }
     }
 }

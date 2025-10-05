@@ -125,9 +125,9 @@ impl JsProcessor for OxcJsProcessor {
         bundle.push_str("// Ultra Bundler - Optimized Build Output with Node Modules Tree Shaking\n");
         bundle.push_str("(function() {\n'use strict';\n\n");
 
-        // Build used exports map from tree shaking stats
+        // Get used exports map from tree shaking stats
         let used_exports_map = if let Some(stats) = tree_shaking_stats {
-            self.build_used_exports_map(stats, modules).await
+            stats.used_exports.clone()
         } else {
             std::collections::HashMap::new()
         };
@@ -278,45 +278,6 @@ impl OxcJsProcessor {
         Self {
             cache: Arc::new(crate::utils::UltraCache::new()),
         }
-    }
-
-    async fn build_used_exports_map(&self, _stats: &TreeShakingStats, modules: &[ModuleInfo]) -> std::collections::HashMap<String, std::collections::HashSet<String>> {
-        let mut map = std::collections::HashMap::new();
-
-        // For now, simulate used exports based on actual imports in the code
-        // This is a simplified implementation
-        for module in modules {
-            let module_path = module.path.to_string_lossy().to_string();
-            let mut used_exports = std::collections::HashSet::new();
-
-            // Analyze what exports are actually used
-            let all_content = modules.iter()
-                .map(|m| m.content.as_str())
-                .collect::<Vec<_>>()
-                .join("\n");
-
-            // Check for utils usage
-            if module_path.contains("utils.js") {
-                if all_content.contains("utils.formatData") {
-                    used_exports.insert("utils".to_string());
-                }
-                // Don't add unused exports like unusedUtility, unusedFunction, UNUSED_CONSTANT
-            }
-
-            // Check for app usage
-            if module_path.contains("app.js") {
-                if all_content.contains("createApp") {
-                    used_exports.insert("createApp".to_string());
-                }
-                // Don't add unusedAppHelper
-            }
-
-            if !used_exports.is_empty() {
-                map.insert(module_path, used_exports);
-            }
-        }
-
-        map
     }
 
     async fn process_js_module(&self, module: &ModuleInfo) -> Result<String> {
