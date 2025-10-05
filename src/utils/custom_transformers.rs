@@ -1,4 +1,6 @@
 // Custom Transformers - User-defined code transformations
+#![allow(dead_code)] // Public API - used via examples and external integrations
+
 use crate::core::models::ModuleInfo;
 use crate::utils::{Result, UltraError, Plugin};
 use async_trait::async_trait;

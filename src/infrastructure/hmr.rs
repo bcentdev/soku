@@ -60,6 +60,7 @@ impl UltraHmrService {
         }
     }
 
+    #[allow(dead_code)] // Public API - used in examples
     pub async fn with_hook(self, hook: Arc<dyn crate::infrastructure::HmrHook>) -> Self {
         self.hook_manager.lock().await.register(hook);
         self

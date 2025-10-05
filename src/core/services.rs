@@ -66,20 +66,24 @@ impl UltraBuildService {
         self
     }
 
+    #[allow(dead_code)] // Public API - used in examples
     pub fn with_plugin(mut self, plugin: Arc<dyn crate::utils::Plugin>) -> Self {
         self.plugin_manager.register(plugin);
         self
     }
 
+    #[allow(dead_code)] // Public API - used in examples
     pub fn with_transformer(mut self, transformer: CustomTransformer) -> Self {
         self.transformer_chain.add(transformer);
         self
     }
 
+    #[allow(dead_code)] // Public API - used in examples
     pub fn plugin_manager_mut(&mut self) -> &mut PluginManager {
         &mut self.plugin_manager
     }
 
+    #[allow(dead_code)] // Public API - used in examples
     pub fn transformer_chain_mut(&mut self) -> &mut TransformerChain {
         &mut self.transformer_chain
     }

@@ -1,4 +1,6 @@
 // Advanced Source Maps - Accurate mappings with inline sources support
+#![allow(dead_code)] // Public API - used via examples and external integrations
+
 use crate::utils::{Result, UltraError};
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;

@@ -1,4 +1,6 @@
 // Advanced HMR Hooks - Customizable Hot Module Replacement lifecycle
+#![allow(dead_code)] // Public API - used via examples and external integrations
+
 use crate::utils::Result;
 use async_trait::async_trait;
 use std::path::PathBuf;
@@ -104,6 +106,7 @@ pub struct HmrHookManager {
 }
 
 impl HmrHookManager {
+    #[allow(dead_code)] // Public API - used internally by HMR service
     pub fn new() -> Self {
         Self {
             hooks: Vec::new(),
