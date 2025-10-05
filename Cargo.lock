@@ -2559,6 +2559,54 @@ dependencies = [
 ]
 
 [[package]]
+name = "soku"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64",
+ "bincode 1.3.3",
+ "blake3",
+ "bumpalo",
+ "chrono",
+ "clap",
+ "colored",
+ "dashmap 6.1.0",
+ "flate2",
+ "futures",
+ "grass",
+ "lightningcss",
+ "memmap2",
+ "notify",
+ "num_cpus",
+ "once_cell",
+ "oxc_allocator",
+ "oxc_ast",
+ "oxc_codegen",
+ "oxc_diagnostics",
+ "oxc_minifier",
+ "oxc_parser",
+ "oxc_semantic",
+ "oxc_span",
+ "oxc_transformer",
+ "parking_lot 0.12.4",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "sled",
+ "sourcemap",
+ "string-interner",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-tungstenite",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "sourcemap"
 version = "8.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2895,54 +2943,6 @@ name = "typenum"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1dccffe3ce07af9386bfd29e80c0ab1a8205a2fc34e4bcd40364df902cfa8f3f"
-
-[[package]]
-name = "ultra"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64",
- "bincode 1.3.3",
- "blake3",
- "bumpalo",
- "chrono",
- "clap",
- "colored",
- "dashmap 6.1.0",
- "flate2",
- "futures",
- "grass",
- "lightningcss",
- "memmap2",
- "notify",
- "num_cpus",
- "once_cell",
- "oxc_allocator",
- "oxc_ast",
- "oxc_codegen",
- "oxc_diagnostics",
- "oxc_minifier",
- "oxc_parser",
- "oxc_semantic",
- "oxc_span",
- "oxc_transformer",
- "parking_lot 0.12.4",
- "rayon",
- "regex",
- "serde",
- "serde_json",
- "sled",
- "sourcemap",
- "string-interner",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tokio-tungstenite",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
 
 [[package]]
 name = "unicode-id-start"

@@ -16,11 +16,11 @@ mkdir -p npm-packages
 
 # Platform configurations
 declare -A PLATFORMS=(
-  ["darwin-arm64"]="aarch64-apple-darwin:ultra"
-  ["darwin-x64"]="x86_64-apple-darwin:ultra"
-  ["linux-x64"]="x86_64-unknown-linux-gnu:ultra"
-  ["linux-arm64"]="aarch64-unknown-linux-gnu:ultra"
-  ["win32-x64"]="x86_64-pc-windows-msvc:ultra.exe"
+  ["darwin-arm64"]="aarch64-apple-darwin:soku"
+  ["darwin-x64"]="x86_64-apple-darwin:soku"
+  ["linux-x64"]="x86_64-unknown-linux-gnu:soku"
+  ["linux-arm64"]="aarch64-unknown-linux-gnu:soku"
+  ["win32-x64"]="x86_64-pc-windows-msvc:soku.exe"
 )
 
 # Function to create platform package

@@ -110,13 +110,13 @@ jobs:
 
     - name: Strip binary (Unix)
       if: matrix.os != 'windows-latest'
-      run: strip target/${{ matrix.target }}/release/ultra
+      run: strip target/${{ matrix.target }}/release/soku
 
     - name: Upload binary
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ needs.create-release.outputs.version }}
-        files: target/${{ matrix.target }}/release/ultra${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        files: target/${{ matrix.target }}/release/soku${{ matrix.os == 'windows-latest' && '.exe' || '' }}
 
   publish-crate:
     name: Publish to crates.io
@@ -177,9 +177,9 @@ jobs:
 
             # Determine binary name
             if [ "$target" = "x86_64-pc-windows-msvc" ]; then
-              binary="ultra.exe"
+              binary="soku.exe"
             else
-              binary="ultra"
+              binary="soku"
             fi
 
             # Find and copy binary from build artifacts

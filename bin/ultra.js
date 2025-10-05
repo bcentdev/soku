@@ -14,11 +14,11 @@ const PLATFORMS = {
 };
 
 const BINARY_NAMES = {
-  'darwin-arm64': 'ultra',
-  'darwin-x64': 'ultra',
-  'linux-x64': 'ultra',
-  'linux-arm64': 'ultra',
-  'win32-x64': 'ultra.exe',
+  'darwin-arm64': 'soku',
+  'darwin-x64': 'soku',
+  'linux-x64': 'soku',
+  'linux-arm64': 'soku',
+  'win32-x64': 'soku.exe',
 };
 
 function getPlatformInfo() {

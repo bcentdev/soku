@@ -31,9 +31,9 @@ MISSING_BINARIES=0
 
 for target in "${PLATFORMS[@]}"; do
   if [[ "$target" == *"windows"* ]]; then
-    binary_path="target/$target/release/ultra.exe"
+    binary_path="target/$target/release/soku.exe"
   else
-    binary_path="target/$target/release/ultra"
+    binary_path="target/$target/release/soku"
   fi
 
   if [ ! -f "$binary_path" ]; then

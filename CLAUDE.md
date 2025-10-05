@@ -1,12 +1,12 @@
-# Ultra Bundler - Architecture & Development Guide
+# Soku (速) - Architecture & Development Guide
 
 ## 🚀 Overview
 
-Ultra Bundler is a high-performance JavaScript/TypeScript bundler built in Rust, designed for ultra-fast builds (sub-250ms) with advanced features like tree shaking, TypeScript/TSX support, and Hot Module Replacement.
+Soku (速 - speed) is a high-performance JavaScript/TypeScript bundler built in Rust, designed for ultra-fast builds (sub-250ms) with advanced features like tree shaking, TypeScript/TSX support, and Hot Module Replacement.
 
 ## 📁 Architecture
 
-Ultra follows **Clean Architecture** principles with clear separation of concerns:
+Soku follows **Clean Architecture** principles with clear separation of concerns:
 
 ```
 src/
@@ -331,5 +331,5 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 **Types**: `feat`, `fix`, `refactor`, `perf`, `chore`, `docs`
 
-This architecture ensures Ultra Bundler remains the fastest bundler while maintaining code quality and extensibility.
+This architecture ensures Soku remains the fastest bundler while maintaining code quality and extensibility.
 - siempre que implementes un cambio, debes de hacer limpiar los warnings de la build y hacer commit
