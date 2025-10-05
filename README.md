@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)](https://www.rust-lang.org)
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/vicentetorres/ultra-bundler/releases)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/bcentdev/ultra/releases)
 
 **Ultra-fast builds • Zero config • Advanced tree shaking**
 
@@ -40,8 +40,8 @@
 
 ```bash
 # Install from source
-git clone https://github.com/vicentetorres/ultra-bundler
-cd ultra-bundler
+git clone https://github.com/bcentdev/ultra
+cd ultra
 cargo build --release
 
 # Add to PATH
@@ -512,8 +512,8 @@ Contributions are welcome! Ultra uses a **6-day sprint cycle** for rapid iterati
 
 ```bash
 # Clone repository
-git clone https://github.com/vicentetorres/ultra-bundler
-cd ultra-bundler
+git clone https://github.com/bcentdev/ultra
+cd ultra
 
 # Build
 cargo build
@@ -594,8 +594,8 @@ Built on the shoulders of giants:
 
 **Built with ❤️ and ⚡ by the Ultra Team**
 
-[⭐ Star us on GitHub](https://github.com/vicentetorres/ultra-bundler) •
-[🐛 Report Bug](https://github.com/vicentetorres/ultra-bundler/issues) •
-[💡 Request Feature](https://github.com/vicentetorres/ultra-bundler/issues)
+[⭐ Star us on GitHub](https://github.com/bcentdev/ultra) •
+[🐛 Report Bug](https://github.com/bcentdev/ultra/issues) •
+[💡 Request Feature](https://github.com/bcentdev/ultra/issues)
 
 </div>
