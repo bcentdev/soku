@@ -3,7 +3,7 @@
 // This example shows how to use HMR hooks to customize
 // Hot Module Replacement behavior.
 
-use ultra::infrastructure::{UltraHmrService, HmrHook, HmrHookContext, BuiltInHmrHooks};
+use ultra::infrastructure::{UltraHmrService, HmrHook, HmrHookContext, HmrHookUpdateKind, BuiltInHmrHooks};
 use ultra::utils::Result;
 use async_trait::async_trait;
 use std::sync::Arc;

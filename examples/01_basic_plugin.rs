@@ -5,6 +5,7 @@
 
 use ultra::utils::{Plugin, PluginContext, Result};
 use ultra::core::models::ModuleInfo;
+use ultra::core::interfaces::BuildService;
 use async_trait::async_trait;
 use std::sync::Arc;
 
@@ -65,24 +66,30 @@ impl Plugin for TimingPlugin {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Create build service
-    let fs_service = Arc::new(ultra::infrastructure::BasicFileSystemService::new());
-    let js_processor = Arc::new(ultra::infrastructure::EnhancedJsProcessor::new());
-    let css_processor = Arc::new(ultra::infrastructure::LightningCssProcessor::new());
+    // Create build service with current APIs
+    let fs_service = Arc::new(ultra::infrastructure::TokioFileSystemService);
+    let js_processor = Arc::new(ultra::infrastructure::UnifiedJsProcessor::new(
+        ultra::infrastructure::ProcessingStrategy::Standard
+    ));
+    let css_processor = Arc::new(ultra::infrastructure::LightningCssProcessor::new(false));
 
     // Create and register plugin
-    let service = ultra::core::UltraBuildService::new(fs_service, js_processor, css_processor)
+    let service = ultra::core::services::UltraBuildService::new(fs_service, js_processor, css_processor)
         .with_plugin(Arc::new(TimingPlugin::new()));
 
     // Build configuration
     let config = ultra::core::models::BuildConfig {
         root: std::path::PathBuf::from("./demo-project"),
         outdir: std::path::PathBuf::from("./demo-project/dist"),
-        entry: std::path::PathBuf::from("./demo-project/main.js"),
-        minify: false,
-        enable_source_maps: true,
         enable_tree_shaking: false,
-        enable_hmr: false,
+        enable_minification: false,
+        enable_source_maps: true,
+        enable_code_splitting: false,
+        max_chunk_size: None,
+        mode: "development".to_string(),
+        alias: std::collections::HashMap::new(),
+        external: Vec::new(),
+        vendor_chunk: false,
         entries: std::collections::HashMap::new(),
     };
 

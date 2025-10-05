@@ -4,14 +4,17 @@
 // code during the build process.
 
 use ultra::utils::{CustomTransformer, BuiltInTransformers, TransformerBuilder, Result};
+use ultra::core::interfaces::BuildService;
 use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Create build service
-    let fs_service = Arc::new(ultra::infrastructure::BasicFileSystemService::new());
-    let js_processor = Arc::new(ultra::infrastructure::EnhancedJsProcessor::new());
-    let css_processor = Arc::new(ultra::infrastructure::LightningCssProcessor::new());
+    // Create build service with current APIs
+    let fs_service = Arc::new(ultra::infrastructure::TokioFileSystemService);
+    let js_processor = Arc::new(ultra::infrastructure::UnifiedJsProcessor::new(
+        ultra::infrastructure::ProcessingStrategy::Standard
+    ));
+    let css_processor = Arc::new(ultra::infrastructure::LightningCssProcessor::new(false));
 
     // Example 1: Remove console.log statements in production
     let remove_logs = BuiltInTransformers::remove_console_logs();
@@ -52,7 +55,7 @@ async fn main() -> Result<()> {
     );
 
     // Example 7: Build a transformer chain
-    let service = ultra::core::UltraBuildService::new(fs_service, js_processor, css_processor)
+    let service = ultra::core::services::UltraBuildService::new(fs_service, js_processor, css_processor)
         .with_transformer(remove_logs)
         .with_transformer(remove_debugger)
         .with_transformer(add_strict)
@@ -63,11 +66,15 @@ async fn main() -> Result<()> {
     let config = ultra::core::models::BuildConfig {
         root: std::path::PathBuf::from("./demo-project"),
         outdir: std::path::PathBuf::from("./demo-project/dist"),
-        entry: std::path::PathBuf::from("./demo-project/main.js"),
-        minify: true,  // Enable minification
-        enable_source_maps: true,
         enable_tree_shaking: true,
-        enable_hmr: false,
+        enable_minification: true,
+        enable_source_maps: true,
+        enable_code_splitting: false,
+        max_chunk_size: None,
+        mode: "production".to_string(),
+        alias: std::collections::HashMap::new(),
+        external: Vec::new(),
+        vendor_chunk: false,
         entries: std::collections::HashMap::new(),
     };
 

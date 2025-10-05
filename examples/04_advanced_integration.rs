@@ -5,6 +5,7 @@
 
 use ultra::utils::{Plugin, PluginContext, CustomTransformer, BuiltInTransformers, Result};
 use ultra::core::models::{ModuleInfo, BuildConfig};
+use ultra::core::interfaces::BuildService;
 use async_trait::async_trait;
 use std::sync::Arc;
 use std::path::PathBuf;
@@ -52,7 +53,7 @@ impl Plugin for ProductionPlugin {
 
         if let Some(stats) = &result.tree_shaking_stats {
             println!("   - Tree shaking: {} exports removed ({:.1}% reduction)",
-                stats.removed_exports.len(),
+                stats.removed_exports,
                 stats.reduction_percentage
             );
         }
@@ -76,10 +77,12 @@ impl Plugin for ProductionPlugin {
 async fn main() -> Result<()> {
     println!("🚀 Ultra Bundler - Advanced Integration Example\n");
 
-    // Create services
-    let fs_service = Arc::new(ultra::infrastructure::BasicFileSystemService::new());
-    let js_processor = Arc::new(ultra::infrastructure::EnhancedJsProcessor::new());
-    let css_processor = Arc::new(ultra::infrastructure::LightningCssProcessor::new());
+    // Create services with current APIs
+    let fs_service = Arc::new(ultra::infrastructure::TokioFileSystemService);
+    let js_processor = Arc::new(ultra::infrastructure::UnifiedJsProcessor::new(
+        ultra::infrastructure::ProcessingStrategy::Enhanced
+    ));
+    let css_processor = Arc::new(ultra::infrastructure::LightningCssProcessor::new(true));
     let tree_shaker = Arc::new(ultra::infrastructure::RegexTreeShaker::new());
 
     // Configure multiple entry points
@@ -92,16 +95,20 @@ async fn main() -> Result<()> {
     let config = BuildConfig {
         root: PathBuf::from("./demo-project"),
         outdir: PathBuf::from("./demo-project/dist-advanced"),
-        entry: PathBuf::from("./demo-project/main.js"),
-        minify: true,
-        enable_source_maps: true,  // Advanced source maps with inline sources
         enable_tree_shaking: true,
-        enable_hmr: false,
+        enable_minification: true,
+        enable_source_maps: true,  // Advanced source maps with inline sources
+        enable_code_splitting: false,
+        max_chunk_size: None,
+        mode: "production".to_string(),
+        alias: HashMap::new(),
+        external: Vec::new(),
+        vendor_chunk: false,
         entries,
     };
 
     // Create build service with all features
-    let service = ultra::core::UltraBuildService::new(fs_service, js_processor, css_processor)
+    let service = ultra::core::services::UltraBuildService::new(fs_service, js_processor, css_processor)
         // Add tree shaking
         .with_tree_shaker(tree_shaker)
         // Add production plugin
