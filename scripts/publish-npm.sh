@@ -1,5 +1,5 @@
 #!/bin/bash
-# Automated npm publishing script for Ultra
+# Automated npm publishing script for Soku
 # Usage: ./scripts/publish-npm.sh [dry-run]
 
 set -e
@@ -7,8 +7,8 @@ set -e
 VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
 DRY_RUN=${1:-""}
 
-echo "🚀 Ultra npm Publishing Script"
-echo "================================"
+echo "🚀 Soku (速) npm Publishing Script"
+echo "==================================="
 echo "Version: $VERSION"
 echo ""
 
@@ -75,7 +75,7 @@ echo ""
 cd npm-packages
 for platform_dir in */; do
   platform=${platform_dir%/}
-  echo "Publishing ultra-bundler-$platform..."
+  echo "Publishing soku-$platform..."
   cd "$platform"
 
   if [ "$DRY_RUN" = "dry-run" ]; then
@@ -85,14 +85,14 @@ for platform_dir in */; do
   fi
 
   cd ..
-  echo "  ✓ Published ultra-bundler-$platform"
+  echo "  ✓ Published soku-$platform"
   echo ""
 done
 
 cd ..
 
 # Publish main package
-echo "Publishing main package ultra-bundler..."
+echo "Publishing main package soku..."
 if [ "$DRY_RUN" = "dry-run" ]; then
   npm publish --dry-run --access public
 else
@@ -103,7 +103,7 @@ echo ""
 echo "✅ All packages published successfully!"
 echo ""
 echo "Install with:"
-echo "  npm install -g ultra-bundler"
+echo "  npm install -g soku"
 echo ""
 echo "View on npm:"
-echo "  https://www.npmjs.com/package/ultra-bundler"
+echo "  https://www.npmjs.com/package/soku"

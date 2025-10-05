@@ -1,10 +1,10 @@
-# Ultra Publishing Guide
+# Soku Publishing Guide
 
-Esta guía te muestra cómo publicar Ultra en npm de forma fácil y automatizada.
+Esta guía te muestra cómo publicar Soku (速) en npm de forma fácil y automatizada.
 
 ## 🚀 Publicación Automática (Recomendado)
 
-Ultra está configurado para publicarse automáticamente en npm cuando creas un release en GitHub.
+Soku está configurado para publicarse automáticamente en npm cuando creas un release en GitHub.
 
 ### Requisitos Previos
 
@@ -163,21 +163,21 @@ Después de publicar, verifica:
 
 ```bash
 # Ver en npm registry
-npm view ultra-bundler
+npm view soku
 
 # Instalar y probar
-npm install -g ultra-bundler
-ultra --version
-ultra build --help
+npm install -g soku
+soku --version
+soku build --help
 ```
 
 También puedes ver en:
-- https://www.npmjs.com/package/ultra-bundler
-- https://www.npmjs.com/package/ultra-bundler-darwin-arm64
-- https://www.npmjs.com/package/ultra-bundler-darwin-x64
-- https://www.npmjs.com/package/ultra-bundler-linux-x64
-- https://www.npmjs.com/package/ultra-bundler-linux-arm64
-- https://www.npmjs.com/package/ultra-bundler-win32-x64
+- https://www.npmjs.com/package/soku
+- https://www.npmjs.com/package/soku-darwin-arm64
+- https://www.npmjs.com/package/soku-darwin-x64
+- https://www.npmjs.com/package/soku-linux-x64
+- https://www.npmjs.com/package/soku-linux-arm64
+- https://www.npmjs.com/package/soku-win32-x64
 
 ---
 

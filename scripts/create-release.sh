@@ -1,5 +1,5 @@
 #!/bin/bash
-# Automated release creation script for Ultra
+# Automated release creation script for Soku
 # Usage: ./scripts/create-release.sh [version]
 
 set -e
@@ -13,8 +13,8 @@ fi
 
 TAG="v$VERSION"
 
-echo "🏷️  Ultra Release Creation Script"
-echo "=================================="
+echo "🏷️  Soku (速) Release Creation Script"
+echo "======================================"
 echo "Version: $VERSION"
 echo "Tag: $TAG"
 echo ""
@@ -105,7 +105,7 @@ if command -v gh &> /dev/null; then
   echo "$CHANGELOG_SECTION" > "$TEMP_FILE"
 
   gh release create "$TAG" \
-    --title "Ultra $VERSION" \
+    --title "Soku $VERSION" \
     --notes-file "$TEMP_FILE"
 
   rm "$TEMP_FILE"
@@ -120,7 +120,7 @@ else
   echo "To create a GitHub release manually:"
   echo "  1. Go to: https://github.com/bcentdev/ultra/releases/new"
   echo "  2. Tag: $TAG"
-  echo "  3. Title: Ultra $VERSION"
+  echo "  3. Title: Soku $VERSION"
   echo "  4. Copy changelog from CHANGELOG.md"
 fi
 

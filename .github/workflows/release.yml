@@ -193,9 +193,9 @@ jobs:
 
             cat > "$pkg_dir/package.json" <<EOF
           {
-            "name": "ultra-bundler-$platform",
+            "name": "soku-$platform",
             "version": "$VERSION",
-            "description": "Ultra bundler native binary for $platform",
+            "description": "Soku (速) bundler native binary for $platform",
             "repository": {
               "type": "git",
               "url": "git+https://github.com/bcentdev/ultra.git"
@@ -205,7 +205,7 @@ jobs:
             "cpu": ["$cpu"],
             "files": ["bin"],
             "bin": {
-              "ultra": "./bin/$binary"
+              "soku": "./bin/$binary"
             }
           }
           EOF
@@ -218,11 +218,11 @@ jobs:
           cd npm-packages
           for platform_dir in */; do
             platform=${platform_dir%/}
-            echo "📦 Publishing ultra-bundler-$platform..."
+            echo "📦 Publishing soku-$platform..."
             cd "$platform"
             npm publish --access public
             cd ..
-            echo "✓ Published ultra-bundler-$platform"
+            echo "✓ Published soku-$platform"
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -234,9 +234,9 @@ jobs:
 
       - name: Publish main package to npm
         run: |
-          echo "📦 Publishing ultra-bundler..."
+          echo "📦 Publishing soku..."
           npm publish --access public
-          echo "✓ Published ultra-bundler"
+          echo "✓ Published soku"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -250,7 +250,7 @@ jobs:
               release_id: context.payload.release.id
             });
 
-            const newBody = release.data.body + '\n\n---\n\n### 📦 npm Package\n\nInstall via npm:\n```bash\nnpm install -g ultra-bundler\n```\n\nView on npm: https://www.npmjs.com/package/ultra-bundler';
+            const newBody = release.data.body + '\n\n---\n\n### 📦 npm Package\n\nInstall via npm:\n```bash\nnpm install -g soku\n```\n\nView on npm: https://www.npmjs.com/package/soku';
 
             await github.rest.repos.updateRelease({
               owner: context.repo.owner,

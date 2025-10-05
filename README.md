@@ -18,11 +18,11 @@
 
 ---
 
-## 🌟 What is Ultra?
+## 🌟 What is Soku?
 
-**Ultra** is a blazingly fast JavaScript/TypeScript bundler built in Rust, designed for sub-250ms builds with zero configuration. It combines native Rust performance with intelligent optimizations to deliver the fastest bundling experience for modern web development.
+**Soku (速)** is a blazingly fast JavaScript/TypeScript bundler built in Rust, designed for sub-250ms builds with zero configuration. It combines native Rust performance with intelligent optimizations to deliver the fastest bundling experience for modern web development.
 
-### ✨ Why Ultra?
+### ✨ Why Soku?
 
 - ⚡ **Ultra-Fast**: Sub-250ms builds for typical projects
 - 🌳 **Intelligent Tree Shaking**: 50-80% bundle size reduction
@@ -40,13 +40,13 @@
 
 ```bash
 # Via npm (recommended)
-npm install -g ultra-bundler
+npm install -g soku
 
 # Via yarn
-yarn global add ultra-bundler
+yarn global add soku
 
 # Via pnpm
-pnpm add -g ultra-bundler
+pnpm add -g soku
 
 # Or install from source
 git clone https://github.com/bcentdev/ultra
@@ -60,13 +60,13 @@ export PATH=$PATH:$(pwd)/target/release
 ```bash
 # Create a new project
 mkdir my-app && cd my-app
-echo 'console.log("Hello Ultra!");' > main.js
+echo 'console.log("Hello Soku!");' > main.js
 
 # Bundle it (zero config!)
-ultra build
+soku build
 
 # Output:
-#   ULTRA v0.3.0
+#   SOKU (速) v0.3.0
 #
 #   dist/ bundle.js (45 B)
 #   dist/ bundle.css (33 B)
@@ -91,7 +91,7 @@ export default Welcome;
 ```
 
 ```bash
-ultra build --strategy enhanced
+soku build --strategy enhanced
 # Automatically strips TypeScript types and transforms JSX
 ```
 
@@ -136,12 +136,12 @@ ultra build --strategy enhanced
 
 ## 📖 Commands
 
-### `ultra build` - Production Build
+### `soku build` - Production Build
 
 Build your project for production with all optimizations enabled.
 
 ```bash
-ultra build [OPTIONS]
+soku build [OPTIONS]
 ```
 
 #### Options
@@ -165,30 +165,30 @@ ultra build [OPTIONS]
 
 ```bash
 # Basic production build
-ultra build
+soku build
 
 # Build with source maps
-ultra build --source-maps
+soku build --source-maps
 
 # Build for development with no minification
-ultra build --mode development --no-minify
+soku build --mode development --no-minify
 
 # Force enhanced TypeScript/JSX processing
-ultra build --strategy enhanced
+soku build --strategy enhanced
 
 # Build with code splitting and analysis
-ultra build --code-splitting --analyze
+soku build --code-splitting --analyze
 
 # Full optimization build
-ultra build --source-maps --code-splitting --ultra-mode
+soku build --source-maps --code-splitting --ultra-mode
 ```
 
-### `ultra dev` - Development Server
+### `soku dev` - Development Server
 
 Start a development server with Hot Module Replacement.
 
 ```bash
-ultra dev [OPTIONS]
+soku dev [OPTIONS]
 ```
 
 #### Options
@@ -202,18 +202,18 @@ ultra dev [OPTIONS]
 
 ```bash
 # Start dev server on default port
-ultra dev
+soku dev
 
 # Start on custom port
-ultra dev --port 8080
+soku dev --port 8080
 ```
 
-### `ultra watch` - Watch Mode
+### `soku watch` - Watch Mode
 
 Watch for file changes and rebuild automatically.
 
 ```bash
-ultra watch [OPTIONS]
+soku watch [OPTIONS]
 ```
 
 #### Options
@@ -233,36 +233,36 @@ ultra watch [OPTIONS]
 
 ```bash
 # Watch with defaults
-ultra watch
+soku watch
 
 # Watch with verbose logging
-ultra watch --verbose
+soku watch --verbose
 
 # Watch with source maps and clear console
-ultra watch --source-maps --clear
+soku watch --source-maps --clear
 ```
 
-### `ultra preview` - Preview Build
+### `soku preview` - Preview Build
 
 Preview a production build locally.
 
 ```bash
-ultra preview
+soku preview
 ```
 
-### `ultra info` - System Information
+### `soku info` - System Information
 
 Show bundler version and system information.
 
 ```bash
-ultra info
+soku info
 ```
 
 ---
 
 ## 🎯 Processing Strategies
 
-Ultra offers three processing strategies that can be manually selected or auto-detected:
+Soku offers three processing strategies that can be manually selected or auto-detected:
 
 ### 🚀 Fast Mode
 - **Best For**: Small projects, prototyping
@@ -288,7 +288,7 @@ Ultra offers three processing strategies that can be manually selected or auto-d
 
 ## 🎨 Project Structure
 
-Ultra works with minimal configuration. Here's a typical project structure:
+Soku works with minimal configuration. Here's a typical project structure:
 
 ```
 my-project/
@@ -313,7 +313,7 @@ my-project/
 
 ## 🌳 Tree Shaking
 
-Ultra's tree shaking is one of its most powerful features, delivering 50-80% bundle size reduction.
+Soku's tree shaking is one of its most powerful features, delivering 50-80% bundle size reduction.
 
 ### How It Works
 
@@ -344,7 +344,7 @@ console.log(multiply(3, 4));
 
 **Result:**
 ```bash
-ultra build
+soku build
 
 # Output:
 # 🌳 Tree shaking: 78.5% code reduction, 3 exports removed
@@ -354,7 +354,7 @@ ultra build
 
 ## 🎯 Performance
 
-Ultra delivers exceptional performance across all project sizes:
+Soku delivers exceptional performance across all project sizes:
 
 | Project Size | Files | Build Time | Mode |
 |-------------|-------|------------|------|
@@ -368,15 +368,15 @@ Ultra delivers exceptional performance across all project sizes:
 
 ```bash
 # Demo project (8 files, TypeScript + CSS)
-ultra build
+soku build
 # ✓ built in 12ms
 
 # Medium project (120 files, TSX components)
-ultra build --strategy enhanced
+soku build --strategy enhanced
 # ✓ built in 187ms
 
 # Large project (450 files, full TypeScript)
-ultra build
+soku build
 # ✓ built in 245ms (auto-ultra mode enabled)
 ```
 
@@ -442,7 +442,7 @@ export const Button = ({ text, onClick, variant = 'primary' }: ButtonProps) => {
 
 ```bash
 # Create multiple bundles
-ultra build \
+soku build \
   --entry main.js \
   --entry admin.js \
   --entry worker.js \
@@ -453,7 +453,7 @@ ultra build \
 
 ## 🔧 Configuration (Optional)
 
-Ultra works zero-config, but you can customize it with `ultra.config.json`:
+Soku works zero-config, but you can customize it with `soku.config.json`:
 
 ```json
 {
@@ -513,7 +513,7 @@ src/
 
 ## 🤝 Contributing
 
-Contributions are welcome! Ultra uses a **6-day sprint cycle** for rapid iteration.
+Contributions are welcome! Soku uses a **6-day sprint cycle** for rapid iteration.
 
 ### Development Setup
 
@@ -530,7 +530,7 @@ cargo test
 
 # Test with demo project
 cd demo-project
-../target/debug/ultra build
+../target/debug/soku build
 ```
 
 ### Areas for Contribution
@@ -599,7 +599,7 @@ Built on the shoulders of giants:
 
 <div align="center">
 
-**Built with ❤️ and ⚡ by the Ultra Team**
+**Built with ❤️ and ⚡ by the Soku Team**
 
 [⭐ Star us on GitHub](https://github.com/bcentdev/ultra) •
 [🐛 Report Bug](https://github.com/bcentdev/ultra/issues) •

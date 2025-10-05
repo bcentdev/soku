@@ -1,7 +1,7 @@
 {
-  "name": "ultra-bundler",
+  "name": "soku",
   "version": "0.3.0",
-  "description": "Ultra-fast JavaScript/TypeScript bundler built in Rust - Sub-250ms builds with zero config",
+  "description": "🚀 Soku (速) - Speed-first JavaScript/TypeScript bundler built in Rust - Sub-250ms builds with zero config",
   "keywords": [
     "bundler",
     "build-tool",
@@ -11,6 +11,9 @@
     "tsx",
     "rust",
     "fast",
+    "speed",
+    "velocity",
+    "soku",
     "tree-shaking",
     "hmr",
     "hot-module-replacement",
@@ -26,9 +29,9 @@
     "url": "git+https://github.com/bcentdev/ultra.git"
   },
   "license": "MIT",
-  "author": "Ultra Team",
+  "author": "Soku Team",
   "bin": {
-    "ultra": "./bin/ultra.js"
+    "soku": "./bin/ultra.js"
   },
   "files": [
     "bin",
@@ -52,10 +55,10 @@
     "arm64"
   ],
   "optionalDependencies": {
-    "ultra-bundler-darwin-arm64": "0.3.0",
-    "ultra-bundler-darwin-x64": "0.3.0",
-    "ultra-bundler-linux-x64": "0.3.0",
-    "ultra-bundler-linux-arm64": "0.3.0",
-    "ultra-bundler-win32-x64": "0.3.0"
+    "soku-darwin-arm64": "0.3.0",
+    "soku-darwin-x64": "0.3.0",
+    "soku-linux-x64": "0.3.0",
+    "soku-linux-arm64": "0.3.0",
+    "soku-win32-x64": "0.3.0"
   }
 }

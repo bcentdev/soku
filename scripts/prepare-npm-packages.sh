@@ -7,7 +7,7 @@ VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
 REPO="https://github.com/bcentdev/ultra"
 
 echo "📦 Preparing npm packages for version $VERSION"
-echo "   Package: ultra-bundler"
+echo "   Package: soku"
 echo "   Registry: npmjs.org"
 
 # Create npm-packages directory
@@ -50,9 +50,9 @@ create_platform_package() {
   # Create package.json
   cat > "$pkg_dir/package.json" <<EOF
 {
-  "name": "ultra-bundler-$platform",
+  "name": "soku-$platform",
   "version": "$VERSION",
-  "description": "Ultra bundler native binary for $platform",
+  "description": "Soku (速) bundler native binary for $platform",
   "repository": {
     "type": "git",
     "url": "git+$REPO.git"
@@ -62,7 +62,7 @@ create_platform_package() {
     "bin"
   ],
   "bin": {
-    "ultra": "./bin/$binary"
+    "soku": "./bin/$binary"
   }
 }
 EOF

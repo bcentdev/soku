@@ -25,7 +25,7 @@
 # Añade:
 ## [0.3.1] - 2025-01-XX
 ### Added
-- Nueva funcionalidad
+- Nueva funcionalidad Soku
 
 # 3. Commit
 git add Cargo.toml package.json CHANGELOG.md
@@ -36,9 +36,9 @@ git push
 ./scripts/create-release.sh
 ```
 
-**¡Listo!** En ~15 minutos Ultra estará en npm.
+**¡Listo!** En ~15 minutos Soku estará en npm.
 
-Verifica en: https://www.npmjs.com/package/ultra-bundler
+Verifica en: https://www.npmjs.com/package/soku
 
 ## 🔧 Publicar Manualmente (Si necesario)
 
@@ -65,8 +65,8 @@ npm login
 ./scripts/publish-npm.sh dry-run
 
 # Instalar tu versión
-npm install -g ultra-bundler
-ultra --version
+npm install -g soku
+soku --version
 ```
 
 ---

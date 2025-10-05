@@ -1,8 +1,8 @@
-# Ultra - The Next-Gen JavaScript Bundler
+# Soku (速) - The Next-Gen JavaScript Bundler
 
 ⚡ **Ultra-fast** • 🌳 **Advanced tree shaking** • 🎯 **Zero config** • 🦀 **Built in Rust**
 
-Ultra is a blazingly fast JavaScript/TypeScript bundler designed for sub-250ms builds with zero configuration.
+Soku (速 - speed) is a blazingly fast JavaScript/TypeScript bundler designed for sub-250ms builds with zero configuration.
 
 ## 🚀 Quick Start
 
@@ -10,16 +10,16 @@ Ultra is a blazingly fast JavaScript/TypeScript bundler designed for sub-250ms b
 
 ```bash
 # npm
-npm install -g ultra-bundler
+npm install -g soku
 
 # yarn
-yarn global add ultra-bundler
+yarn global add soku
 
 # pnpm
-pnpm add -g ultra-bundler
+pnpm add -g soku
 
 # Or use npx without installing
-npx ultra-bundler build
+npx soku build
 ```
 
 ### Your First Bundle
@@ -27,10 +27,10 @@ npx ultra-bundler build
 ```bash
 # Create a project
 mkdir my-app && cd my-app
-echo 'console.log("Hello Ultra!");' > main.js
+echo 'console.log("Hello Soku!");' > main.js
 
 # Bundle it (zero config!)
-ultra build
+soku build
 
 # Output:
 #   ✓ built in 8ms
@@ -52,40 +52,40 @@ ultra build
 ### Build for Production
 
 ```bash
-ultra build
+soku build
 ```
 
 ### Development Server with HMR
 
 ```bash
-ultra dev
+soku dev
 ```
 
 ### Watch Mode
 
 ```bash
-ultra watch
+soku watch
 ```
 
 ### Options
 
 ```bash
 # Build with source maps
-ultra build --source-maps
+soku build --source-maps
 
 # Build for development
-ultra build --mode development --no-minify
+soku build --mode development --no-minify
 
 # Force enhanced TypeScript/JSX processing
-ultra build --strategy enhanced
+soku build --strategy enhanced
 
 # Build with code splitting
-ultra build --code-splitting --analyze
+soku build --code-splitting --analyze
 ```
 
 ## 🎯 Processing Strategies
 
-Ultra offers three processing strategies:
+Soku offers three processing strategies:
 
 - **🚀 Fast Mode**: Minimal transformations, maximum speed (<50ms)
 - **📦 Standard Mode**: TypeScript type stripping, basic optimizations (<150ms)
@@ -104,7 +104,7 @@ Ultra offers three processing strategies:
 
 ## 🏗️ Project Structure
 
-Ultra works with minimal configuration:
+Soku works with minimal configuration:
 
 ```
 my-project/
@@ -120,7 +120,7 @@ my-project/
 
 ## 🔧 Configuration (Optional)
 
-Create `ultra.config.json` for custom configuration:
+Create `soku.config.json` for custom configuration:
 
 ```json
 {
@@ -135,7 +135,7 @@ Create `ultra.config.json` for custom configuration:
 
 ## 🌐 Platform Support
 
-Ultra provides native binaries for:
+Soku provides native binaries for:
 
 - **macOS** (Intel and Apple Silicon)
 - **Linux** (x64 and ARM64)
@@ -167,7 +167,7 @@ Built with:
 
 ---
 
-**Made with ❤️ and ⚡ by the Ultra Team**
+**Made with ❤️ and ⚡ by the Soku Team**
 
 [⭐ Star us on GitHub](https://github.com/bcentdev/ultra) •
 [🐛 Report Bug](https://github.com/bcentdev/ultra/issues) •

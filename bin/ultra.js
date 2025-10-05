@@ -6,11 +6,11 @@ const { platform, arch } = require('os');
 
 // Map Node.js platform/arch to package names
 const PLATFORMS = {
-  'darwin-arm64': 'ultra-bundler-darwin-arm64',
-  'darwin-x64': 'ultra-bundler-darwin-x64',
-  'linux-x64': 'ultra-bundler-linux-x64',
-  'linux-arm64': 'ultra-bundler-linux-arm64',
-  'win32-x64': 'ultra-bundler-win32-x64',
+  'darwin-arm64': 'soku-darwin-arm64',
+  'darwin-x64': 'soku-darwin-x64',
+  'linux-x64': 'soku-linux-x64',
+  'linux-arm64': 'soku-linux-arm64',
+  'win32-x64': 'soku-win32-x64',
 };
 
 const BINARY_NAMES = {
@@ -35,7 +35,7 @@ function findBinary() {
 
   if (!packageName) {
     console.error(`Unsupported platform: ${platformKey}`);
-    console.error('Ultra bundler is currently supported on:');
+    console.error('Soku bundler is currently supported on:');
     console.error('  - macOS (Intel and Apple Silicon)');
     console.error('  - Linux (x64 and ARM64)');
     console.error('  - Windows (x64)');
@@ -47,13 +47,13 @@ function findBinary() {
     const binaryPath = require.resolve(`${packageName}/bin/${binaryName}`);
     return binaryPath;
   } catch (error) {
-    console.error(`Failed to find Ultra binary for ${platformKey}`);
+    console.error(`Failed to find Soku binary for ${platformKey}`);
     console.error('');
     console.error('This may happen if:');
     console.error('  1. The optional dependency was not installed');
     console.error('  2. Your platform is not yet supported');
     console.error('');
-    console.error('Try reinstalling: npm install ultra-bundler');
+    console.error('Try reinstalling: npm install soku');
     console.error(`Or manually install: npm install ${packageName}`);
     process.exit(1);
   }
@@ -70,7 +70,7 @@ function run() {
   });
 
   child.on('error', (error) => {
-    console.error('Failed to start Ultra:', error.message);
+    console.error('Failed to start Soku:', error.message);
     process.exit(1);
   });
 
