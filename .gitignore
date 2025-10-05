@@ -27,6 +27,7 @@ yarn-error.log*
 
 # npm publishing
 npm-packages/
+.npmrc
 
 # Output directories
 dist/

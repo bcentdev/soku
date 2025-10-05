@@ -6,7 +6,19 @@ set -e
 VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
 REPO="https://github.com/bcentdev/ultra"
 
+# Determine package scope from package.json
+PACKAGE_NAME=$(node -p "require('./package.json').name")
+if [[ "$PACKAGE_NAME" == "@bcentdev/ultra" ]]; then
+  SCOPE="@bcentdev/ultra"
+  REGISTRY="GitHub Packages"
+else
+  SCOPE="@ultra-bundler"
+  REGISTRY="npmjs.org"
+fi
+
 echo "📦 Preparing npm packages for version $VERSION"
+echo "   Registry: $REGISTRY"
+echo "   Scope: $SCOPE"
 
 # Create npm-packages directory
 rm -rf npm-packages
@@ -45,10 +57,12 @@ create_platform_package() {
   # Copy binary
   cp "$binary_path" "$pkg_dir/bin/"
 
-  # Create package.json
+  # Create package.json with correct scope
+  local pkg_name="${SCOPE}-${platform}"
+
   cat > "$pkg_dir/package.json" <<EOF
 {
-  "name": "@ultra-bundler/$platform",
+  "name": "$pkg_name",
   "version": "$VERSION",
   "description": "Ultra bundler native binary for $platform",
   "repository": {

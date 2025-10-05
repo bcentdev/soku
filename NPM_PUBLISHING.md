@@ -2,6 +2,12 @@
 
 This guide explains how to publish Ultra as an npm package with native binaries for multiple platforms.
 
+> **⚠️ IMPORTANT**: Before following this guide, read [NPM_OR_GITHUB_PACKAGES.md](./NPM_OR_GITHUB_PACKAGES.md) to choose between:
+> - **npmjs.org** (recommended for public tools)
+> - **GitHub Packages** (integrated with GitHub)
+>
+> This guide assumes you're publishing to **npmjs.org**.
+
 ## Architecture
 
 Ultra uses a multi-package strategy similar to esbuild and swc:
