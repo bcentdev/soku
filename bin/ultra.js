@@ -4,22 +4,13 @@ const { spawn } = require('child_process');
 const { join } = require('path');
 const { platform, arch } = require('os');
 
-// Detect package scope from current package.json
-let packageScope = '@bcentdev/ultra';
-try {
-  const pkg = require('../package.json');
-  // packageScope is already set correctly
-} catch (e) {
-  // Use default if package.json not found
-}
-
 // Map Node.js platform/arch to package names
 const PLATFORMS = {
-  'darwin-arm64': `${packageScope}-darwin-arm64`,
-  'darwin-x64': `${packageScope}-darwin-x64`,
-  'linux-x64': `${packageScope}-linux-x64`,
-  'linux-arm64': `${packageScope}-linux-arm64`,
-  'win32-x64': `${packageScope}-win32-x64`,
+  'darwin-arm64': 'ultra-bundler-darwin-arm64',
+  'darwin-x64': 'ultra-bundler-darwin-x64',
+  'linux-x64': 'ultra-bundler-linux-x64',
+  'linux-arm64': 'ultra-bundler-linux-arm64',
+  'win32-x64': 'ultra-bundler-win32-x64',
 };
 
 const BINARY_NAMES = {

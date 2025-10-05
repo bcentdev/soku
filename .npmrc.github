@@ -1,8 +1,0 @@
-# GitHub Packages Registry Configuration
-# Rename this file to .npmrc to use GitHub Packages
-
-# Route @bcentdev scoped packages to GitHub Packages
-@bcentdev:registry=https://npm.pkg.github.com
-
-# Authentication (add your token here or use npm login)
-# //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}

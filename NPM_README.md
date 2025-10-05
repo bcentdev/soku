@@ -10,16 +10,16 @@ Ultra is a blazingly fast JavaScript/TypeScript bundler designed for sub-250ms b
 
 ```bash
 # npm
-npm install -g @bcentdev/ultra
+npm install -g ultra-bundler
 
 # yarn
-yarn global add @bcentdev/ultra
+yarn global add ultra-bundler
 
 # pnpm
-pnpm add -g @bcentdev/ultra
+pnpm add -g ultra-bundler
 
 # Or use npx without installing
-npx @bcentdev/ultra build
+npx ultra-bundler build
 ```
 
 ### Your First Bundle

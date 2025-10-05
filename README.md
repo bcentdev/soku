@@ -39,12 +39,19 @@
 ### Installation
 
 ```bash
-# Install from source
+# Via npm (recommended)
+npm install -g ultra-bundler
+
+# Via yarn
+yarn global add ultra-bundler
+
+# Via pnpm
+pnpm add -g ultra-bundler
+
+# Or install from source
 git clone https://github.com/bcentdev/ultra
 cd ultra
 cargo build --release
-
-# Add to PATH
 export PATH=$PATH:$(pwd)/target/release
 ```
 
