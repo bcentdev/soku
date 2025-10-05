@@ -15,6 +15,7 @@ pub mod path_aliases;
 pub mod dead_code_eliminator;
 pub mod advanced_source_maps;
 pub mod plugin_system;
+pub mod custom_transformers;
 
 pub use errors::*;
 pub use logging::*;
@@ -32,3 +33,4 @@ pub use path_aliases::*;
 pub use dead_code_eliminator::*;
 pub use advanced_source_maps::*;
 pub use plugin_system::*;
+pub use custom_transformers::*;
