@@ -1,6 +1,6 @@
-# Ultra Bundler - Examples
+# Soku Bundler - Examples
 
-This directory contains practical examples demonstrating how to use Ultra Bundler's advanced features.
+This directory contains practical examples demonstrating how to use Soku Bundler's advanced features.
 
 ## Examples
 

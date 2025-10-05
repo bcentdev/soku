@@ -72,5 +72,5 @@ jobs:
     
     - name: Check binary size
       run: |
-        ls -lh target/release/ultra
-        size target/release/ultra || true
+        ls -lh target/release/soku
+        size target/release/soku || true

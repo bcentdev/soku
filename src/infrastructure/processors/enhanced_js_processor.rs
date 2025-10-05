@@ -21,7 +21,7 @@ use std::path::Path;
 ///
 /// Example migration:
 /// ```rust,no_run
-/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+/// use soku::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 ///
 /// // Old (deprecated)
 /// // let processor = EnhancedJsProcessor::new();
@@ -693,7 +693,7 @@ impl JsProcessor for EnhancedJsProcessor {
                 .and_then(|s| s.to_str())
                 .unwrap_or("unknown")));
 
-        // Check cache first for ultra-fast rebuilds (using unified cache interface)
+        // Check cache first for lightning-fast rebuilds (using unified cache interface)
         let path_str = module.path.to_string_lossy();
         if let Some(cached) = super::common::get_cached_js(&self.cache, &path_str, &module.content, self.enable_cache) {
             Logger::debug("Cache hit for enhanced processing");
@@ -725,7 +725,7 @@ impl JsProcessor for EnhancedJsProcessor {
         let _timer = crate::utils::Timer::start("Enhanced bundling modules");
 
         let mut bundle = String::new();
-        bundle.push_str("// Ultra Bundler - Enhanced TypeScript/JavaScript Build\n");
+        bundle.push_str("// Soku Bundler - Enhanced TypeScript/JavaScript Build\n");
         bundle.push_str("(function() {\n'use strict';\n\n");
 
         // Process modules with enhanced performance
@@ -765,7 +765,7 @@ impl JsProcessor for EnhancedJsProcessor {
         let _timer = crate::utils::Timer::start("Enhanced bundling with tree shaking and node_modules optimization");
 
         let mut bundle = String::new();
-        bundle.push_str("// Ultra Bundler - Enhanced Build with Node Modules Tree Shaking\n");
+        bundle.push_str("// Soku Bundler - Enhanced Build with Node Modules Tree Shaking\n");
         bundle.push_str("(function() {\n'use strict';\n\n");
 
         // Separate node_modules from local modules for different processing

@@ -4,14 +4,14 @@
 
 pub fn generate_hmr_client_code(port: u16) -> String {
     format!(r#"
-// Ultra Bundler HMR Client Runtime
+// Soku Bundler HMR Client Runtime
 (function() {{
     'use strict';
 
     const HMR_PORT = {port};
     const HMR_URL = `ws://localhost:${{HMR_PORT}}`;
 
-    class UltraHMRClient {{
+    class SokuHMRClient {{
         constructor() {{
             this.ws = null;
             this.reconnectAttempts = 0;
@@ -30,7 +30,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
                 this.ws = new WebSocket(HMR_URL);
                 this.setupEventHandlers();
             }} catch (error) {{
-                console.warn('[Ultra HMR] Connection failed:', error);
+                console.warn('[Soku HMR] Connection failed:', error);
                 this.scheduleReconnect();
             }}
         }}
@@ -39,8 +39,8 @@ pub fn generate_hmr_client_code(port: u16) -> String {
             this.ws.onopen = () => {{
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
-                this.showNotification('🔥 Ultra HMR Connected', 'success');
-                console.log('[Ultra HMR] Connected to development server');
+                this.showNotification('🔥 Soku HMR Connected', 'success');
+                console.log('[Soku HMR] Connected to development server');
             }};
 
             this.ws.onmessage = (event) => {{
@@ -48,23 +48,23 @@ pub fn generate_hmr_client_code(port: u16) -> String {
                     const update = JSON.parse(event.data);
                     this.handleUpdate(update);
                 }} catch (error) {{
-                    console.warn('[Ultra HMR] Invalid update message:', error);
+                    console.warn('[Soku HMR] Invalid update message:', error);
                 }}
             }};
 
             this.ws.onclose = () => {{
                 this.isConnected = false;
-                console.log('[Ultra HMR] Connection closed');
+                console.log('[Soku HMR] Connection closed');
                 this.scheduleReconnect();
             }};
 
             this.ws.onerror = (error) => {{
-                console.warn('[Ultra HMR] WebSocket error:', error);
+                console.warn('[Soku HMR] WebSocket error:', error);
             }};
         }}
 
         handleUpdate(update) {{
-            console.log('[Ultra HMR] Received update:', update);
+            console.log('[Soku HMR] Received update:', update);
 
             switch (update.kind) {{
                 case 'FullReload':
@@ -99,7 +99,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
                     break;
 
                 default:
-                    console.log('[Ultra HMR] Unknown update kind:', update.kind);
+                    console.log('[Soku HMR] Unknown update kind:', update.kind);
             }}
         }}
 
@@ -108,7 +108,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
             const newContent = update.content;
 
             if (!newContent) {{
-                console.warn('[Ultra HMR] No content for module update:', modulePath);
+                console.warn('[Soku HMR] No content for module update:', modulePath);
                 return;
             }}
 
@@ -122,7 +122,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
                     this.performFullReload();
                 }}
             }} catch (error) {{
-                console.warn('[Ultra HMR] Module update failed:', error);
+                console.warn('[Soku HMR] Module update failed:', error);
                 this.performFullReload();
             }}
         }}
@@ -132,7 +132,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
             const newContent = update.content;
 
             if (!newContent) {{
-                console.warn('[Ultra HMR] No content for CSS update:', cssPath);
+                console.warn('[Soku HMR] No content for CSS update:', cssPath);
                 return;
             }}
 
@@ -140,7 +140,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
                 this.hotReplaceCss(cssPath, newContent);
                 this.showNotification(`🎨 CSS Updated: ${{cssPath}}`, 'info');
             }} catch (error) {{
-                console.warn('[Ultra HMR] CSS update failed:', error);
+                console.warn('[Soku HMR] CSS update failed:', error);
                 this.performFullReload();
             }}
         }}
@@ -164,17 +164,17 @@ pub fn generate_hmr_client_code(port: u16) -> String {
             script.textContent = newContent;
 
             // Remove old script if exists
-            const oldScript = document.querySelector(`script[data-ultra-module="${{modulePath}}"]`);
+            const oldScript = document.querySelector(`script[data-soku-module="${{modulePath}}"]`);
             if (oldScript) {{
                 oldScript.remove();
             }}
 
             // Add new script
-            script.setAttribute('data-ultra-module', modulePath);
+            script.setAttribute('data-soku-module', modulePath);
             document.head.appendChild(script);
 
             // Trigger custom event for application to handle
-            window.dispatchEvent(new CustomEvent('ultra-hmr-module-updated', {{
+            window.dispatchEvent(new CustomEvent('soku-hmr-module-updated', {{
                 detail: {{ modulePath, content: newContent }}
             }}));
         }}
@@ -188,7 +188,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
                 cssElement = document.querySelector(`link[href*="${{cssPath}}"]`);
                 if (!cssElement) {{
                     // Look for existing style tags
-                    cssElement = document.querySelector(`style[data-ultra-css="${{cssPath}}"]`);
+                    cssElement = document.querySelector(`style[data-soku-css="${{cssPath}}"]`);
                 }}
             }}
 
@@ -207,21 +207,21 @@ pub fn generate_hmr_client_code(port: u16) -> String {
                 }}
 
                 const style = document.createElement('style');
-                style.setAttribute('data-ultra-css', cssPath);
+                style.setAttribute('data-soku-css', cssPath);
                 style.textContent = newContent;
                 document.head.appendChild(style);
                 this.cssLinks.set(cssPath, style);
             }}
 
             // Trigger custom event
-            window.dispatchEvent(new CustomEvent('ultra-hmr-css-updated', {{
+            window.dispatchEvent(new CustomEvent('soku-hmr-css-updated', {{
                 detail: {{ cssPath, content: newContent }}
             }}));
         }}
 
         performFullReload() {{
             this.showNotification('🔄 Reloading page...', 'warning');
-            console.log('[Ultra HMR] Performing full page reload');
+            console.log('[Soku HMR] Performing full page reload');
 
             // Small delay to show notification
             setTimeout(() => {{
@@ -231,7 +231,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
 
         scheduleReconnect() {{
             if (this.reconnectAttempts >= this.maxReconnectAttempts) {{
-                console.warn('[Ultra HMR] Max reconnection attempts reached');
+                console.warn('[Soku HMR] Max reconnection attempts reached');
                 this.showNotification('❌ HMR Disconnected', 'error');
                 return;
             }}
@@ -239,7 +239,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
             this.reconnectAttempts++;
             const delay = this.reconnectDelay * this.reconnectAttempts;
 
-            console.log(`[Ultra HMR] Reconnecting in ${{delay}}ms (attempt ${{this.reconnectAttempts}})`);
+            console.log(`[Soku HMR] Reconnecting in ${{delay}}ms (attempt ${{this.reconnectAttempts}})`);
 
             setTimeout(() => {{
                 this.connect();
@@ -302,7 +302,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
             this.hideErrorOverlay();
 
             const overlay = document.createElement('div');
-            overlay.id = '__ultra_hmr_error_overlay__';
+            overlay.id = '__soku_hmr_error_overlay__';
             overlay.style.cssText = `
                 position: fixed;
                 top: 0;
@@ -363,7 +363,7 @@ pub fn generate_hmr_client_code(port: u16) -> String {
         }}
 
         hideErrorOverlay() {{
-            const overlay = document.getElementById('__ultra_hmr_error_overlay__');
+            const overlay = document.getElementById('__soku_hmr_error_overlay__');
             if (overlay) {{
                 overlay.remove();
             }}
@@ -372,14 +372,14 @@ pub fn generate_hmr_client_code(port: u16) -> String {
         setupErrorHandling() {{
             // Handle unhandled promise rejections
             window.addEventListener('unhandledrejection', (event) => {{
-                console.warn('[Ultra HMR] Unhandled promise rejection:', event.reason);
+                console.warn('[Soku HMR] Unhandled promise rejection:', event.reason);
                 const errorMsg = event.reason?.stack || event.reason?.message || String(event.reason);
                 this.showErrorOverlay(`Unhandled Promise Rejection:\n\n${{errorMsg}}`);
             }});
 
             // Handle JavaScript errors
             window.addEventListener('error', (event) => {{
-                console.warn('[Ultra HMR] JavaScript error:', event.error);
+                console.warn('[Soku HMR] JavaScript error:', event.error);
                 const errorMsg = event.error?.stack || event.message;
                 this.showErrorOverlay(`JavaScript Error:\n\n${{errorMsg}}`);
             }});
@@ -402,16 +402,16 @@ pub fn generate_hmr_client_code(port: u16) -> String {
 
     // Initialize HMR client
     if (typeof window !== 'undefined') {{
-        window.__ULTRA_HMR__ = new UltraHMRClient();
+        window.__SOKU_HMR__ = new SokuHMRClient();
 
         // Expose some utilities for debugging
-        window.__ULTRA_HMR_DEBUG__ = {{
-            reload: () => window.__ULTRA_HMR__.performFullReload(),
-            stats: () => window.__ULTRA_HMR__.getStats(),
-            isConnected: () => window.__ULTRA_HMR__.isConnected()
+        window.__SOKU_HMR_DEBUG__ = {{
+            reload: () => window.__SOKU_HMR__.performFullReload(),
+            stats: () => window.__SOKU_HMR__.getStats(),
+            isConnected: () => window.__SOKU_HMR__.isConnected()
         }};
 
-        console.log('🔥 Ultra HMR Client initialized');
+        console.log('🔥 Soku HMR Client initialized');
     }}
 }})();
 "#, port = port)

@@ -1,4 +1,4 @@
-// Watch mode for Ultra Bundler
+// Watch mode for Soku Bundler
 // Monitors file changes and triggers automatic rebuilds
 
 use crate::core::models::BuildConfig;
@@ -35,12 +35,12 @@ impl Default for WatchConfig {
 }
 
 /// File watcher that monitors changes and triggers rebuilds
-pub struct UltraWatcher {
+pub struct SokuWatcher {
     config: WatchConfig,
     build_config: BuildConfig,
 }
 
-impl UltraWatcher {
+impl SokuWatcher {
     /// Create a new file watcher
     pub fn new(config: WatchConfig, build_config: BuildConfig) -> Self {
         Self {
@@ -257,7 +257,7 @@ mod tests {
             vendor_chunk: false,
             entries: std::collections::HashMap::new(),
         };
-        let watcher = UltraWatcher::new(config, build_config);
+        let watcher = SokuWatcher::new(config, build_config);
 
         assert!(watcher.is_source_file(Path::new("test.js")));
         assert!(watcher.is_source_file(Path::new("test.tsx")));

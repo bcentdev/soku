@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Ultra Bundler - Automated Changelog Generator
+# Soku Bundler - Automated Changelog Generator
 # Generates CHANGELOG.md from git commits when creating tags
 
 set -e
@@ -45,7 +45,7 @@ fi
 CHANGELOG_TEMP=$(mktemp)
 echo "# Changelog" > "$CHANGELOG_TEMP"
 echo "" >> "$CHANGELOG_TEMP"
-echo "All notable changes to Ultra Bundler will be documented in this file." >> "$CHANGELOG_TEMP"
+echo "All notable changes to Soku Bundler will be documented in this file." >> "$CHANGELOG_TEMP"
 echo "" >> "$CHANGELOG_TEMP"
 echo "The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)," >> "$CHANGELOG_TEMP"
 echo "and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)." >> "$CHANGELOG_TEMP"

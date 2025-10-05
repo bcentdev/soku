@@ -217,19 +217,19 @@ mod tests {
     #[test]
     fn test_mmap_file_reader() {
         let mut temp_file = NamedTempFile::new().unwrap();
-        writeln!(temp_file, "Hello, Ultra Bundler!").unwrap();
+        writeln!(temp_file, "Hello, Soku Bundler!").unwrap();
 
         let reader = MmapFileReader::new(temp_file.path()).unwrap();
         let content = reader.as_str().unwrap();
 
-        assert!(content.contains("Hello, Ultra Bundler!"));
+        assert!(content.contains("Hello, Soku Bundler!"));
     }
 
     #[test]
     fn test_content_hash() {
         let data1 = b"Hello, World!";
         let data2 = b"Hello, World!";
-        let data3 = b"Hello, Ultra!";
+        let data3 = b"Hello, Soku!";
 
         let hash1 = ContentHash::new(data1);
         let hash2 = ContentHash::new(data2);

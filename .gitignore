@@ -39,8 +39,8 @@ build/
 *.temp
 .cache/
 
-# Ultra bundler specific
-.ultra-cache/
+# Soku bundler specific
+.soku-cache/
 .claude/
 
 # Examples specific

@@ -18,7 +18,7 @@ function checkInstallation() {
 
   if (!packageName) {
     console.warn(`⚠️  Soku bundler: Platform ${platformKey} is not officially supported.`);
-    console.warn('You may need to build from source: https://github.com/bcentdev/ultra');
+    console.warn('You may need to build from source: https://github.com/bcentdev/soku');
     return;
   }
 

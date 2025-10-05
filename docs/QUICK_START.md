@@ -55,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Processing Strategies
 
-Ultra offers three processing strategies:
+Soku offers three processing strategies:
 
 ```rust
 use soku::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
@@ -83,7 +83,7 @@ struct MyPlugin;
 impl Plugin for MyPlugin {
     fn name(&self) -> &str { "my-plugin" }
 
-    async fn before_build(&self, ctx: &PluginContext) -> ultra::utils::Result<()> {
+    async fn before_build(&self, ctx: &PluginContext) -> soku::utils::Result<()> {
         println!("Building {} modules", ctx.modules.len());
         Ok(())
     }
@@ -181,7 +181,7 @@ let config = BuildConfig {
 
 ## Features
 
-- ⚡ **Ultra-fast builds** - Sub-250ms typical
+- ⚡ **Lightning-fast builds** - Sub-250ms typical
 - 🌳 **Tree shaking** - 50-80% code reduction
 - 📦 **Multiple entry points** - Multi-page apps
 - 🗺️ **Advanced source maps** - With inline sources

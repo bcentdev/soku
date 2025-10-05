@@ -113,8 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2024-01-16
 
 ### Added
-- 🎉 **Initial release of Ultra**
-- ⚡ **Ultra-fast bundling** with oxc + Lightning CSS
+- 🎉 **Initial release of Soku**
+- ⚡ **Lightning-fast bundling** with oxc + Lightning CSS
 - 🚀 **Zero-config** bundler that works out of the box
 - 📦 **Complete bundling** for JavaScript, TypeScript, CSS, and HTML
 - 🔧 **CLI interface** with intuitive commands
@@ -122,10 +122,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📊 **Performance metrics** and benchmarking
 
 ### Features
-- `ultra dev` - Development server (simulated HMR)
-- `ultra build` - Production build with real file output
-- `ultra preview` - Preview production builds
-- `ultra info` - Show bundler information and status
+- `soku dev` - Development server (simulated HMR)
+- `soku build` - Production build with real file output
+- `soku preview` - Preview production builds
+- `soku info` - Show bundler information and status
 
 ### Performance
 - **Build time**: 12ms average

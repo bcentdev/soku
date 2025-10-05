@@ -1,4 +1,4 @@
-// Bundle analysis for Ultra Bundler
+// Bundle analysis for Soku Bundler
 // Provides size analysis and visualization of bundle contents
 
 use crate::core::models::{ModuleInfo, ModuleType, BuildResult};

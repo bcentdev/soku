@@ -1,4 +1,4 @@
-// Ultra Bundler - Modern Architecture
+// Soku Bundler - Modern Architecture
 // Entry point with clean separation of concerns
 
 mod utils;

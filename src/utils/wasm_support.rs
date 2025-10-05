@@ -1,4 +1,4 @@
-// WebAssembly support for Ultra Bundler
+// WebAssembly support for Soku Bundler
 // Handles WASM module loading and integration
 
 use crate::utils::Result;

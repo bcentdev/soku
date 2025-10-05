@@ -151,6 +151,7 @@ pub struct TreeShakingStats {
     pub reduction_percentage: f64,
     /// Map of module path -> set of used exports
     /// Format: "module_path" -> {"export1", "export2", ...}
+    #[allow(dead_code)] // Future feature for advanced tree shaking analysis
     pub used_exports: std::collections::HashMap<String, std::collections::HashSet<String>>,
 }
 

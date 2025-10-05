@@ -39,7 +39,7 @@ pub struct HmrClient {
     pub sender: tokio::sync::mpsc::UnboundedSender<String>,
 }
 
-/// Ultra-fast Hot Module Replacement system
+/// Lightning-fast Hot Module Replacement system
 #[derive(Clone)]
 pub struct SokuHmrService {
     clients: Arc<DashMap<String, HmrClient>>,
@@ -158,7 +158,7 @@ impl SokuHmrService {
             id: Uuid::new_v4().to_string(),
             kind: HmrUpdateKind::ModuleUpdated,
             path: PathBuf::from("__hmr_connected__"),
-            content: Some("Connected to Ultra HMR".to_string()),
+            content: Some("Connected to Soku HMR".to_string()),
             dependencies: vec![],
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)

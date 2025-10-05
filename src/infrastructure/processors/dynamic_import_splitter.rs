@@ -96,10 +96,10 @@ impl DynamicImportSplitter {
                         format!("chunk-{}.js", self.import_counter)
                     });
 
-                // Replace import() with __ultra_load_chunk()
+                // Replace import() with __soku_load_chunk()
                 replacements.push((
                     full_match.as_str().to_string(),
-                    format!("__ultra_load_chunk('{}')", chunk_file)
+                    format!("__soku_load_chunk('{}')", chunk_file)
                 ));
             }
         }
@@ -115,20 +115,20 @@ impl DynamicImportSplitter {
     /// Generate runtime chunk loader
     pub fn generate_chunk_loader() -> String {
         r#"
-// Ultra Dynamic Import Loader
+// Soku Dynamic Import Loader
 (function() {
-  window.__ultra_loaded_chunks = window.__ultra_loaded_chunks || {};
-  window.__ultra_loading_chunks = window.__ultra_loading_chunks || {};
+  window.__soku_loaded_chunks = window.__soku_loaded_chunks || {};
+  window.__soku_loading_chunks = window.__soku_loading_chunks || {};
 
-  window.__ultra_load_chunk = function(chunkPath) {
+  window.__soku_load_chunk = function(chunkPath) {
     // Return cached chunk if already loaded
-    if (window.__ultra_loaded_chunks[chunkPath]) {
-      return Promise.resolve(window.__ultra_loaded_chunks[chunkPath]);
+    if (window.__soku_loaded_chunks[chunkPath]) {
+      return Promise.resolve(window.__soku_loaded_chunks[chunkPath]);
     }
 
     // Return in-progress load if already loading
-    if (window.__ultra_loading_chunks[chunkPath]) {
-      return window.__ultra_loading_chunks[chunkPath];
+    if (window.__soku_loading_chunks[chunkPath]) {
+      return window.__soku_loading_chunks[chunkPath];
     }
 
     // Load chunk dynamically
@@ -138,22 +138,22 @@ impl DynamicImportSplitter {
       script.async = true;
 
       script.onload = () => {
-        // Extract module exports from global __ultra_chunk_exports
-        const exports = window.__ultra_chunk_exports || {};
-        window.__ultra_loaded_chunks[chunkPath] = exports;
-        delete window.__ultra_loading_chunks[chunkPath];
+        // Extract module exports from global __soku_chunk_exports
+        const exports = window.__soku_chunk_exports || {};
+        window.__soku_loaded_chunks[chunkPath] = exports;
+        delete window.__soku_loading_chunks[chunkPath];
         resolve(exports);
       };
 
       script.onerror = () => {
-        delete window.__ultra_loading_chunks[chunkPath];
+        delete window.__soku_loading_chunks[chunkPath];
         reject(new Error(`Failed to load chunk: ${chunkPath}`));
       };
 
       document.head.appendChild(script);
     });
 
-    window.__ultra_loading_chunks[chunkPath] = loadPromise;
+    window.__soku_loading_chunks[chunkPath] = loadPromise;
     return loadPromise;
   };
 })();
@@ -274,7 +274,7 @@ mod tests {
 
         let result = splitter.replace_dynamic_imports(code, &manifest);
 
-        assert!(result.contains("__ultra_load_chunk('chunk-1.js')"));
+        assert!(result.contains("__soku_load_chunk('chunk-1.js')"));
         assert!(!result.contains("import('./feature.js')"));
     }
 
@@ -282,8 +282,8 @@ mod tests {
     fn test_chunk_loader_generation() {
         let loader = DynamicImportSplitter::generate_chunk_loader();
 
-        assert!(loader.contains("__ultra_load_chunk"));
-        assert!(loader.contains("__ultra_loaded_chunks"));
+        assert!(loader.contains("__soku_load_chunk"));
+        assert!(loader.contains("__soku_loaded_chunks"));
         assert!(loader.contains("document.createElement('script')"));
     }
 

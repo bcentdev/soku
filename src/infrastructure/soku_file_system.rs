@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use dashmap::DashMap;
 
-/// Soku ultra-performance file system service with memory mapping and caching
+/// Soku high-performance file system service with memory mapping and caching
 #[allow(dead_code)]
 pub struct SokuFileSystemService {
     incremental_cache: Arc<IncrementalCache>,
@@ -30,8 +30,8 @@ impl SokuFileSystemService {
     }
 
     /// Scan directory with parallel processing and memory mapping
-    pub async fn scan_directory_ultra(&self, path: &Path) -> Result<ProjectStructure> {
-        let _timer = crate::utils::Timer::start("Ultra directory scanning");
+    pub async fn scan_directory_turbo(&self, path: &Path) -> Result<ProjectStructure> {
+        let _timer = crate::utils::Timer::start("High-speed directory scanning");
 
         // Collect all files first
         let mut all_files = Vec::new();
@@ -82,7 +82,7 @@ impl SokuFileSystemService {
     }
 
     /// Read file with memory mapping and caching
-    pub async fn read_file_ultra(&self, path: &Path) -> Result<String> {
+    pub async fn read_file_turbo(&self, path: &Path) -> Result<String> {
         let path_str = path.to_string_lossy();
 
         // Try to get from incremental cache first
@@ -130,10 +130,10 @@ impl SokuFileSystemService {
 
     /// Get cache statistics
     #[allow(dead_code)] // Future use for cache analytics and debugging
-    pub fn cache_stats(&self) -> UltraFileSystemStats {
+    pub fn cache_stats(&self) -> SokuFileSystemStats {
         let incremental_stats = self.incremental_cache.stats();
 
-        UltraFileSystemStats {
+        SokuFileSystemStats {
             cached_files: incremental_stats.content_entries,
             memory_usage_bytes: 0, // Simplified for now
             metadata_entries: self.file_metadata.len(),
@@ -218,7 +218,7 @@ enum FileType {
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct UltraFileSystemStats {
+pub struct SokuFileSystemStats {
     pub cached_files: usize,
     pub memory_usage_bytes: usize,
     pub metadata_entries: usize,
@@ -233,11 +233,11 @@ impl Default for SokuFileSystemService {
 #[async_trait::async_trait]
 impl FileSystemService for SokuFileSystemService {
     async fn scan_directory(&self, path: &Path) -> Result<ProjectStructure> {
-        self.scan_directory_ultra(path).await
+        self.scan_directory_turbo(path).await
     }
 
     async fn read_file(&self, path: &Path) -> Result<String> {
-        self.read_file_ultra(path).await
+        self.read_file_turbo(path).await
     }
 
     async fn write_file(&self, path: &Path, content: &str) -> Result<()> {
@@ -276,7 +276,7 @@ mod tests {
     use tokio;
 
     #[tokio::test]
-    async fn test_ultra_file_system_operations() {
+    async fn test_soku_file_system_operations() {
         let fs = SokuFileSystemService::new();
         let temp_dir = tempdir().unwrap();
         let test_file = temp_dir.path().join("test.js");
@@ -300,7 +300,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_ultra_directory_scan() {
+    async fn test_soku_directory_scan() {
         let fs = SokuFileSystemService::new();
         let temp_dir = tempdir().unwrap();
 

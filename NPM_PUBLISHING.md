@@ -1,6 +1,6 @@
-# Publishing Ultra to npm
+# Publishing Soku to npm
 
-This guide explains how to publish Ultra as an npm package with native binaries for multiple platforms.
+This guide explains how to publish Soku as an npm package with native binaries for multiple platforms.
 
 > **⚠️ IMPORTANT**: Before following this guide, read [NPM_OR_GITHUB_PACKAGES.md](./NPM_OR_GITHUB_PACKAGES.md) to choose between:
 > - **npmjs.org** (recommended for public tools)
@@ -10,7 +10,7 @@ This guide explains how to publish Ultra as an npm package with native binaries 
 
 ## Architecture
 
-Ultra uses a multi-package strategy similar to esbuild and swc:
+Soku uses a multi-package strategy similar to esbuild and swc:
 
 1. **Main package** (`soku`): JavaScript wrapper that detects platform and loads the correct binary
 2. **Platform packages** (`@soku/*`): Contains native binaries for specific platforms
@@ -87,7 +87,7 @@ Example `package.json` for platform package:
 {
   "name": "@soku/darwin-arm64",
   "version": "0.3.0",
-  "description": "Ultra bundler native binary for macOS Apple Silicon",
+  "description": "Soku bundler native binary for macOS Apple Silicon",
   "repository": "https://github.com/bcentdev/soku",
   "license": "MIT",
   "os": ["darwin"],
@@ -184,7 +184,7 @@ jobs:
           {
             "name": "@soku/${{ matrix.package }}",
             "version": "${{ github.event.release.tag_name }}",
-            "description": "Ultra bundler for ${{ matrix.package }}",
+            "description": "Soku bundler for ${{ matrix.package }}",
             "repository": "https://github.com/bcentdev/soku",
             "license": "MIT",
             "files": ["bin"]

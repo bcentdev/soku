@@ -143,7 +143,7 @@ impl ProcessingOptions {
 /// ## Basic Usage
 ///
 /// ```rust,no_run
-/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+/// use soku::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 /// use std::path::Path;
 ///
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -173,7 +173,7 @@ impl ProcessingOptions {
 /// ## Auto-Detection
 ///
 /// ```rust,no_run
-/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+/// use soku::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 ///
 /// // Automatically select strategy based on project characteristics
 /// let has_typescript = true;
@@ -188,7 +188,7 @@ impl ProcessingOptions {
 ///
 /// ```rust,ignore
 /// // Note: ProcessingOptions is an internal type
-/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+/// use soku::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 ///
 /// // Custom options example (simplified)
 /// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Enhanced);
@@ -203,7 +203,7 @@ impl ProcessingOptions {
 /// # Migration from Legacy Processors
 ///
 /// ```rust,no_run
-/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+/// use soku::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 ///
 /// // Standard mode: Basic TypeScript stripping
 /// let standard = UnifiedJsProcessor::new(ProcessingStrategy::Standard);
@@ -430,7 +430,7 @@ impl JsProcessor for UnifiedJsProcessor {
         let _timer = crate::utils::Timer::start(&format!("Bundling modules ({})", self.strategy.name()));
 
         let mut bundle = String::new();
-        bundle.push_str(&format!("// Ultra Bundler - {} Mode Build\n", self.strategy.name()));
+        bundle.push_str(&format!("// Soku Bundler - {} Mode Build\n", self.strategy.name()));
         bundle.push_str("(function() {\n'use strict';\n\n");
 
         // Process each module
@@ -486,7 +486,7 @@ impl JsProcessor for UnifiedJsProcessor {
         let strategy_name = self.strategy.name();
 
         // Bundle header
-        bundle.push_str(&format!("// Ultra Bundler - {} Mode Build\n", strategy_name));
+        bundle.push_str(&format!("// Soku Bundler - {} Mode Build\n", strategy_name));
         bundle.push_str("(function() {\n'use strict';\n\n");
 
         // Build source tracking
@@ -1095,7 +1095,7 @@ static REQUIRE_REGEX: Lazy<Regex> = Lazy::new(|| {
 ///
 /// # Example
 /// ```rust,no_run
-/// use ultra::infrastructure::processors::common::extract_dependencies;
+/// use soku::infrastructure::processors::common::extract_dependencies;
 ///
 /// let code = r#"
 ///     import React from 'react';

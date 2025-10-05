@@ -17,7 +17,7 @@ cargo install flamegraph     # Performance profiling
 ### Building from Source
 ```bash
 git clone https://github.com/bcentdev/soku
-cd ultra
+cd soku
 
 # Development build
 cargo build
@@ -158,7 +158,7 @@ cargo run --release --example benchmark
 cargo run --release --features profile-memory
 
 # CPU profiling with flamegraph
-cargo flamegraph --bin ultra -- build examples/large-app
+cargo flamegraph --bin soku -- build examples/large-app
 ```
 
 ## 🔧 Development Workflow
@@ -172,7 +172,7 @@ cargo watch -x 'run -- dev examples/basic'
 RUST_LOG=debug cargo run -- dev examples/basic
 
 # Performance tracing
-ULTRA_TRACE=1 cargo run --release -- dev examples/basic
+SOKU_TRACE=1 cargo run --release -- dev examples/basic
 ```
 
 ### Adding New Features
@@ -213,7 +213,7 @@ match module_type {
 ### CPU Profiling
 ```bash
 # Generate flamegraph
-cargo flamegraph --bin ultra -- build examples/large-app
+cargo flamegraph --bin soku -- build examples/large-app
 
 # Use perf (Linux)
 perf record --call-graph=dwarf cargo run --release -- build
@@ -227,14 +227,14 @@ valgrind --tool=massif cargo run --release -- build
 
 # macOS instruments
 cargo build --release
-instruments -t Allocations target/release/ultra build
+instruments -t Allocations target/release/soku build
 ```
 
 ### Benchmarking
 ```bash
 # Compare against other bundlers
 hyperfine --warmup 3 \
-  'ultra build examples/basic' \
+  'soku build examples/basic' \
   'vite build examples/basic' \
   'bun build examples/basic/index.js'
 
@@ -277,7 +277,7 @@ gh release create v0.2.0 --notes "Release notes here"
 **Slow HMR**: Check file watcher configuration
 ```rust
 // Increase coalescing window if too many events
-let coalescing_ms = std::env::var("ULTRA_COALESCING")
+let coalescing_ms = std::env::var("SOKU_COALESCING")
     .unwrap_or_else(|_| "16".to_string())
     .parse()
     .unwrap_or(16);
@@ -297,7 +297,7 @@ tokio::spawn(async move {
 
 **Build Failures**: Enable verbose logging
 ```bash
-RUST_LOG=ultra_bundler=debug cargo run -- build
+RUST_LOG=soku_bundler=debug cargo run -- build
 ```
 
 ### Debug Utilities

@@ -411,7 +411,7 @@ impl CodeSplitter {
         self.chunks.get(chunk_name).map(|modules| {
             let mut bundle = String::new();
 
-            bundle.push_str(&format!("// Ultra Bundler - Chunk: {}\n", chunk_name));
+            bundle.push_str(&format!("// Soku Bundler - Chunk: {}\n", chunk_name));
             bundle.push_str("(function(){\n");
 
             for module in modules {

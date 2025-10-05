@@ -39,7 +39,7 @@ impl Plugin for ProductionPlugin {
         Ok(())
     }
 
-    async fn after_build(&self, _context: &PluginContext, result: &ultra::core::models::BuildResult) -> Result<()> {
+    async fn after_build(&self, _context: &PluginContext, result: &soku::core::models::BuildResult) -> Result<()> {
         // Calculate total output size
         let total_size: usize = result.output_files.iter()
             .map(|f| f.size)
@@ -75,15 +75,15 @@ impl Plugin for ProductionPlugin {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("🚀 Ultra Bundler - Advanced Integration Example\n");
+    println!("🚀 Soku Bundler - Advanced Integration Example\n");
 
     // Create services with current APIs
-    let fs_service = Arc::new(ultra::infrastructure::TokioFileSystemService);
-    let js_processor = Arc::new(ultra::infrastructure::UnifiedJsProcessor::new(
-        ultra::infrastructure::ProcessingStrategy::Enhanced
+    let fs_service = Arc::new(soku::infrastructure::TokioFileSystemService);
+    let js_processor = Arc::new(soku::infrastructure::UnifiedJsProcessor::new(
+        soku::infrastructure::ProcessingStrategy::Enhanced
     ));
-    let css_processor = Arc::new(ultra::infrastructure::LightningCssProcessor::new(true));
-    let tree_shaker = Arc::new(ultra::infrastructure::RegexTreeShaker::new());
+    let css_processor = Arc::new(soku::infrastructure::LightningCssProcessor::new(true));
+    let tree_shaker = Arc::new(soku::infrastructure::RegexTreeShaker::new());
 
     // Configure multiple entry points
     let mut entries = HashMap::new();
@@ -108,7 +108,7 @@ async fn main() -> Result<()> {
     };
 
     // Create build service with all features
-    let service = ultra::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
+    let service = soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
         // Add tree shaking
         .with_tree_shaker(tree_shaker)
         // Add production plugin

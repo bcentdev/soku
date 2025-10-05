@@ -1,4 +1,4 @@
-// Ultra Bundler Library
+// Soku Bundler Library
 // Exposes core functionality for testing and programmatic usage
 
 pub mod core;

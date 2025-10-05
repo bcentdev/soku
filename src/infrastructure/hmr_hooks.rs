@@ -422,7 +422,7 @@ mod tests {
 
         // Should reload for config files
         let context = HmrHookContext::new(
-            PathBuf::from("ultra.config.json"),
+            PathBuf::from("soku.config.json"),
             HmrHookUpdateKind::Other,
         );
         let should_reload = hook.should_full_reload(&context).await.unwrap();
@@ -521,7 +521,7 @@ mod tests {
 
         // Should reload for config files
         let context = HmrHookContext::new(
-            PathBuf::from("ultra.config.json"),
+            PathBuf::from("soku.config.json"),
             HmrHookUpdateKind::Other,
         );
         let should_reload = manager.should_full_reload(&context).await.unwrap();

@@ -5,7 +5,7 @@ pub struct Logger;
 impl Logger {
     pub fn init() {
         tracing_subscriber::fmt()
-            .with_env_filter("ultra=info")
+            .with_env_filter("soku=info")
             .with_target(false)
             .without_time()
             .init();
@@ -13,7 +13,7 @@ impl Logger {
 
     #[allow(dead_code)] // Logging utility - may be used in future
     pub fn build_start(root: &str, outdir: &str) {
-        info!("🔨 Ultra Bundler - Production Build");
+        info!("🔨 Soku Bundler - Production Build");
         info!("═══════════════════════════════════════");
         info!("📁 Input: {}", root);
         info!("📦 Output: {}", outdir);
@@ -68,7 +68,7 @@ impl Logger {
         info!("  • Output directory: {}", outdir);
         info!("");
         info!("✅ Real build completed successfully!");
-        info!("🚀 Ultra with oxc + Lightning CSS");
+        info!("🚀 Soku with oxc + Lightning CSS");
     }
 
     pub fn error(msg: &str) {

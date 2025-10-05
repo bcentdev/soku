@@ -10,7 +10,7 @@ use std::io::Write;
 use std::path::Path;
 use flate2::{Compression, write::GzEncoder};
 
-/// Ultra-fast JavaScript minification using oxc
+/// Lightning-fast JavaScript minification using oxc
 pub struct OxcMinifier {
     options: MinifierOptions,
 }

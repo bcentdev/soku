@@ -31,7 +31,7 @@
   "license": "MIT",
   "author": "Soku Team",
   "bin": {
-    "soku": "./bin/ultra.js"
+    "soku": "./bin/soku.js"
   },
   "files": [
     "bin",
@@ -40,7 +40,7 @@
   ],
   "scripts": {
     "postinstall": "node bin/install.js",
-    "test": "node bin/ultra.js --version"
+    "test": "node bin/soku.js --version"
   },
   "engines": {
     "node": ">=14.0.0"

@@ -1,4 +1,4 @@
-// CSS Modules support for Ultra Bundler
+// CSS Modules support for Soku Bundler
 // Provides scoped CSS with unique class names to avoid global namespace pollution
 
 use crate::utils::Result;

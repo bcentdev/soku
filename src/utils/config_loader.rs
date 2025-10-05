@@ -4,10 +4,10 @@ use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
-/// Configuration file format (ultra.config.json)
+/// Configuration file format (soku.config.json)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UltraConfig {
+pub struct SokuConfig {
     /// Entry point file (e.g., "src/main.js") - single entry (backward compatible)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entry: Option<String>,
@@ -58,7 +58,7 @@ pub struct UltraConfig {
     pub vendor_chunk: Option<bool>,
 }
 
-impl Default for UltraConfig {
+impl Default for SokuConfig {
     fn default() -> Self {
         Self {
             entry: None,
@@ -82,12 +82,12 @@ pub struct ConfigLoader;
 
 impl ConfigLoader {
     /// Load configuration from file if it exists
-    /// Searches for ultra.config.json in the project root
-    pub fn load_from_file(root: &Path) -> Result<Option<UltraConfig>> {
-        let config_path = root.join("ultra.config.json");
+    /// Searches for soku.config.json in the project root
+    pub fn load_from_file(root: &Path) -> Result<Option<SokuConfig>> {
+        let config_path = root.join("soku.config.json");
 
         if !config_path.exists() {
-            Logger::debug("No ultra.config.json found, using defaults");
+            Logger::debug("No soku.config.json found, using defaults");
             return Ok(None);
         }
 
@@ -96,9 +96,9 @@ impl ConfigLoader {
         let content = std::fs::read_to_string(&config_path)
             .map_err(|e| SokuError::Io(e))?;
 
-        let config: UltraConfig = serde_json::from_str(&content)
+        let config: SokuConfig = serde_json::from_str(&content)
             .map_err(|e| SokuError::config(format!(
-                "Failed to parse ultra.config.json: {}",
+                "Failed to parse soku.config.json: {}",
                 e
             )))?;
 
@@ -108,7 +108,7 @@ impl ConfigLoader {
 
     /// Merge file config with CLI arguments (CLI takes precedence)
     pub fn merge_with_cli(
-        file_config: Option<UltraConfig>,
+        file_config: Option<SokuConfig>,
         root: PathBuf,
         outdir: Option<&str>,
         enable_tree_shaking: Option<bool>,
@@ -184,9 +184,9 @@ impl ConfigLoader {
     }
 
     /// Generate example config file
-    #[allow(dead_code)] // Future CLI command: ultra init
+    #[allow(dead_code)] // Future CLI command: soku init
     pub fn generate_example() -> String {
-        let example = UltraConfig::default();
+        let example = SokuConfig::default();
         serde_json::to_string_pretty(&example).unwrap_or_else(|_| {
             r#"{
   "entry": "src/main.js",
@@ -222,8 +222,8 @@ mod tests {
 
         let parent = temp_file.path().parent().unwrap();
 
-        // Rename to ultra.config.json
-        let config_path = parent.join("ultra.config.json");
+        // Rename to soku.config.json
+        let config_path = parent.join("soku.config.json");
         std::fs::copy(temp_file.path(), &config_path).unwrap();
 
         let result = ConfigLoader::load_from_file(parent).unwrap();
@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     fn test_merge_with_cli_override() {
-        let file_config = UltraConfig {
+        let file_config = SokuConfig {
             outdir: Some("build".to_string()),
             minify: Some(false),
             ..Default::default()

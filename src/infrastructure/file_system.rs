@@ -79,7 +79,7 @@ mod tests {
         let test_file = temp_dir.path().join("test.txt");
 
         // Test write and read
-        let content = "Hello, Ultra!";
+        let content = "Hello, Soku!";
         fs_service.write_file(&test_file, content).await.unwrap();
 
         let read_content = fs_service.read_file(&test_file).await.unwrap();

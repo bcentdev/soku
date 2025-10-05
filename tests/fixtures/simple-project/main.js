@@ -2,6 +2,6 @@
 import { greet } from './utils.js';
 
 console.log('Test project initialized');
-greet('Ultra');
+greet('Soku');
 
 export { greet };

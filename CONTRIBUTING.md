@@ -1,6 +1,6 @@
-# Contributing to Ultra ⚡
+# Contributing to Soku ⚡
 
-Thanks for your interest in contributing to Ultra! This document outlines the process for contributing to make it as easy as possible.
+Thanks for your interest in contributing to Soku! This document outlines the process for contributing to make it as easy as possible.
 
 ## 🚀 Quick Start
 
@@ -8,8 +8,8 @@ Thanks for your interest in contributing to Ultra! This document outlines the pr
 
 1. **Fork and clone the repository**
    ```bash
-   git clone https://github.com/your-username/ultra
-   cd ultra
+   git clone https://github.com/your-username/soku
+   cd soku
    ```
 
 2. **Install Rust** (if not already installed)
@@ -175,7 +175,7 @@ A clear description of what the bug is.
 
 **To Reproduce**
 Steps to reproduce the behavior:
-1. Run `ultra build`
+1. Run `soku build`
 2. See error
 
 **Expected behavior**
@@ -184,7 +184,7 @@ What you expected to happen.
 **Environment**
 - OS: [e.g. macOS 14.0]
 - Rust version: [e.g. 1.70.0]
-- Ultra version: [e.g. 0.1.0]
+- Soku version: [e.g. 0.1.0]
 
 **Additional context**
 Any other context about the problem.
@@ -244,9 +244,9 @@ We use [Semantic Versioning](https://semver.org/):
 ## ❓ Questions?
 
 - Open a [Discussion](https://github.com/bcentdev/soku/discussions) for questions
-- Join our [Discord](https://discord.gg/ultra) for real-time chat
+- Join our [Discord](https://discord.gg/soku) for real-time chat
 - Check existing [Issues](https://github.com/bcentdev/soku/issues) and [PRs](https://github.com/bcentdev/soku/pulls)
 
 ---
 
-**Thank you for contributing to Ultra! 🚀**
+**Thank you for contributing to Soku! 🚀**

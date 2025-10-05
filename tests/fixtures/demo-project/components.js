@@ -9,7 +9,7 @@ export const components = {
 
     createHeader() {
         const header = document.createElement('header');
-        header.innerHTML = '<h1>Ultra Bundler Test</h1>';
+        header.innerHTML = '<h1>Soku Bundler Test</h1>';
         document.body.appendChild(header);
     },
 
@@ -17,8 +17,8 @@ export const components = {
         const main = document.createElement('main');
         main.innerHTML = `
             <div class="content">
-                <p>This is a clean test project for Ultra Bundler</p>
-                <button onclick="alert('Ultra fast!')">Test Button</button>
+                <p>This is a clean test project for Soku Bundler</p>
+                <button onclick="alert('Lightning fast!')">Test Button</button>
             </div>
         `;
         document.body.appendChild(main);
@@ -26,7 +26,7 @@ export const components = {
 
     createFooter() {
         const footer = document.createElement('footer');
-        footer.innerHTML = '<p>&copy; 2024 Ultra Bundler</p>';
+        footer.innerHTML = '<p>&copy; 2024 Soku Bundler</p>';
         document.body.appendChild(footer);
     }
 };

@@ -98,7 +98,7 @@ async fn main() -> Result<()> {
         )))
         .await;
 
-    println!("🚀 Starting Ultra HMR Server with custom hooks...");
+    println!("🚀 Starting Soku HMR Server with custom hooks...");
     println!("   Hooks registered:");
     println!("   - Logger (verbose mode)");
     println!("   - Full reload for config files");

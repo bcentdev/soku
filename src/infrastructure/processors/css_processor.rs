@@ -96,7 +96,7 @@ impl CssProcessor for LightningCssProcessor {
         let _timer = crate::utils::Timer::start("Bundling CSS files");
 
         let mut bundle = String::new();
-        bundle.push_str("/* Ultra Bundler - CSS Bundle */\n");
+        bundle.push_str("/* Soku Bundler - CSS Bundle */\n");
 
         for css_file in files {
             let content = tokio::fs::read_to_string(css_file).await
@@ -183,7 +183,7 @@ mod tests {
         let files = vec![css1_path, css2_path];
         let result = processor.bundle_css(&files).await.unwrap();
 
-        assert!(result.contains("Ultra Bundler"));
+        assert!(result.contains("Soku Bundler"));
         assert!(result.contains("From: style1.css"));
         assert!(result.contains("From: style2.css"));
         assert!(result.contains("color: red") || result.contains("red"));

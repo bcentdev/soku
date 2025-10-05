@@ -15,7 +15,7 @@
 - Parallel processing (rayon + tokio)
 
 ### Sprint 5: Advanced Features (100%)
-- ✅ Watch Mode (`ultra watch`)
+- ✅ Watch Mode (`soku watch`)
 - ✅ Bundle Analysis (`--analyze` flag)
 - ✅ CSS Modules (`.module.css` auto-detection)
 - ✅ Incremental Builds (persistent state)
@@ -76,7 +76,7 @@
 **Objetivo**: Advanced features y developer experience
 
 **Tareas**:
-- ✅ Config file support (ultra.config.json con merge CLI/file)
+- ✅ Config file support (soku.config.json con merge CLI/file)
 - ✅ HMR improvements (error recovery con overlay, CSS hot reload mejorado)
 - ✅ WebSocket connection management real con channel-based messaging
 - ✅ Error overlay visual para build failures
@@ -91,7 +91,7 @@
 
 **Tareas**:
 - ✅ Environment Variables (process.env, import.meta.env con .env files)
-- ✅ Path Aliases (@/, @components, @utils via ultra.config.json)
+- ✅ Path Aliases (@/, @components, @utils via soku.config.json)
 - ✅ External Dependencies (exclude React, etc. del bundle)
 
 **Resultado**:
@@ -235,10 +235,10 @@
 - ✅ Bundle analysis
 - ✅ HMR con error recovery
 - ✅ WASM support (auto loaders)
-- ✅ Config file support (ultra.config.json)
+- ✅ Config file support (soku.config.json)
 - ✅ Error overlay visual
 - ✅ CSS hot reload
-- ✅ Auto mode selection (ultra/normal)
+- ✅ Auto mode selection (turbo/normal)
 - ✅ Minification avanzada
 - ✅ Node modules optimization
 - ✅ WebSocket-based HMR server
@@ -257,9 +257,9 @@
 - **Total planificado**: 19 features adicionales
 
 ### Comparación con Competidores
-Cuando completemos Sprint 9-11, Ultra tendrá:
+Cuando completemos Sprint 9-11, Soku tendrá:
 - **37 features activas** (18 actuales + 19 planificadas)
 - **Velocidad**: 10-20x más rápido que Webpack
 - **Bundle size**: 50-80% reducción con tree shaking
 - **DX**: Config file, HMR, error overlay, aliases
-- **Features únicos**: Ultra mode, auto-optimization, 3.8MB binary
+- **Features únicos**: Soku mode, auto-optimization, 3.8MB binary

@@ -1,12 +1,12 @@
 <div align="center">
 
-![Ultra Banner](assets/ultra-banner.svg)
+![Soku Banner](assets/soku-banner.svg)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)](https://www.rust-lang.org)
 [![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/bcentdev/soku/releases)
 
-**Ultra-fast builds • Zero config • Advanced tree shaking**
+**Lightning-fast builds • Zero config • Advanced tree shaking**
 
 [🚀 Quick Start](#-quick-start) •
 [⚡ Features](#-features) •
@@ -24,7 +24,7 @@
 
 ### ✨ Why Soku?
 
-- ⚡ **Ultra-Fast**: Sub-250ms builds for typical projects
+- ⚡ **Lightning-Fast**: Sub-250ms builds for typical projects
 - 🌳 **Intelligent Tree Shaking**: 50-80% bundle size reduction
 - 📦 **Full TypeScript/TSX Support**: Complete type stripping and JSX transformation
 - 🎯 **Zero Config**: Works out of the box, configure when you need it
@@ -50,7 +50,7 @@ pnpm add -g soku
 
 # Or install from source
 git clone https://github.com/bcentdev/soku
-cd ultra
+cd soku
 cargo build --release
 export PATH=$PATH:$(pwd)/target/release
 ```
@@ -117,7 +117,7 @@ soku build --strategy enhanced
 - **🎯 Smart Auto-Mode**: Automatically selects optimal strategy based on project size
   - Small projects (≤10 files): Fast mode
   - Medium projects (≤100 files): Standard mode
-  - Large projects (>100 files): Ultra mode with advanced optimizations
+  - Large projects (>100 files): Soku mode with advanced optimizations
 - **💾 Intelligent Caching**: Content-based persistent cache with Blake3 hashing
 - **⚡ Parallel Processing**: Multi-core utilization via Rayon
 - **🧠 SIMD Optimizations**: Vectorized string operations
@@ -154,8 +154,8 @@ soku build [OPTIONS]
 | `--no-minify` | Disable minification | Enabled |
 | `--source-maps` | Enable source maps | Disabled |
 | `--strategy <MODE>` | Processing strategy (fast/standard/enhanced) | Auto-detect |
-| `--ultra-mode` | Force ultra performance mode | Auto |
-| `--normal-mode` | Force normal mode (disable auto-ultra) | Auto |
+| `--turbo-mode` | Force high performance mode | Auto |
+| `--normal-mode` | Force normal mode (disable auto-turbo) | Auto |
 | `--no-cache` | Disable caching for debugging | Enabled |
 | `--code-splitting` | Enable vendor/common chunk splitting | Disabled |
 | `--analyze` | Generate bundle analysis report | Disabled |
@@ -180,7 +180,7 @@ soku build --strategy enhanced
 soku build --code-splitting --analyze
 
 # Full optimization build
-soku build --source-maps --code-splitting --ultra-mode
+soku build --source-maps --code-splitting --turbo-mode
 ```
 
 ### `soku dev` - Development Server
@@ -279,7 +279,7 @@ Soku offers three processing strategies that can be manually selected or auto-de
 - **Features**: Full TypeScript + JSX transformations, advanced optimizations
 - **Performance**: <250ms builds
 
-### 🎯 Ultra Mode (Auto-Enabled for Large Projects)
+### 🎯 Turbo Mode (Auto-Enabled for Large Projects)
 - **Best For**: Very large projects (>100 files)
 - **Features**: All enhanced features + SIMD, parallel processing, arena allocation
 - **Performance**: <300ms for 2000+ files
@@ -362,7 +362,7 @@ Soku delivers exceptional performance across all project sizes:
 | **Small** | 10-50 | **<100ms** | Standard |
 | **Medium** | 50-100 | **<150ms** | Standard |
 | **Large** | 100-500 | **<200ms** | Enhanced |
-| **Very Large** | 500-2000+ | **<300ms** | Ultra |
+| **Very Large** | 500-2000+ | **<300ms** | Soku |
 
 ### Real-World Examples
 
@@ -377,7 +377,7 @@ soku build --strategy enhanced
 
 # Large project (450 files, full TypeScript)
 soku build
-# ✓ built in 245ms (auto-ultra mode enabled)
+# ✓ built in 245ms (auto-turbo mode enabled)
 ```
 
 ---
@@ -475,7 +475,7 @@ Soku works zero-config, but you can customize it with `soku.config.json`:
 
 ## 🏗️ Architecture
 
-Ultra follows Clean Architecture principles for maintainability and testability:
+Soku follows Clean Architecture principles for maintainability and testability:
 
 ```
 src/
@@ -492,7 +492,7 @@ src/
 │   │   ├── tree_shaker.rs          # Regex-based tree shaking
 │   │   └── ast_tree_shaker.rs      # AST-based tree shaking
 │   ├── file_system.rs              # Basic file operations
-│   ├── ultra_file_system.rs        # Advanced file ops (mmap, parallel)
+│   ├── soku_file_system.rs        # Advanced file ops (mmap, parallel)
 │   └── hmr.rs                      # Hot Module Replacement
 │
 ├── utils/                          # Utilities Layer
@@ -500,7 +500,7 @@ src/
 │   ├── logging.rs                  # Structured logging
 │   ├── performance.rs              # Caching system
 │   ├── advanced_performance.rs     # SIMD, arena allocation
-│   ├── ultra_ui.rs                 # Beautiful CLI
+│   ├── soku_ui.rs                 # Beautiful CLI
 │   ├── plugin_system.rs            # Plugin API
 │   └── custom_transformers.rs      # Code transformations
 │
@@ -520,7 +520,7 @@ Contributions are welcome! Soku uses a **6-day sprint cycle** for rapid iteratio
 ```bash
 # Clone repository
 git clone https://github.com/bcentdev/soku
-cd ultra
+cd soku
 
 # Build
 cargo build
@@ -569,7 +569,7 @@ Built on the shoulders of giants:
 
 - **🦀 Rust Community** - For the amazing language
 - **⚡ oxc** - Fastest JavaScript/TypeScript parser
-- **🌩️ Lightning CSS** - Ultra-fast CSS processing
+- **🌩️ Lightning CSS** - Lightning-fast CSS processing
 - **🔥 Tokio** - Async runtime excellence
 - **⚡ Rayon** - Data parallelism
 - **🎯 All Contributors** - Making this project possible

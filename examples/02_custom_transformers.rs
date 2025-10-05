@@ -10,11 +10,11 @@ use std::sync::Arc;
 #[tokio::main]
 async fn main() -> Result<()> {
     // Create build service with current APIs
-    let fs_service = Arc::new(ultra::infrastructure::TokioFileSystemService);
-    let js_processor = Arc::new(ultra::infrastructure::UnifiedJsProcessor::new(
-        ultra::infrastructure::ProcessingStrategy::Standard
+    let fs_service = Arc::new(soku::infrastructure::TokioFileSystemService);
+    let js_processor = Arc::new(soku::infrastructure::UnifiedJsProcessor::new(
+        soku::infrastructure::ProcessingStrategy::Standard
     ));
-    let css_processor = Arc::new(ultra::infrastructure::LightningCssProcessor::new(false));
+    let css_processor = Arc::new(soku::infrastructure::LightningCssProcessor::new(false));
 
     // Example 1: Remove console.log statements in production
     let remove_logs = BuiltInTransformers::remove_console_logs();
@@ -48,14 +48,14 @@ async fn main() -> Result<()> {
 
     // Example 6: Conditional transformer - only for test files
     let test_transformer = BuiltInTransformers::test_only(
-        ultra::utils::TransformerType::Regex {
+        soku::utils::TransformerType::Regex {
             pattern: "describe\\(".to_string(),
             replacement: "test(".to_string(),
         }
     );
 
     // Example 7: Build a transformer chain
-    let service = ultra::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
+    let service = soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
         .with_transformer(remove_logs)
         .with_transformer(remove_debugger)
         .with_transformer(add_strict)
@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
         .with_transformer(add_build_info);
 
     // Build configuration
-    let config = ultra::core::models::BuildConfig {
+    let config = soku::core::models::BuildConfig {
         root: std::path::PathBuf::from("./demo-project"),
         outdir: std::path::PathBuf::from("./demo-project/dist"),
         enable_tree_shaking: true,

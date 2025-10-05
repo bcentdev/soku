@@ -10,7 +10,7 @@ use string_interner::{StringInterner, DefaultSymbol, DefaultBackend};
 
 /// Soku-fast caching system with persistent storage
 pub struct SokuCache {
-    // In-memory hot cache for ultra-speed
+    // In-memory hot cache for high-speed
     js_cache: Arc<DashMap<String, String>>,
     css_cache: Arc<DashMap<String, String>>,
     parse_cache: Arc<DashMap<u64, String>>,
@@ -122,7 +122,7 @@ impl SokuCache {
         let content_hash = self.hash_content(content);
         let key = format!("{}:{}", path, content_hash);
 
-        // Hot cache for ultra-speed
+        // Hot cache for high-speed
         self.js_cache.insert(key.clone(), result.clone());
 
         // Persistent cache for cross-session performance
@@ -169,7 +169,7 @@ impl SokuCache {
         let content_hash = self.hash_content(content);
         let key = format!("{}:{}", path, content_hash);
 
-        // Hot cache for ultra-speed
+        // Hot cache for high-speed
         self.css_cache.insert(key.clone(), result.clone());
 
         // Persistent cache for cross-session performance

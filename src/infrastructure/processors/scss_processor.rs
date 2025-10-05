@@ -124,7 +124,7 @@ impl CssProcessor for ScssProcessor {
         let _timer = crate::utils::Timer::start("Bundling SCSS/CSS files");
 
         let mut bundle = String::new();
-        bundle.push_str("/* Ultra Bundler - SCSS/CSS Bundle */\n");
+        bundle.push_str("/* Soku Bundler - SCSS/CSS Bundle */\n");
 
         for file_path in files {
             Logger::debug(&format!("Bundling file: {}", file_path.display()));

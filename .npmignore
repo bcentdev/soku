@@ -7,7 +7,7 @@ test-*/
 
 # Build artifacts
 target/
-.ultra-cache/
+.soku-cache/
 
 # Development files
 .git/

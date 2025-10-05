@@ -3,7 +3,7 @@ import { utils } from './utils.js';
 import { components } from './components.js';
 import './styles.css';
 
-console.log('🚀 Clean Ultra Build Test');
+console.log('🚀 Clean Soku Build Test');
 
 // Initialize utilities
 utils.init();
@@ -13,7 +13,7 @@ components.render();
 
 // Test functionality
 const result = utils.processData({
-    name: 'Ultra Bundler',
+    name: 'Soku Bundler',
     version: '0.3.0',
     features: ['Fast', 'TypeScript', 'Tree Shaking']
 });

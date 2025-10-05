@@ -32,8 +32,8 @@ impl StrategyArg {
 }
 
 #[derive(Parser)]
-#[command(name = "ultra")]
-#[command(about = "Ultra - The fastest bundler for modern web development")]
+#[command(name = "soku")]
+#[command(about = "Soku - The fastest bundler for modern web development")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -70,10 +70,10 @@ pub enum Commands {
         /// Processing strategy (fast, standard, enhanced) - optional override, auto-detects by default
         #[arg(long, value_enum)]
         strategy: Option<StrategyArg>,
-        /// Force ultra performance mode (advanced caching, SIMD, parallel processing)
+        /// Force high-performance mode (advanced caching, SIMD, parallel processing)
         #[arg(long)]
-        ultra_mode: bool,
-        /// Force normal mode (disable auto-ultra detection)
+        turbo_mode: bool,
+        /// Force normal mode (disable auto-turbo detection)
         #[arg(long)]
         normal_mode: bool,
         /// Disable caching for debugging
@@ -153,14 +153,14 @@ impl CliHandler {
                 no_minify,
                 source_maps,
                 strategy,
-                ultra_mode,
+                turbo_mode,
                 normal_mode,
                 no_cache,
                 code_splitting,
                 analyze,
                 mode,
             } => {
-                self.handle_build_command(&root, outdir.as_deref(), !no_tree_shaking, !no_minify, source_maps, strategy, ultra_mode, normal_mode, no_cache, code_splitting, analyze, &mode).await
+                self.handle_build_command(&root, outdir.as_deref(), !no_tree_shaking, !no_minify, source_maps, strategy, turbo_mode, normal_mode, no_cache, code_splitting, analyze, &mode).await
             }
             Commands::Preview { dir, port } => {
                 self.handle_preview_command(&dir, port).await
@@ -200,7 +200,7 @@ impl CliHandler {
         enable_minification: bool,
         enable_source_maps: bool,
         strategy: Option<StrategyArg>,
-        force_ultra_mode: bool,
+        force_turbo_mode: bool,
         force_normal_mode: bool,
         _disable_cache: bool,
         enable_code_splitting: bool,
@@ -214,7 +214,7 @@ impl CliHandler {
         // Load config file if it exists
         let file_config = ConfigLoader::load_from_file(&project_root)?;
         if file_config.is_some() {
-            Logger::info("📋 Loaded configuration from ultra.config.json");
+            Logger::info("📋 Loaded configuration from soku.config.json");
         }
 
         // Merge file config with CLI arguments (CLI takes precedence)
@@ -235,8 +235,8 @@ impl CliHandler {
         }
 
         // Analyze project to determine optimal mode
-        let should_use_ultra_mode = if force_ultra_mode {
-            Logger::info("🔧 Ultra Mode: Forced by --ultra-mode flag");
+        let should_use_turbo_mode = if force_turbo_mode {
+            Logger::info("🔧 Turbo Mode: Forced by --turbo-mode flag");
             true
         } else if force_normal_mode {
             Logger::info("🔧 Normal Mode: Forced by --normal-mode flag");
@@ -244,11 +244,11 @@ impl CliHandler {
         } else {
             // Auto-detect based on project characteristics
             let analysis = self.analyze_project(&project_root).await?;
-            let auto_ultra = analysis.should_use_ultra_mode();
+            let auto_turbo = analysis.should_use_turbo_mode();
 
-            if auto_ultra {
+            if auto_turbo {
                 Logger::info(&format!(
-                    "🧠 Auto-Ultra: Detected {} files, {} TypeScript, {}KB total - Using Ultra Mode",
+                    "🧠 Auto-Turbo: Detected {} files, {} TypeScript, {}KB total - Using Turbo Mode",
                     analysis.total_files,
                     analysis.typescript_files,
                     analysis.total_size_kb
@@ -261,19 +261,19 @@ impl CliHandler {
                 ));
             }
 
-            auto_ultra
+            auto_turbo
         };
 
         // Create services based on determined mode
-        let fs_service: Arc<dyn FileSystemService> = if should_use_ultra_mode {
-            Logger::info("🚀 Ultra Mode: Using advanced file system with memory mapping and parallel processing");
+        let fs_service: Arc<dyn FileSystemService> = if should_use_turbo_mode {
+            Logger::info("🚀 Turbo Mode: Using advanced file system with memory mapping and parallel processing");
             Arc::new(SokuFileSystemService::new())
         } else {
             Arc::new(TokioFileSystemService)
         };
 
         // Use UnifiedJsProcessor with explicit or auto-detected strategy
-        let detected_strategy = if should_use_ultra_mode {
+        let detected_strategy = if should_use_turbo_mode {
             ProcessingStrategy::Enhanced
         } else {
             ProcessingStrategy::Standard
@@ -298,8 +298,8 @@ impl CliHandler {
         let lightning_css = Arc::new(LightningCssProcessor::new(enable_minification));
         let css_processor = Arc::new(ScssProcessor::with_css_processor(enable_minification, lightning_css));
 
-        if should_use_ultra_mode {
-            Logger::info("🔥 Ultra Mode: SIMD optimizations and advanced caching enabled");
+        if should_use_turbo_mode {
+            Logger::info("🔥 Turbo Mode: SIMD optimizations and advanced caching enabled");
         }
 
         // Create build service
@@ -365,7 +365,7 @@ impl CliHandler {
     }
 
     async fn handle_dev_command(&self, root: &str, port: u16) -> Result<()> {
-        tracing::info!("🚀 Ultra Bundler - Development Server");
+        tracing::info!("🚀 Soku Bundler - Development Server");
         tracing::info!("═══════════════════════════════════════");
         tracing::info!("📁 Root: {}", root);
         tracing::info!("🌐 Port: {}", port);
@@ -422,7 +422,7 @@ impl CliHandler {
     }
 
     async fn handle_preview_command(&self, dir: &str, port: u16) -> Result<()> {
-        tracing::info!("📦 Ultra Bundler - Preview Server");
+        tracing::info!("📦 Soku Bundler - Preview Server");
         tracing::info!("═══════════════════════════════════════");
         tracing::info!("📁 Directory: {}", dir);
         tracing::info!("🌐 Port: {}", port);
@@ -455,9 +455,9 @@ impl CliHandler {
         verbose: bool,
         strategy: Option<StrategyArg>,
     ) -> Result<()> {
-        use crate::utils::{UltraWatcher, WatchConfig};
+        use crate::utils::{SokuWatcher, WatchConfig};
 
-        tracing::info!("👀 Ultra Watch Mode");
+        tracing::info!("👀 Soku Watch Mode");
         tracing::info!("══════════════════════════════════════");
 
         let root_path = Path::new(root).canonicalize().unwrap_or_else(|_| PathBuf::from(root));
@@ -522,14 +522,14 @@ impl CliHandler {
         }
 
         // Create watcher and start watching
-        let watcher = UltraWatcher::new(watch_config, build_config);
+        let watcher = SokuWatcher::new(watch_config, build_config);
         watcher.watch(&mut build_service).await?;
 
         Ok(())
     }
 
     async fn handle_info_command(&self) -> Result<()> {
-        tracing::info!("🦀 Ultra Bundler v0.3.0");
+        tracing::info!("🦀 Soku Bundler v0.3.0");
         tracing::info!("══════════════════════════════════════");
         tracing::info!("⚡ The fastest bundler for modern web development");
         tracing::info!("");
@@ -556,7 +556,7 @@ impl CliHandler {
         tracing::info!("");
         tracing::info!("🔗 Links:");
         tracing::info!("  • GitHub: https://github.com/bcentdev/soku");
-        tracing::info!("  • Documentation: https://ultra-bundler.dev");
+        tracing::info!("  • Documentation: https://soku-bundler.dev");
 
         Ok(())
     }
@@ -691,9 +691,9 @@ struct ProjectAnalysis {
 }
 
 impl ProjectAnalysis {
-    /// Determine if Ultra Mode would be beneficial for this project
-    fn should_use_ultra_mode(&self) -> bool {
-        // Ultra Mode is beneficial when:
+    /// Determine if Turbo Mode would be beneficial for this project
+    fn should_use_turbo_mode(&self) -> bool {
+        // Turbo Mode is beneficial when:
         // 1. Many files (>= 8 files) - parallel processing helps
         // 2. TypeScript files present - enhanced processor is better
         // 3. Large total size (>= 50KB) - memory mapping and caching help

@@ -1,4 +1,4 @@
-// Plugin System - Event-based extensibility for Ultra Bundler
+// Plugin System - Event-based extensibility for Soku Bundler
 #![allow(dead_code)] // Public API - used via examples and external integrations
 
 use crate::core::models::{BuildConfig, BuildResult, ModuleInfo};

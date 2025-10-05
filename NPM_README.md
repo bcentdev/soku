@@ -1,6 +1,6 @@
 # Soku (速) - The Next-Gen JavaScript Bundler
 
-⚡ **Ultra-fast** • 🌳 **Advanced tree shaking** • 🎯 **Zero config** • 🦀 **Built in Rust**
+⚡ **Lightning-fast** • 🌳 **Advanced tree shaking** • 🎯 **Zero config** • 🦀 **Built in Rust**
 
 Soku (速 - speed) is a blazingly fast JavaScript/TypeScript bundler designed for sub-250ms builds with zero configuration.
 
@@ -39,7 +39,7 @@ soku build
 
 ## ⚡ Features
 
-- **⚡ Ultra-Fast**: Sub-250ms builds for typical projects
+- **⚡ Lightning-Fast**: Sub-250ms builds for typical projects
 - **🌳 Intelligent Tree Shaking**: 50-80% bundle size reduction
 - **📦 Full TypeScript/TSX Support**: Complete type stripping and JSX transformation
 - **🎯 Zero Config**: Works out of the box, configure when you need it
@@ -90,7 +90,7 @@ Soku offers three processing strategies:
 - **🚀 Fast Mode**: Minimal transformations, maximum speed (<50ms)
 - **📦 Standard Mode**: TypeScript type stripping, basic optimizations (<150ms)
 - **⚡ Enhanced Mode**: Full TypeScript + JSX transformations (<250ms)
-- **🎯 Ultra Mode**: Auto-enabled for large projects (>100 files)
+- **🎯 Turbo Mode**: Auto-enabled for large projects (>100 files)
 
 ## 📊 Performance
 
@@ -100,7 +100,7 @@ Soku offers three processing strategies:
 | **Small** | 10-50 | **<100ms** | Standard |
 | **Medium** | 50-100 | **<150ms** | Standard |
 | **Large** | 100-500 | **<200ms** | Enhanced |
-| **Very Large** | 500-2000+ | **<300ms** | Ultra |
+| **Very Large** | 500-2000+ | **<300ms** | Soku |
 
 ## 🏗️ Project Structure
 

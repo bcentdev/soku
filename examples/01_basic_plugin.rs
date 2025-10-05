@@ -39,7 +39,7 @@ impl Plugin for TimingPlugin {
         Ok(())
     }
 
-    async fn after_build(&self, context: &PluginContext, result: &ultra::core::models::BuildResult) -> Result<()> {
+    async fn after_build(&self, context: &PluginContext, result: &soku::core::models::BuildResult) -> Result<()> {
         if let Some(start) = *self.start_time.lock().unwrap() {
             let duration = start.elapsed();
             println!("🔌 [{}] Build completed in {:?}", self.name, duration);
@@ -67,18 +67,18 @@ impl Plugin for TimingPlugin {
 #[tokio::main]
 async fn main() -> Result<()> {
     // Create build service with current APIs
-    let fs_service = Arc::new(ultra::infrastructure::TokioFileSystemService);
-    let js_processor = Arc::new(ultra::infrastructure::UnifiedJsProcessor::new(
-        ultra::infrastructure::ProcessingStrategy::Standard
+    let fs_service = Arc::new(soku::infrastructure::TokioFileSystemService);
+    let js_processor = Arc::new(soku::infrastructure::UnifiedJsProcessor::new(
+        soku::infrastructure::ProcessingStrategy::Standard
     ));
-    let css_processor = Arc::new(ultra::infrastructure::LightningCssProcessor::new(false));
+    let css_processor = Arc::new(soku::infrastructure::LightningCssProcessor::new(false));
 
     // Create and register plugin
-    let service = ultra::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
+    let service = soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
         .with_plugin(Arc::new(TimingPlugin::new()));
 
     // Build configuration
-    let config = ultra::core::models::BuildConfig {
+    let config = soku::core::models::BuildConfig {
         root: std::path::PathBuf::from("./demo-project"),
         outdir: std::path::PathBuf::from("./demo-project/dist"),
         enable_tree_shaking: false,

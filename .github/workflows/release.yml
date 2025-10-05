@@ -33,9 +33,9 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref_name }}
-        name: Ultra v${{ steps.get_version.outputs.version }}
+        name: Soku v${{ steps.get_version.outputs.version }}
         body: |
-          ## Ultra v${{ steps.get_version.outputs.version }}
+          ## Soku v${{ steps.get_version.outputs.version }}
 
           ### 🚀 What's New
           - Check the [CHANGELOG.md](CHANGELOG.md) for detailed changes
@@ -44,7 +44,7 @@ jobs:
           ```bash
           # Install from source
           git clone https://github.com/bcentdev/soku
-          cd ultra
+          cd soku
           git checkout v${{ steps.get_version.outputs.version }}
           cargo install --path .
           ```
@@ -69,19 +69,19 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            asset_name: ultra-linux-x86_64
+            asset_name: soku-linux-x86_64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            asset_name: ultra-linux-x86_64-musl
+            asset_name: soku-linux-x86_64-musl
           - os: macos-latest
             target: x86_64-apple-darwin
-            asset_name: ultra-macos-x86_64
+            asset_name: soku-macos-x86_64
           - os: macos-latest
             target: aarch64-apple-darwin
-            asset_name: ultra-macos-aarch64
+            asset_name: soku-macos-aarch64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            asset_name: ultra-windows-x86_64.exe
+            asset_name: soku-windows-x86_64.exe
 
     steps:
     - name: Checkout code

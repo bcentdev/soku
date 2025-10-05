@@ -2,7 +2,7 @@
 
 ## 🚀 Overview
 
-Soku (速 - speed) is a high-performance JavaScript/TypeScript bundler built in Rust, designed for ultra-fast builds (sub-250ms) with advanced features like tree shaking, TypeScript/TSX support, and Hot Module Replacement.
+Soku (速 - speed) is a high-performance JavaScript/TypeScript bundler built in Rust, designed for lightning-fast builds (sub-250ms) with advanced features like tree shaking, TypeScript/TSX support, and Hot Module Replacement.
 
 ## 📁 Architecture
 
@@ -23,7 +23,7 @@ src/
 │   │   ├── tree_shaker.rs       # Dead code elimination
 │   │   └── mod.rs
 │   ├── file_system.rs      # File operations
-│   ├── ultra_file_system.rs # Advanced file ops
+│   ├── soku_file_system.rs # Advanced file ops
 │   ├── hmr.rs             # Hot Module Replacement
 │   ├── hmr_client.rs      # HMR client runtime
 │   └── mod.rs
@@ -32,7 +32,7 @@ src/
 │   ├── logging.rs         # Structured logging
 │   ├── performance.rs     # Caching system
 │   ├── advanced_performance.rs # Advanced optimizations
-│   ├── ultra_ui.rs        # CLI interface
+│   ├── soku_ui.rs        # CLI interface
 │   └── mod.rs
 ├── cli/                   # Presentation Layer
 │   ├── commands.rs        # CLI command handling
@@ -102,7 +102,7 @@ src/
 
 #### File System
 - `file_system.rs`: Standard file operations
-- `ultra_file_system.rs`: Advanced features (memory mapping, parallel processing)
+- `soku_file_system.rs`: Advanced features (memory mapping, parallel processing)
 
 #### Hot Module Replacement
 - `hmr.rs`: HMR server and WebSocket handling
@@ -124,7 +124,7 @@ src/
 - **SIMD Operations**: Vectorized string processing
 - **Parallel Processing**: Rayon-based parallelization
 
-#### `ultra_ui.rs` - Beautiful CLI
+#### `soku_ui.rs` - Beautiful CLI
 - **Epic Banner**: Colorful startup display
 - **Progress Tracking**: Real-time build progress
 - **Statistics**: Detailed performance metrics
@@ -177,7 +177,7 @@ src/
 
 ## ⚡ Performance Characteristics
 
-- **Ultra-Fast Builds**: Sub-250ms for typical projects
+- **Lightning-Fast Builds**: Sub-250ms for typical projects
 - **Tree Shaking**: 50-80% code reduction
 - **Caching**: Aggressive caching for subsequent builds
 - **Parallel Processing**: Multi-core utilization
@@ -238,13 +238,13 @@ demo-project/
 ### Test Commands
 ```bash
 # Build demo project
-cd demo-project && ../target/debug/ultra build
+cd demo-project && ../target/debug/soku build
 
 # Build with timing
-cd demo-project && time ../target/debug/ultra build
+cd demo-project && time ../target/debug/soku build
 
 # Watch for changes
-cd demo-project && ../target/debug/ultra dev
+cd demo-project && ../target/debug/soku dev
 ```
 
 ## 📊 Current Features
@@ -257,7 +257,7 @@ cd demo-project && ../target/debug/ultra dev
 ✅ **Tree Shaking** - Dead code elimination (50-80% reduction)
 ✅ **Hot Module Replacement** - Development server with WebSocket
 ✅ **WebAssembly Support** - Auto-generated JavaScript loaders for .wasm files
-✅ **Ultra-fast Builds** - Sub-250ms performance with SIMD optimizations
+✅ **Lightning-fast Builds** - Sub-250ms performance with SIMD optimizations
 ✅ **Beautiful CLI** - Epic UI with progress tracking
 ✅ **Caching System** - Persistent and memory caching with invalidation
 ✅ **Code Splitting** - Vendor + common + route chunks
