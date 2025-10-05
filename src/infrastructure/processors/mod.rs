@@ -1,6 +1,5 @@
 // Processors module
 pub mod common;  // Shared functionality between processors
-pub mod js_processor;
 pub mod css_processor;
 pub mod scss_processor;
 pub mod tree_shaker;
@@ -18,8 +17,6 @@ pub use common::{
 };
 
 // Re-export processors
-#[allow(unused_imports)]
-pub use js_processor::OxcJsProcessor;  // Deprecated - use UnifiedJsProcessor instead (kept for backwards compatibility)
 pub use css_processor::*;
 pub use scss_processor::*;
 pub use tree_shaker::*;

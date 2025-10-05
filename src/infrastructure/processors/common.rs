@@ -132,12 +132,11 @@ impl ProcessingOptions {
 
 /// Unified JavaScript/TypeScript processor with strategy-based processing
 ///
-/// This processor consolidates the functionality of `OxcJsProcessor` and `EnhancedJsProcessor`
-/// into a single implementation with three processing strategies:
+/// This processor consolidates JavaScript/TypeScript processing with three strategies:
 ///
 /// - **Fast**: Minimal transformations, maximum speed
-/// - **Standard**: Basic TypeScript stripping (equivalent to OxcJsProcessor)
-/// - **Enhanced**: Full TypeScript + JSX transformation (equivalent to EnhancedJsProcessor)
+/// - **Standard**: Basic TypeScript stripping with oxc
+/// - **Enhanced**: Full TypeScript + JSX transformation with oxc
 ///
 /// # Examples
 ///
@@ -206,17 +205,11 @@ impl ProcessingOptions {
 /// ```rust,no_run
 /// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 ///
-/// // Old: OxcJsProcessor (deprecated)
-/// // let processor = OxcJsProcessor::new();
+/// // Standard mode: Basic TypeScript stripping
+/// let standard = UnifiedJsProcessor::new(ProcessingStrategy::Standard);
 ///
-/// // New: UnifiedJsProcessor with Standard strategy
-/// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Standard);
-///
-/// // Old: EnhancedJsProcessor (deprecated)
-/// // let processor = EnhancedJsProcessor::new();
-///
-/// // New: UnifiedJsProcessor with Enhanced strategy
-/// let processor = UnifiedJsProcessor::new(ProcessingStrategy::Enhanced);
+/// // Enhanced mode: Full TypeScript + JSX transformation
+/// let enhanced = UnifiedJsProcessor::new(ProcessingStrategy::Enhanced);
 /// ```
 #[derive(Clone)]
 pub struct UnifiedJsProcessor {
