@@ -1,7 +1,7 @@
 # Ultra Bundler - Roadmap
 
 > Última actualización: 2025-10-05
-> Estado: 12,495 líneas Rust | 75 unit tests | 6 integration tests | 0 warnings | Sprint 10 al 20% 🔄
+> Estado: 12,874 líneas Rust | 86 unit tests | 6 integration tests | 0 warnings | Sprint 10 al 40% 🔄
 
 ## ✅ Completado
 
@@ -122,18 +122,19 @@
 
 ## 🎯 Próximos Sprints
 
-### Sprint 10: Architecture (En progreso - 20%)
+### Sprint 10: Architecture (En progreso - 40%)
 **Objetivo**: Features arquitecturales avanzadas
 
 **Tareas**:
 - ✅ Multiple Entry Points (multi-page apps, libraries) - COMPLETADO
-- 📅 Advanced Source Maps (inline sources, accurate mappings)
+- ✅ Advanced Source Maps (inline sources, accurate mappings) - COMPLETADO
 - 📅 Plugin API (simplified, event-based)
 - 📅 Custom Transformers Support
 - 📅 Advanced HMR Hooks
 
 **Resultados parciales**:
 - Multiple Entry Points: Configuración entries en BuildConfig/UltraConfig, método build_with_multiple_entries, dependency graph traversal BFS, bundles separados por entry con optimización completa, backward compatible
+- Advanced Source Maps: AdvancedSourceMapGenerator con source map v3, sourcesContent incluido, inline data URLs, external source maps, name mappings, 11 tests pasando
 
 **Impacto**: MEDIO-ALTO - Casos de uso avanzados
 **Tiempo**: 2-3 días
