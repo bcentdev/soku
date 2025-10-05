@@ -135,6 +135,18 @@ Ultra Bundler is designed for **extreme performance**:
 
 ## 📖 Documentation
 
+### 📚 **Guides & References**
+
+- **[Quick Start Guide](docs/QUICK_START.md)** - Get started in 5 minutes
+- **[Plugin API](docs/PLUGIN_API.md)** - Complete plugin system documentation
+- **[Examples](examples/)** - Working code examples for all features
+  - [Basic Plugin](examples/01_basic_plugin.rs) - Plugin usage and lifecycle hooks
+  - [Custom Transformers](examples/02_custom_transformers.rs) - Code transformations
+  - [HMR Hooks](examples/03_hmr_hooks.rs) - Hot reload customization
+  - [Advanced Integration](examples/04_advanced_integration.rs) - Production setup
+- **[Architecture Guide](CLAUDE.md)** - Internal architecture and development guide
+- **[Roadmap](ROADMAP.md)** - Feature roadmap and sprint planning
+
 ### 🔧 **CLI Commands**
 
 ```bash
