@@ -262,8 +262,7 @@ impl UltraBuildService {
                         // Use blocking task for CPU-intensive dependency extraction
                         let content_clone = content.clone();
                         tokio::task::spawn_blocking(move || {
-                            let js_processor = crate::infrastructure::OxcJsProcessor::new();
-                            js_processor.extract_dependencies(&content_clone)
+                            crate::infrastructure::processors::common::extract_dependencies(&content_clone)
                         }).await
                         .map_err(|e| crate::utils::UltraError::build(format!("Dependency extraction failed: {}", e)))?
                     }

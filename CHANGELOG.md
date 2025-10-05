@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.0] - 2025-09-23
+## [0.3.0] - 2024-09-23
 
 ### 🚀 Added
 - **Node.js modules support** with automatic npm package resolution
@@ -66,7 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Bundle size reporting** with detailed metrics
 - **Performance insights** for developers
 
-## [0.2.0] - 2025-09-21
+## [0.2.0] - 2024-09-21
 
 ### 🚀 Added
 - **Hot Module Replacement (HMR)** system with WebSocket server
@@ -110,7 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Arena allocation thread safety issues
 - Slice comparison type errors
 
-## [0.1.0] - 2025-01-16
+## [0.1.0] - 2024-01-16
 
 ### Added
 - 🎉 **Initial release of Ultra**

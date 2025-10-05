@@ -1074,6 +1074,87 @@ pub fn store_cached_css(
     }
 }
 
+// ============================================================================
+// Dependency Extraction (Shared)
+// ============================================================================
+
+// Pre-compiled regex patterns for dependency extraction
+static CSS_IMPORT_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"import\s+['"]([^'"]+)['"]"#).unwrap()
+});
+static REQUIRE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"require\s*\(\s*['"]([^'"]+)['"]\s*\)"#).unwrap()
+});
+
+/// Extract dependencies from JavaScript/TypeScript content
+///
+/// This function parses import and require statements to find module dependencies.
+/// It handles:
+/// - ES6 imports: `import foo from 'module'` and `import 'module'`
+/// - CommonJS: `require('module')`
+/// - Both relative and absolute paths
+///
+/// # Arguments
+/// * `content` - The JavaScript/TypeScript source code
+///
+/// # Returns
+/// A vector of dependency paths (module specifiers)
+///
+/// # Example
+/// ```rust,no_run
+/// use ultra::infrastructure::processors::common::extract_dependencies;
+///
+/// let code = r#"
+///     import React from 'react';
+///     import './styles.css';
+///     const lodash = require('lodash');
+/// "#;
+///
+/// let deps = extract_dependencies(code);
+/// assert_eq!(deps, vec!["react", "./styles.css", "lodash"]);
+/// ```
+pub fn extract_dependencies(content: &str) -> Vec<String> {
+    let mut dependencies = Vec::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        // Handle ES6 import patterns
+        if trimmed.starts_with("import ") {
+            if let Some(from_index) = trimmed.rfind(" from ") {
+                let import_path = &trimmed[from_index + 6..];
+                // Remove quotes and semicolon
+                let clean_path = import_path.trim_matches(|c| c == '"' || c == '\'' || c == ';');
+
+                if !clean_path.is_empty() {
+                    // Handle both relative imports and node_modules imports
+                    dependencies.push(clean_path.to_string());
+                }
+            } else {
+                // Handle CSS/asset imports like: import './styles.css'
+                // Using pre-compiled regex for performance
+                if let Some(captures) = CSS_IMPORT_REGEX.captures(trimmed) {
+                    let import_path = &captures[1];
+
+                    // Handle all import paths
+                    dependencies.push(import_path.to_string());
+                }
+            }
+        }
+
+        // Handle CommonJS require() patterns
+        // Using pre-compiled regex for performance
+        for captures in REQUIRE_REGEX.captures_iter(trimmed) {
+            let require_path = &captures[1];
+            if !require_path.is_empty() {
+                dependencies.push(require_path.to_string());
+            }
+        }
+    }
+
+    dependencies
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

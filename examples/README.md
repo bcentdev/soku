@@ -132,13 +132,12 @@ These examples require the following dependencies (already in Cargo.toml):
 ## API Documentation
 
 For complete API documentation, see:
-- [PLUGIN_API.md](../docs/PLUGIN_API.md) - Plugin system documentation
-- [TRANSFORMERS.md](../docs/TRANSFORMERS.md) - Transformers guide
-- [HMR_HOOKS.md](../docs/HMR_HOOKS.md) - HMR hooks reference
-- [ADVANCED_FEATURES.md](../docs/ADVANCED_FEATURES.md) - Advanced features guide
+- [PLUGIN_API.md](../docs/PLUGIN_API.md) - Plugin system documentation (covers transformers and HMR hooks)
+- [QUICK_START.md](../docs/QUICK_START.md) - Quick start guide with current APIs
+- [DEVELOPMENT.md](../docs/DEVELOPMENT.md) - Development guide
 
 ## Need Help?
 
-- **Issues**: https://github.com/anthropics/ultra-bundler/issues
-- **Discussions**: https://github.com/anthropics/ultra-bundler/discussions
+- **Issues**: https://github.com/bcentdev/ultra/issues
+- **Discussions**: https://github.com/bcentdev/ultra/discussions
 - **Documentation**: See `docs/` directory

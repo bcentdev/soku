@@ -16,8 +16,8 @@ cargo install flamegraph     # Performance profiling
 
 ### Building from Source
 ```bash
-git clone https://github.com/your-org/ultra-bundler
-cd ultra-bundler
+git clone https://github.com/bcentdev/ultra
+cd ultra
 
 # Development build
 cargo build

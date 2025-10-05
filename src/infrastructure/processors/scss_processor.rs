@@ -15,6 +15,7 @@ pub struct ScssProcessor {
 
 impl ScssProcessor {
     /// Create a new SCSS processor
+    #[allow(dead_code)]
     pub fn new(minify: bool) -> Self {
         Self {
             minify,

@@ -11,39 +11,63 @@ cargo add ultra-bundler
 ## Basic Usage
 
 ```rust
-use ultra::core::UltraBuildService;
+use ultra::core::services::UltraBuildService;
 use ultra::core::models::BuildConfig;
+use ultra::infrastructure::{TokioFileSystemService, LightningCssProcessor};
+use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::collections::HashMap;
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    // Create services
-    let fs = Arc::new(ultra::infrastructure::BasicFileSystemService::new());
-    let js = Arc::new(ultra::infrastructure::EnhancedJsProcessor::new());
-    let css = Arc::new(ultra::infrastructure::LightningCssProcessor::new());
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Create services with current APIs
+    let fs = Arc::new(TokioFileSystemService);
+    let js = Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Enhanced));
+    let css = Arc::new(LightningCssProcessor::new(false)); // false = no minify for dev
 
     // Create build service
     let mut service = UltraBuildService::new(fs, js, css);
 
-    // Configure build
+    // Configure build with current structure
     let config = BuildConfig {
         root: PathBuf::from("./src"),
         outdir: PathBuf::from("./dist"),
-        entry: PathBuf::from("./src/main.js"),
-        minify: true,
-        enable_source_maps: true,
         enable_tree_shaking: true,
-        enable_hmr: false,
-        entries: std::collections::HashMap::new(),
+        enable_minification: false,  // Development mode
+        enable_source_maps: true,
+        enable_code_splitting: false,
+        max_chunk_size: None,
+        mode: "development".to_string(),
+        alias: HashMap::new(),
+        external: Vec::new(),
+        vendor_chunk: false,
+        entries: HashMap::new(),  // Auto-detect entry from root
     };
 
     // Build!
     let result = service.build(&config).await?;
-    println!("✨ Build complete!");
+    println!("✨ Build complete in {}ms!", result.build_time);
 
     Ok(())
 }
+```
+
+## Processing Strategies
+
+Ultra offers three processing strategies:
+
+```rust
+use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+
+// Fast mode - minimal transformations, maximum speed
+let fast_processor = UnifiedJsProcessor::new(ProcessingStrategy::Fast);
+
+// Standard mode - basic TypeScript stripping
+let standard_processor = UnifiedJsProcessor::new(ProcessingStrategy::Standard);
+
+// Enhanced mode - full TypeScript + JSX transformation (recommended)
+let enhanced_processor = UnifiedJsProcessor::new(ProcessingStrategy::Enhanced);
 ```
 
 ## Adding Plugins
@@ -59,7 +83,7 @@ struct MyPlugin;
 impl Plugin for MyPlugin {
     fn name(&self) -> &str { "my-plugin" }
 
-    async fn before_build(&self, ctx: &PluginContext) -> Result<()> {
+    async fn before_build(&self, ctx: &PluginContext) -> ultra::utils::Result<()> {
         println!("Building {} modules", ctx.modules.len());
         Ok(())
     }
@@ -69,7 +93,7 @@ impl Plugin for MyPlugin {
 let service = service.with_plugin(Arc::new(MyPlugin));
 ```
 
-## Adding Transformers
+## Adding Custom Transformers
 
 ```rust
 use ultra::utils::BuiltInTransformers;
@@ -79,6 +103,28 @@ let service = service
     .with_transformer(BuiltInTransformers::remove_console_logs())
     // Add 'use strict'
     .with_transformer(BuiltInTransformers::add_use_strict());
+```
+
+## Production Build
+
+```rust
+// Production configuration
+let config = BuildConfig {
+    root: PathBuf::from("./src"),
+    outdir: PathBuf::from("./dist"),
+    enable_tree_shaking: true,      // Remove dead code
+    enable_minification: true,       // Minify output
+    enable_source_maps: true,        // Generate source maps
+    enable_code_splitting: true,     // Split vendor code
+    max_chunk_size: Some(500_000),   // 500KB chunks
+    mode: "production".to_string(),
+    alias: HashMap::new(),
+    external: Vec::new(),
+    vendor_chunk: true,              // Separate vendor bundle
+    entries: HashMap::new(),
+};
+
+let css = Arc::new(LightningCssProcessor::new(true)); // true = minify for production
 ```
 
 ## Multiple Entry Points
@@ -93,6 +139,7 @@ entries.insert("admin".to_string(), PathBuf::from("./src/admin.js"));
 let config = BuildConfig {
     entries,  // Multiple bundles!
     // ... rest of config
+    ..Default::default()
 };
 ```
 
@@ -109,11 +156,28 @@ let hmr = UltraHmrService::new(PathBuf::from("./src"))
 hmr.start_server(3001).await?;
 ```
 
+## Tree Shaking
+
+```rust
+use ultra::infrastructure::processors::TreeShaker;
+
+// Add tree shaker for dead code elimination
+let tree_shaker = Arc::new(TreeShaker::new());
+let service = service.with_tree_shaker(tree_shaker);
+
+// Tree shaking is also enabled via config
+let config = BuildConfig {
+    enable_tree_shaking: true,  // 50-80% code reduction
+    // ...
+    ..Default::default()
+};
+```
+
 ## Next Steps
 
 - [Plugin API Documentation](./PLUGIN_API.md)
+- [Development Guide](./DEVELOPMENT.md)
 - [Examples Directory](../examples/)
-- [Advanced Features Guide](./ADVANCED_FEATURES.md)
 
 ## Features
 
@@ -124,10 +188,11 @@ hmr.start_server(3001).await?;
 - 🔌 **Plugin system** - Extensible architecture
 - 🔧 **Custom transformers** - Code transformations
 - 🔥 **HMR with hooks** - Customizable hot reload
-- 🎯 **TypeScript/TSX** - Full support
+- 🎯 **TypeScript/TSX** - Full support via UnifiedJsProcessor
+- 🚀 **Three processing strategies** - Fast, Standard, Enhanced
 
 ## Need Help?
 
 - Examples: `examples/` directory
 - Documentation: `docs/` directory
-- Issues: GitHub Issues
+- GitHub: https://github.com/bcentdev/ultra

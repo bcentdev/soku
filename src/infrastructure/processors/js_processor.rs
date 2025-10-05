@@ -11,9 +11,11 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 // Pre-compiled regex patterns for performance
+#[allow(dead_code)]
 static CSS_IMPORT_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"import\s+['"]([^'"]+)['"]"#).unwrap()
 });
+#[allow(dead_code)]
 static REQUIRE_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"require\s*\(\s*['"]([^'"]+)['"]\s*\)"#).unwrap()
 });
@@ -664,6 +666,7 @@ impl OxcJsProcessor {
         Ok(processed)
     }
 
+    #[allow(dead_code)]
     pub fn extract_dependencies(&self, content: &str) -> Vec<String> {
         let mut dependencies = Vec::new();
 

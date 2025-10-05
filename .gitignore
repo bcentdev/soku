@@ -3,9 +3,6 @@
 **/*.rs.bk
 *.pdb
 
-# Cargo
-Cargo.lock
-
 # IDE
 .vscode/
 .idea/
@@ -37,6 +34,10 @@ build/
 *.tmp
 *.temp
 .cache/
+
+# Ultra bundler specific
+.ultra-cache/
+.claude/
 
 # Examples specific
 examples/*/dist*

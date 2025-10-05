@@ -18,7 +18,8 @@ pub use common::{
 };
 
 // Re-export processors
-pub use js_processor::*;
+#[allow(unused_imports)]
+pub use js_processor::OxcJsProcessor;  // Deprecated - use UnifiedJsProcessor instead (kept for backwards compatibility)
 pub use css_processor::*;
 pub use scss_processor::*;
 pub use tree_shaker::*;
