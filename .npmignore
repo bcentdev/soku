@@ -1,0 +1,45 @@
+# Source code (users don't need Rust source)
+src/
+tests/
+examples/
+demo-project/
+test-*/
+
+# Build artifacts
+target/
+.ultra-cache/
+
+# Development files
+.git/
+.github/
+.vscode/
+.idea/
+.claude/
+
+# Rust files
+Cargo.toml
+Cargo.lock
+*.rs
+rustfmt.toml
+
+# Documentation that's not needed in npm package
+DEVELOPMENT.md
+CONTRIBUTING.md
+ROADMAP.md
+CLAUDE.md
+docs/
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# Test files
+*.test.js
+__tests__/
+
+# Misc
+.DS_Store
+*.log
+*.tmp
+*.swp

@@ -1,0 +1,61 @@
+{
+  "name": "ultra-bundler",
+  "version": "0.3.0",
+  "description": "Ultra-fast JavaScript/TypeScript bundler built in Rust - Sub-250ms builds with zero config",
+  "keywords": [
+    "bundler",
+    "build-tool",
+    "javascript",
+    "typescript",
+    "jsx",
+    "tsx",
+    "rust",
+    "fast",
+    "tree-shaking",
+    "hmr",
+    "hot-module-replacement",
+    "esbuild-alternative",
+    "webpack-alternative"
+  ],
+  "homepage": "https://github.com/bcentdev/ultra#readme",
+  "bugs": {
+    "url": "https://github.com/bcentdev/ultra/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bcentdev/ultra.git"
+  },
+  "license": "MIT",
+  "author": "Ultra Team",
+  "bin": {
+    "ultra": "./bin/ultra.js"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "postinstall": "node bin/install.js",
+    "test": "node bin/ultra.js --version"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "optionalDependencies": {
+    "@ultra-bundler/darwin-arm64": "0.3.0",
+    "@ultra-bundler/darwin-x64": "0.3.0",
+    "@ultra-bundler/linux-x64": "0.3.0",
+    "@ultra-bundler/linux-arm64": "0.3.0",
+    "@ultra-bundler/win32-x64": "0.3.0"
+  }
+}
