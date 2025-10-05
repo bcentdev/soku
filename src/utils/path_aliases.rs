@@ -1,6 +1,6 @@
+use crate::utils::Logger;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use crate::utils::Logger;
 
 /// Path alias resolver for import path resolution
 pub struct PathAliasResolver {
@@ -11,15 +11,15 @@ pub struct PathAliasResolver {
 impl PathAliasResolver {
     /// Create a new path alias resolver
     pub fn new(aliases: HashMap<String, String>, root: PathBuf) -> Self {
-        Logger::debug(&format!("🔗 Initialized PathAliasResolver with {} aliases", aliases.len()));
+        Logger::debug(&format!(
+            "🔗 Initialized PathAliasResolver with {} aliases",
+            aliases.len()
+        ));
         for (alias, target) in &aliases {
             Logger::debug(&format!("  {} → {}", alias, target));
         }
 
-        Self {
-            aliases,
-            root,
-        }
+        Self { aliases, root }
     }
 
     /// Resolve an import path using aliases
@@ -42,14 +42,22 @@ impl PathAliasResolver {
                 let resolved_target = self.resolve_target(target);
                 let final_path = resolved_target.join(rest);
 
-                Logger::debug(&format!("🔗 Resolved alias: {} → {}", import_path, final_path.display()));
+                Logger::debug(&format!(
+                    "🔗 Resolved alias: {} → {}",
+                    import_path,
+                    final_path.display()
+                ));
                 return Some(final_path);
             }
 
             // Also check for exact alias match without trailing slash
             if import_path == alias {
                 let resolved = self.resolve_target(target);
-                Logger::debug(&format!("🔗 Resolved alias: {} → {}", import_path, resolved.display()));
+                Logger::debug(&format!(
+                    "🔗 Resolved alias: {} → {}",
+                    import_path,
+                    resolved.display()
+                ));
                 return Some(resolved);
             }
         }
@@ -118,7 +126,10 @@ mod tests {
         let resolver = PathAliasResolver::new(aliases, PathBuf::from("/project"));
         let resolved = resolver.resolve("@/components/Button.js");
 
-        assert_eq!(resolved, Some(PathBuf::from("/project/src/components/Button.js")));
+        assert_eq!(
+            resolved,
+            Some(PathBuf::from("/project/src/components/Button.js"))
+        );
     }
 
     #[test]

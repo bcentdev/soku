@@ -1,5 +1,5 @@
 use crate::core::{interfaces::TreeShaker, models::*};
-use crate::utils::{Result, Logger};
+use crate::utils::{Logger, Result};
 use std::collections::{HashMap, HashSet};
 
 pub struct RegexTreeShaker {
@@ -22,10 +22,10 @@ pub struct NodeModuleImport {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 enum NodeModuleImportType {
-    Default,        // import _ from 'lodash'
+    Default, // import _ from 'lodash'
     #[allow(dead_code)]
     Named(Vec<String>), // import { map, filter } from 'lodash'
-    Namespace,      // import * as _ from 'lodash'
+    Namespace, // import * as _ from 'lodash'
 }
 
 #[derive(Debug, Default)]
@@ -85,7 +85,8 @@ impl RegexTreeShaker {
         }
 
         // Handle: import { map, filter, reduce } from 'lodash'
-        if let Ok(re) = regex::Regex::new(r#"import\s+\{\s*([^}]+)\s*\}\s+from\s+["']([^"']+)["']"#) {
+        if let Ok(re) = regex::Regex::new(r#"import\s+\{\s*([^}]+)\s*\}\s+from\s+["']([^"']+)["']"#)
+        {
             if let Some(caps) = re.captures(line) {
                 let imports_str = caps[1].to_string();
                 let package_name = caps[2].to_string();
@@ -124,7 +125,12 @@ impl RegexTreeShaker {
         None
     }
 
-    fn analyze_text_based(&mut self, source: &str, analysis: &mut ModuleAnalysis, module_path: &str) -> Result<()> {
+    fn analyze_text_based(
+        &mut self,
+        source: &str,
+        analysis: &mut ModuleAnalysis,
+        module_path: &str,
+    ) -> Result<()> {
         let lines: Vec<&str> = source.lines().collect();
 
         for line in lines.iter() {
@@ -141,10 +147,7 @@ impl RegexTreeShaker {
 
                 // Also handle as regular import for dependency graph
                 if let Some((name, source)) = self.parse_import_line(trimmed) {
-                    analysis.imports.push(ImportInfo {
-                        name,
-                        source,
-                    });
+                    analysis.imports.push(ImportInfo { name, source });
                 }
             }
 
@@ -152,15 +155,16 @@ impl RegexTreeShaker {
             if trimmed.starts_with("export ") {
                 let export_names = self.parse_export_line(trimmed);
                 for export_name in export_names {
-                    analysis.exports.push(ExportInfo {
-                        name: export_name,
-                    });
+                    analysis.exports.push(ExportInfo { name: export_name });
                 }
             }
 
             // Track function and variable declarations
-            if trimmed.starts_with("function ") || trimmed.starts_with("const ") ||
-               trimmed.starts_with("let ") || trimmed.starts_with("var ") {
+            if trimmed.starts_with("function ")
+                || trimmed.starts_with("const ")
+                || trimmed.starts_with("let ")
+                || trimmed.starts_with("var ")
+            {
                 if let Some(identifier) = self.extract_identifier(trimmed) {
                     analysis.defined_identifiers.insert(identifier);
                 }
@@ -290,7 +294,9 @@ impl RegexTreeShaker {
         }
 
         // Calculate statistics
-        let total_exports: usize = self.module_graph.values()
+        let total_exports: usize = self
+            .module_graph
+            .values()
             .map(|analysis| analysis.exports.len())
             .sum();
 
@@ -331,7 +337,6 @@ impl RegexTreeShaker {
             used_exports: used_exports_map,
         })
     }
-
 }
 
 #[async_trait::async_trait]
@@ -344,9 +349,11 @@ impl TreeShaker for RegexTreeShaker {
             let mut analysis = ModuleAnalysis::default();
 
             Logger::analyzing_module(
-                module.path.file_name()
+                module
+                    .path
+                    .file_name()
                     .and_then(|s| s.to_str())
-                    .unwrap_or("unknown")
+                    .unwrap_or("unknown"),
             );
 
             self.analyze_text_based(&module.content, &mut analysis, &path)?;
@@ -363,7 +370,6 @@ impl TreeShaker for RegexTreeShaker {
 
         Ok(stats)
     }
-
 }
 
 impl Default for RegexTreeShaker {
@@ -389,7 +395,8 @@ import { usedFunction } from './utils.js';
 export default function main() {
     return usedFunction();
 }
-"#.to_string(),
+"#
+                .to_string(),
                 module_type: ModuleType::JavaScript,
                 dependencies: vec![],
                 exports: vec![],
@@ -399,7 +406,8 @@ export default function main() {
                 content: r#"
 export const usedFunction = () => "used";
 export const unusedFunction = () => "unused";
-"#.to_string(),
+"#
+                .to_string(),
                 module_type: ModuleType::JavaScript,
                 dependencies: vec![],
                 exports: vec![],

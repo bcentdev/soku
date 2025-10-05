@@ -2,9 +2,9 @@
 #![allow(dead_code)] // Public API - used via examples and external integrations
 
 use crate::utils::{Result, SokuError};
-use serde::{Serialize, Deserialize};
+use base64::{engine::general_purpose, Engine as _};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use base64::{Engine as _, engine::general_purpose};
 
 /// Source map format (v3)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -173,23 +173,24 @@ pub struct SourceMapUtils;
 impl SourceMapUtils {
     /// Convert source map to JSON string
     pub fn to_json(source_map: &SourceMap) -> Result<String> {
-        serde_json::to_string_pretty(source_map)
-            .map_err(|e| SokuError::Build {
-                message: format!("Failed to serialize source map: {}", e),
-                context: None,
-            })
+        serde_json::to_string_pretty(source_map).map_err(|e| SokuError::Build {
+            message: format!("Failed to serialize source map: {}", e),
+            context: None,
+        })
     }
 
     /// Generate inline source map (data URL)
     pub fn to_inline_data_url(source_map: &SourceMap) -> Result<String> {
-        let json = serde_json::to_string(source_map)
-            .map_err(|e| SokuError::Build {
-                message: format!("Failed to serialize source map: {}", e),
-                context: None,
-            })?;
+        let json = serde_json::to_string(source_map).map_err(|e| SokuError::Build {
+            message: format!("Failed to serialize source map: {}", e),
+            context: None,
+        })?;
 
         let encoded = general_purpose::STANDARD.encode(json.as_bytes());
-        Ok(format!("data:application/json;charset=utf-8;base64,{}", encoded))
+        Ok(format!(
+            "data:application/json;charset=utf-8;base64,{}",
+            encoded
+        ))
     }
 
     /// Generate source map comment for inline embedding
@@ -205,7 +206,9 @@ impl SourceMapUtils {
 
     /// Extract source file from source map
     pub fn get_source_content(source_map: &SourceMap, source_index: usize) -> Option<&String> {
-        source_map.sources_content.as_ref()
+        source_map
+            .sources_content
+            .as_ref()
             .and_then(|contents| contents.get(source_index))
     }
 }

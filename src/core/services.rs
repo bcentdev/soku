@@ -1,16 +1,21 @@
 use crate::core::{interfaces::*, models::*};
-use crate::utils::{Result, Logger, Timer, SokuUI, CompletionStats, OutputFileInfo, TimingBreakdown, SokuCache, performance::parallel, IncrementalBuildState, PluginManager, PluginContext, PluginEvent, TransformerChain, CustomTransformer, AdvancedSourceMapGenerator, SourceMapUtils};
-use crate::infrastructure::{NodeModuleResolver, MinificationService, CodeSplitter, CodeSplitConfig};
-use std::sync::Arc;
-use std::path::{Path, PathBuf};
-use std::collections::HashMap;
+use crate::infrastructure::{
+    CodeSplitConfig, CodeSplitter, MinificationService, NodeModuleResolver,
+};
+use crate::utils::{
+    performance::parallel, AdvancedSourceMapGenerator, CompletionStats, CustomTransformer,
+    IncrementalBuildState, Logger, OutputFileInfo, PluginContext, PluginEvent, PluginManager,
+    Result, SokuCache, SokuUI, SourceMapUtils, Timer, TimingBreakdown, TransformerChain,
+};
 use once_cell::sync::Lazy;
 use regex::Regex;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 // Pre-compiled regex patterns for performance
-static CSS_IMPORT_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"@import\s+(?:url\s*\()?\s*['"]([^'"]+)['"]"#).unwrap()
-});
+static CSS_IMPORT_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"@import\s+(?:url\s*\()?\s*['"]([^'"]+)['"]"#).unwrap());
 
 /// Main build service implementation
 pub struct SokuBuildService {
@@ -40,8 +45,8 @@ impl SokuBuildService {
         let cache = Arc::new(SokuCache::with_persistent_cache(&cache_dir));
 
         // Load incremental state from disk if it exists
-        let incremental_state = IncrementalBuildState::load_from_disk(&cache_dir)
-            .unwrap_or_else(|_| {
+        let incremental_state =
+            IncrementalBuildState::load_from_disk(&cache_dir).unwrap_or_else(|_| {
                 Logger::debug("No previous incremental state found, starting fresh");
                 IncrementalBuildState::new()
             });
@@ -95,7 +100,7 @@ impl SokuBuildService {
         self.ui.show_file_discovery(
             structure.js_modules.len(),
             structure.css_files.len(),
-            structure.wasm_files.len()
+            structure.wasm_files.len(),
         );
 
         Ok(structure)
@@ -119,7 +124,9 @@ impl SokuBuildService {
                 let entry_points: Vec<String> = modules
                     .iter()
                     .filter(|m| {
-                        let name = m.path.file_stem()
+                        let name = m
+                            .path
+                            .file_stem()
                             .and_then(|s| s.to_str())
                             .unwrap_or("")
                             .to_lowercase();
@@ -173,10 +180,15 @@ impl SokuBuildService {
 
         // 🔧 CUSTOM TRANSFORMERS: Apply code transformations
         if !self.transformer_chain.is_empty() {
-            js_with_source_map = self.transformer_chain.transform(js_with_source_map, Some(js_path.to_str().unwrap_or("bundle.js")))?;
+            js_with_source_map = self.transformer_chain.transform(
+                js_with_source_map,
+                Some(js_path.to_str().unwrap_or("bundle.js")),
+            )?;
         }
 
-        self.fs_service.write_file(&js_path, &js_with_source_map).await?;
+        self.fs_service
+            .write_file(&js_path, &js_with_source_map)
+            .await?;
         output_files.push(OutputFile {
             path: js_path,
             content: js_with_source_map.clone(),
@@ -186,7 +198,9 @@ impl SokuBuildService {
         // Write source map file if provided
         if let Some(source_map_content) = source_map {
             let source_map_path = config.outdir.join("bundle.js.map");
-            self.fs_service.write_file(&source_map_path, &source_map_content).await?;
+            self.fs_service
+                .write_file(&source_map_path, &source_map_content)
+                .await?;
             output_files.push(OutputFile {
                 path: source_map_path,
                 content: source_map_content.clone(),
@@ -216,14 +230,15 @@ impl SokuBuildService {
         let mut to_process = Vec::new();
 
         // 🔗 Create path alias resolver
-        let alias_resolver = crate::utils::PathAliasResolver::new(
-            config.alias.clone(),
-            root_dir.to_path_buf()
-        );
+        let alias_resolver =
+            crate::utils::PathAliasResolver::new(config.alias.clone(), root_dir.to_path_buf());
 
         // 📦 Log external dependencies
         if !config.external.is_empty() {
-            Logger::debug(&format!("📦 External dependencies (will not be bundled): {:?}", config.external));
+            Logger::debug(&format!(
+                "📦 External dependencies (will not be bundled): {:?}",
+                config.external
+            ));
         }
 
         // Start with entry files
@@ -233,7 +248,9 @@ impl SokuBuildService {
 
         while let Some(current_path) = to_process.pop() {
             // Skip if already processed - normalize path for consistent deduplication
-            let normalized_path = current_path.canonicalize().unwrap_or_else(|_| current_path.clone());
+            let normalized_path = current_path
+                .canonicalize()
+                .unwrap_or_else(|_| current_path.clone());
             let path_key = normalized_path.to_string_lossy().to_string();
             if resolved_modules.contains_key(&path_key) {
                 continue;
@@ -243,9 +260,10 @@ impl SokuBuildService {
             Logger::debug(&format!("Processing module: {}", current_path.display()));
             if let Ok(mut content) = self.fs_service.read_file(&current_path).await {
                 let mut module_type = ModuleType::from_extension(
-                    current_path.extension()
+                    current_path
+                        .extension()
                         .and_then(|s| s.to_str())
-                        .unwrap_or("")
+                        .unwrap_or(""),
                 );
 
                 // 📦 Process JSON assets - convert to ES module
@@ -262,9 +280,17 @@ impl SokuBuildService {
                         // Use blocking task for CPU-intensive dependency extraction
                         let content_clone = content.clone();
                         tokio::task::spawn_blocking(move || {
-                            crate::infrastructure::processors::common::extract_dependencies(&content_clone)
-                        }).await
-                        .map_err(|e| crate::utils::SokuError::build(format!("Dependency extraction failed: {}", e)))?
+                            crate::infrastructure::processors::common::extract_dependencies(
+                                &content_clone,
+                            )
+                        })
+                        .await
+                        .map_err(|e| {
+                            crate::utils::SokuError::build(format!(
+                                "Dependency extraction failed: {}",
+                                e
+                            ))
+                        })?
                     }
                     ModuleType::Css => {
                         // Extract CSS imports (@import statements)
@@ -274,7 +300,8 @@ impl SokuBuildService {
                 };
 
                 // Resolve dependency paths in parallel (NOW ENABLED with thread-safe resolver)
-                let resolve_tasks: Vec<_> = dependencies.iter()
+                let resolve_tasks: Vec<_> = dependencies
+                    .iter()
                     .map(|dep| {
                         let dep_clone = dep.clone();
                         let current_path_clone = current_path.clone();
@@ -283,11 +310,18 @@ impl SokuBuildService {
                         let alias_resolver_ref = &alias_resolver;
                         let external_list = &config.external;
                         async move {
-                            Logger::debug(&format!("Resolving import '{}' from {}", dep_clone, current_path_clone.display()));
+                            Logger::debug(&format!(
+                                "Resolving import '{}' from {}",
+                                dep_clone,
+                                current_path_clone.display()
+                            ));
 
                             // 📦 Check if dependency is marked as external
                             if Self::is_external_dependency(&dep_clone, external_list) {
-                                Logger::debug(&format!("📦 Skipping external dependency: {}", dep_clone));
+                                Logger::debug(&format!(
+                                    "📦 Skipping external dependency: {}",
+                                    dep_clone
+                                ));
                                 return (dep_clone, None); // Skip external dependencies
                             }
 
@@ -300,7 +334,9 @@ impl SokuBuildService {
                             }
 
                             // Fall back to node resolver
-                            let resolved_path = resolver_ref.resolve(&dep_clone, &current_path_clone, &root_dir_clone).await;
+                            let resolved_path = resolver_ref
+                                .resolve(&dep_clone, &current_path_clone, &root_dir_clone)
+                                .await;
                             (dep_clone, resolved_path)
                         }
                     })
@@ -312,14 +348,16 @@ impl SokuBuildService {
                 let mut resolved_deps = Vec::new();
                 for (dep, resolved_path_opt) in parallel_results {
                     if let Some(resolved_path) = resolved_path_opt {
-                        Logger::debug(&format!("Resolved '{}' to: {}", dep, resolved_path.display()));
+                        Logger::debug(&format!(
+                            "Resolved '{}' to: {}",
+                            dep,
+                            resolved_path.display()
+                        ));
 
                         // Track dependency relationship for incremental builds
                         // normalized_path depends on resolved_path
-                        self.incremental_state.add_dependency(
-                            normalized_path.clone(),
-                            resolved_path.clone()
-                        );
+                        self.incremental_state
+                            .add_dependency(normalized_path.clone(), resolved_path.clone());
 
                         resolved_deps.push(dep);
                         to_process.push(resolved_path);
@@ -353,7 +391,11 @@ impl SokuBuildService {
             return Ok(modules.to_vec());
         }
 
-        Logger::debug(&format!("🔄 Processing {} modules in parallel across {} cores", modules.len(), num_cpus::get()));
+        Logger::debug(&format!(
+            "🔄 Processing {} modules in parallel across {} cores",
+            modules.len(),
+            num_cpus::get()
+        ));
 
         // Use rayon for CPU-bound parallel processing
         use rayon::prelude::*;
@@ -361,7 +403,8 @@ impl SokuBuildService {
         // Clone modules for move into spawn_blocking
         let modules_owned = modules.to_vec();
         let processed_modules: Vec<ModuleInfo> = tokio::task::spawn_blocking(move || {
-            modules_owned.par_iter()
+            modules_owned
+                .par_iter()
                 .map(|module| {
                     // Validate and optimize module content in parallel
                     let optimized_content = module.content.clone();
@@ -376,10 +419,16 @@ impl SokuBuildService {
                     }
                 })
                 .collect()
-        }).await
-        .map_err(|e| crate::utils::SokuError::build(format!("Parallel processing failed: {}", e)))?;
+        })
+        .await
+        .map_err(|e| {
+            crate::utils::SokuError::build(format!("Parallel processing failed: {}", e))
+        })?;
 
-        Logger::debug(&format!("✅ Parallel processing complete: {} modules processed", processed_modules.len()));
+        Logger::debug(&format!(
+            "✅ Parallel processing complete: {} modules processed",
+            processed_modules.len()
+        ));
 
         Ok(processed_modules)
     }
@@ -426,7 +475,12 @@ impl SokuBuildService {
     }
 
     /// Generate cache key based on module contents and build configuration
-    fn generate_js_cache_key(&self, modules: &[ModuleInfo], config: &BuildConfig, tree_stats: Option<&TreeShakingStats>) -> String {
+    fn generate_js_cache_key(
+        &self,
+        modules: &[ModuleInfo],
+        config: &BuildConfig,
+        tree_stats: Option<&TreeShakingStats>,
+    ) -> String {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
 
@@ -496,10 +550,12 @@ impl SokuBuildService {
         };
 
         // Identify entry points
-        let entry_points: Vec<String> = structure.js_modules
+        let entry_points: Vec<String> = structure
+            .js_modules
             .iter()
             .filter(|p| {
-                let name = p.file_stem()
+                let name = p
+                    .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or("")
                     .to_lowercase();
@@ -512,15 +568,18 @@ impl SokuBuildService {
         let mut splitter = CodeSplitter::new(split_config);
         let chunks = splitter.analyze_and_split(js_modules, &entry_points)?;
 
-        Logger::info(&format!("📦 Code splitting: Created {} chunks", chunks.len()));
-
+        Logger::info(&format!(
+            "📦 Code splitting: Created {} chunks",
+            chunks.len()
+        ));
 
         // Process each chunk
         let mut output_files_for_ui = Vec::new();
         let mut output_files_for_result = Vec::new();
 
         for chunk in &chunks {
-            Logger::info(&format!("  ├─ {} ({} modules, {:.1}KB)",
+            Logger::info(&format!(
+                "  ├─ {} ({} modules, {:.1}KB)",
                 chunk.name,
                 chunk.modules.len(),
                 chunk.size_bytes as f64 / 1024.0
@@ -528,7 +587,9 @@ impl SokuBuildService {
 
             // Process chunk modules
             let chunk_content = if tree_shaking_stats.is_some() {
-                self.js_processor.bundle_modules_with_tree_shaking(&chunk.modules, tree_shaking_stats).await?
+                self.js_processor
+                    .bundle_modules_with_tree_shaking(&chunk.modules, tree_shaking_stats)
+                    .await?
             } else {
                 self.js_processor.bundle_modules(&chunk.modules).await?
             };
@@ -536,7 +597,9 @@ impl SokuBuildService {
             // Minify if enabled
             let final_content = if config.enable_minification {
                 let minifier = MinificationService::new();
-                minifier.minify_bundle(chunk_content, &format!("{}.js", chunk.name)).await?
+                minifier
+                    .minify_bundle(chunk_content, &format!("{}.js", chunk.name))
+                    .await?
             } else {
                 chunk_content
             };
@@ -545,7 +608,9 @@ impl SokuBuildService {
             let chunk_name = format!("{}.js", chunk.name);
             let chunk_path = config.outdir.join(&chunk_name);
             let content_size = final_content.len();
-            self.fs_service.write_file(&chunk_path, &final_content).await?;
+            self.fs_service
+                .write_file(&chunk_path, &final_content)
+                .await?;
 
             output_files_for_ui.push(OutputFileInfo {
                 name: chunk_name.clone(),
@@ -558,7 +623,6 @@ impl SokuBuildService {
                 size: content_size,
             });
         }
-
 
         // Process CSS (same as normal build)
         if !structure.css_files.is_empty() {
@@ -579,7 +643,6 @@ impl SokuBuildService {
             });
         }
 
-
         // Generate completion stats with timing breakdown
         let timing_breakdown = TimingBreakdown {
             file_scan_ms: 0,
@@ -597,10 +660,17 @@ impl SokuBuildService {
         });
 
         // Update file metadata for incremental builds (after successful build)
-        Logger::debug(&format!("Updating file metadata for {} modules", js_modules.len()));
+        Logger::debug(&format!(
+            "Updating file metadata for {} modules",
+            js_modules.len()
+        ));
         for module in js_modules {
             if let Err(e) = self.incremental_state.update_file(&module.path) {
-                Logger::debug(&format!("Failed to update file metadata for {}: {}", module.path.display(), e));
+                Logger::debug(&format!(
+                    "Failed to update file metadata for {}: {}",
+                    module.path.display(),
+                    e
+                ));
             }
         }
 
@@ -639,14 +709,16 @@ impl SokuBuildService {
         let build_start = std::time::Instant::now();
 
         // Separate modules into vendor (node_modules) and app (local code)
-        let (vendor_modules, app_modules): (Vec<ModuleInfo>, Vec<ModuleInfo>) = js_modules.iter()
+        let (vendor_modules, app_modules): (Vec<ModuleInfo>, Vec<ModuleInfo>) = js_modules
+            .iter()
             .cloned()
-            .partition(|m| {
-                m.path.to_string_lossy().contains("node_modules")
-            });
+            .partition(|m| m.path.to_string_lossy().contains("node_modules"));
 
-        Logger::info(&format!("📦 Vendor splitting: {} vendor modules, {} app modules",
-            vendor_modules.len(), app_modules.len()));
+        Logger::info(&format!(
+            "📦 Vendor splitting: {} vendor modules, {} app modules",
+            vendor_modules.len(),
+            app_modules.len()
+        ));
 
         let mut output_files = Vec::new();
 
@@ -657,13 +729,17 @@ impl SokuBuildService {
 
             // Minify vendor
             let vendor_content = if config.enable_minification {
-                MinificationService::new().minify_bundle(vendor_content, "vendor.js").await?
+                MinificationService::new()
+                    .minify_bundle(vendor_content, "vendor.js")
+                    .await?
             } else {
                 vendor_content
             };
 
             let vendor_path = config.outdir.join("vendor.js");
-            self.fs_service.write_file(&vendor_path, &vendor_content).await?;
+            self.fs_service
+                .write_file(&vendor_path, &vendor_content)
+                .await?;
 
             output_files.push(OutputFile {
                 path: vendor_path,
@@ -682,10 +758,13 @@ impl SokuBuildService {
 
         // Minify, env vars, dead code
         if config.enable_minification {
-            app_content = MinificationService::new().minify_bundle(app_content, "app.js").await?;
+            app_content = MinificationService::new()
+                .minify_bundle(app_content, "app.js")
+                .await?;
         }
 
-        let env_manager = crate::utils::EnvVarsManager::load_from_files(&config.root, &config.mode)?;
+        let env_manager =
+            crate::utils::EnvVarsManager::load_from_files(&config.root, &config.mode)?;
         if !env_manager.get_all().is_empty() {
             app_content = env_manager.replace_in_code(&app_content);
         }
@@ -750,7 +829,10 @@ impl SokuBuildService {
     ) -> Result<BuildResult> {
         let build_start = std::time::Instant::now();
 
-        Logger::info(&format!("📦 Multiple entry points: {} entries configured", config.entries.len()));
+        Logger::info(&format!(
+            "📦 Multiple entry points: {} entries configured",
+            config.entries.len()
+        ));
 
         let mut output_files = Vec::new();
         let mut all_processed_modules = Vec::new();
@@ -767,7 +849,11 @@ impl SokuBuildService {
                 continue;
             }
 
-            Logger::debug(&format!("  Entry '{}' includes {} modules", entry_name, entry_modules.len()));
+            Logger::debug(&format!(
+                "  Entry '{}' includes {} modules",
+                entry_name,
+                entry_modules.len()
+            ));
 
             // Bundle this entry's modules
             let mut entry_content = self.js_processor.bundle_modules(&entry_modules).await?;
@@ -775,11 +861,14 @@ impl SokuBuildService {
             // Apply optimizations
             if config.enable_minification {
                 let bundle_name = format!("{}.js", entry_name);
-                entry_content = MinificationService::new().minify_bundle(entry_content, &bundle_name).await?;
+                entry_content = MinificationService::new()
+                    .minify_bundle(entry_content, &bundle_name)
+                    .await?;
             }
 
             // Environment variable replacement
-            let env_manager = crate::utils::EnvVarsManager::load_from_files(&config.root, &config.mode)?;
+            let env_manager =
+                crate::utils::EnvVarsManager::load_from_files(&config.root, &config.mode)?;
             if !env_manager.get_all().is_empty() {
                 entry_content = env_manager.replace_in_code(&entry_content);
             }
@@ -791,7 +880,9 @@ impl SokuBuildService {
             // Write entry bundle
             let entry_file_name = format!("{}.js", entry_name);
             let entry_output_path = config.outdir.join(&entry_file_name);
-            self.fs_service.write_file(&entry_output_path, &entry_content).await?;
+            self.fs_service
+                .write_file(&entry_output_path, &entry_content)
+                .await?;
 
             output_files.push(OutputFile {
                 path: entry_output_path,
@@ -851,12 +942,14 @@ impl SokuBuildService {
         let mut to_visit = Vec::new();
 
         // Normalize entry path for comparison
-        let entry_file_name = entry_path.file_name()
+        let entry_file_name = entry_path
+            .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("");
 
         // Find the entry module - match by filename or full path
-        let entry_module = all_modules.iter()
+        let entry_module = all_modules
+            .iter()
             .find(|m| {
                 // Try exact match first
                 if m.path == entry_path {
@@ -874,13 +967,16 @@ impl SokuBuildService {
                 m.path.ends_with(entry_path)
             })
             .ok_or_else(|| crate::utils::SokuError::Build {
-                message: format!("Entry point not found: {} (available modules: {})",
+                message: format!(
+                    "Entry point not found: {} (available modules: {})",
                     entry_path.display(),
-                    all_modules.iter()
+                    all_modules
+                        .iter()
                         .take(3)
                         .map(|m| m.path.display().to_string())
                         .collect::<Vec<_>>()
-                        .join(", ")),
+                        .join(", ")
+                ),
                 context: None,
             })?;
 
@@ -901,9 +997,7 @@ impl SokuBuildService {
             for dep in &module.dependencies {
                 // Try to find the dependency module
                 if let Some(dep_module) = all_modules.iter().find(|m| {
-                    let m_name = m.path.file_stem()
-                        .and_then(|s| s.to_str())
-                        .unwrap_or("");
+                    let m_name = m.path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
                     m_name == dep || m.path.to_string_lossy().contains(dep)
                 }) {
                     to_visit.push(dep_module.clone());
@@ -935,18 +1029,27 @@ impl BuildService for SokuBuildService {
             Vec::new(), // Will be populated after module resolution
             PluginEvent::BeforeBuild,
         );
-        self.plugin_manager.trigger_before_build(&plugin_context).await?;
+        self.plugin_manager
+            .trigger_before_build(&plugin_context)
+            .await?;
 
         // 🔄 CHECK IF FIRST BUILD (before resolving dependencies)
         let is_first_build = self.incremental_state.is_empty();
-        Logger::debug(&format!("Is first build: {} (tracked files: {})", is_first_build, self.incremental_state.file_count()));
+        Logger::debug(&format!(
+            "Is first build: {} (tracked files: {})",
+            is_first_build,
+            self.incremental_state.file_count()
+        ));
 
         // Convert paths to ModuleInfo and resolve dependencies
-        let js_modules = self.resolve_all_dependencies(&structure.js_modules, &config.root, config).await?;
+        let js_modules = self
+            .resolve_all_dependencies(&structure.js_modules, &config.root, config)
+            .await?;
 
         // 🔄 INCREMENTAL BUILD DETECTION
 
-        Logger::debug(&format!("Incremental build check: is_first_build={}, tracked_files={}",
+        Logger::debug(&format!(
+            "Incremental build check: is_first_build={}, tracked_files={}",
             is_first_build,
             self.incremental_state.file_count()
         ));
@@ -960,13 +1063,17 @@ impl BuildService for SokuBuildService {
                 let changed_files = self.incremental_state.get_changed_files();
                 let files_to_rebuild = self.incremental_state.get_files_to_rebuild();
 
-                Logger::info(&format!("🔄 Incremental build: {} files changed, {} files need rebuild",
+                Logger::info(&format!(
+                    "🔄 Incremental build: {} files changed, {} files need rebuild",
                     changed_files.len(),
                     files_to_rebuild.len()
                 ));
 
                 // Log changed files in debug mode
-                if std::env::var("RUST_LOG").unwrap_or_default().contains("debug") {
+                if std::env::var("RUST_LOG")
+                    .unwrap_or_default()
+                    .contains("debug")
+                {
                     for file in &changed_files {
                         Logger::debug(&format!("  Changed: {}", file.display()));
                     }
@@ -978,20 +1085,21 @@ impl BuildService for SokuBuildService {
             Logger::debug("First build - no incremental state");
         }
 
-
         // 🌳 TREE SHAKING (if enabled)
         let tree_shaking_stats = if config.enable_tree_shaking {
             if self.tree_shaker.is_some() {
                 self.ui.show_tree_shaking_analysis(js_modules.len());
 
                 // Use AST tree shaker for better accuracy on complex projects
-                let use_ast_shaker = js_modules.len() > 3 ||
-                    js_modules.iter().any(|m| m.content.len() > 5000);
+                let use_ast_shaker =
+                    js_modules.len() > 3 || js_modules.iter().any(|m| m.content.len() > 5000);
 
                 let entry_points: Vec<String> = js_modules
                     .iter()
                     .filter(|m| {
-                        let name = m.path.file_stem()
+                        let name = m
+                            .path
+                            .file_stem()
                             .and_then(|s| s.to_str())
                             .unwrap_or("")
                             .to_lowercase();
@@ -1019,35 +1127,67 @@ impl BuildService for SokuBuildService {
         };
 
         // Separate JS modules from CSS modules
-        let js_only_modules: Vec<ModuleInfo> = js_modules.iter()
-            .filter(|m| matches!(m.module_type, ModuleType::JavaScript | ModuleType::TypeScript))
+        let js_only_modules: Vec<ModuleInfo> = js_modules
+            .iter()
+            .filter(|m| {
+                matches!(
+                    m.module_type,
+                    ModuleType::JavaScript | ModuleType::TypeScript
+                )
+            })
             .cloned()
             .collect();
 
-        let css_modules: Vec<ModuleInfo> = js_modules.iter()
+        let css_modules: Vec<ModuleInfo> = js_modules
+            .iter()
             .filter(|m| matches!(m.module_type, ModuleType::Css))
             .cloned()
             .collect();
 
         // 📦 CODE SPLITTING (if enabled)
         if config.enable_code_splitting {
-            return self.build_with_code_splitting(config, &js_only_modules, &structure, tree_shaking_stats.as_ref()).await;
+            return self
+                .build_with_code_splitting(
+                    config,
+                    &js_only_modules,
+                    &structure,
+                    tree_shaking_stats.as_ref(),
+                )
+                .await;
         }
 
         // 📦 VENDOR CHUNK SPLITTING (if enabled)
         if config.vendor_chunk {
-            return self.build_with_vendor_splitting(config, &js_only_modules, &css_modules, &structure, tree_shaking_stats.as_ref()).await;
+            return self
+                .build_with_vendor_splitting(
+                    config,
+                    &js_only_modules,
+                    &css_modules,
+                    &structure,
+                    tree_shaking_stats.as_ref(),
+                )
+                .await;
         }
 
         // 📦 MULTIPLE ENTRY POINTS (if configured)
         if !config.entries.is_empty() {
-            return self.build_with_multiple_entries(config, &js_only_modules, &css_modules, &structure, tree_shaking_stats.as_ref()).await;
+            return self
+                .build_with_multiple_entries(
+                    config,
+                    &js_only_modules,
+                    &css_modules,
+                    &structure,
+                    tree_shaking_stats.as_ref(),
+                )
+                .await;
         }
 
         // ⚡ JAVASCRIPT PROCESSING WITH INTELLIGENT CACHING
-        let js_module_names: Vec<String> = js_only_modules.iter()
+        let js_module_names: Vec<String> = js_only_modules
+            .iter()
             .filter_map(|m| {
-                m.path.file_name()
+                m.path
+                    .file_name()
                     .and_then(|n| n.to_str())
                     .map(|s| s.to_string())
             })
@@ -1055,12 +1195,16 @@ impl BuildService for SokuBuildService {
         self.ui.show_processing_phase(&js_module_names, "⚡ JS");
 
         // Generate cache key based on modules content and config
-        let cache_key = self.generate_js_cache_key(&js_only_modules, config, tree_shaking_stats.as_ref());
+        let cache_key =
+            self.generate_js_cache_key(&js_only_modules, config, tree_shaking_stats.as_ref());
 
         // Skip cache when source maps are enabled since source maps aren't cached
         let (mut js_content, source_map) = if config.enable_source_maps {
             Logger::debug("🔄 Processing JS modules with source maps (cache disabled)");
-            let bundle_output = self.js_processor.bundle_modules_with_source_maps(&js_only_modules, config).await?;
+            let bundle_output = self
+                .js_processor
+                .bundle_modules_with_source_maps(&js_only_modules, config)
+                .await?;
             (bundle_output.code, bundle_output.source_map)
         } else if let Some(cached_result) = self.cache.get_js(&cache_key, &cache_key) {
             Logger::debug("✅ Using cached JS bundle");
@@ -1069,7 +1213,10 @@ impl BuildService for SokuBuildService {
             Logger::debug("🔄 Processing JS modules (cache miss)");
             let result = if tree_shaking_stats.is_some() {
                 // Use tree shaking bundling
-                let js_content = self.js_processor.bundle_modules_with_tree_shaking(&js_only_modules, tree_shaking_stats.as_ref()).await?;
+                let js_content = self
+                    .js_processor
+                    .bundle_modules_with_tree_shaking(&js_only_modules, tree_shaking_stats.as_ref())
+                    .await?;
                 (js_content, None)
             } else {
                 // Regular bundling
@@ -1078,7 +1225,8 @@ impl BuildService for SokuBuildService {
             };
 
             // Cache the result for future builds
-            self.cache.cache_js(&cache_key, &cache_key, result.0.clone());
+            self.cache
+                .cache_js(&cache_key, &cache_key, result.0.clone());
             result
         };
 
@@ -1086,13 +1234,16 @@ impl BuildService for SokuBuildService {
         if config.enable_minification {
             let minification_service = MinificationService::new();
             let original_content = js_content.clone();
-            js_content = minification_service.minify_bundle(js_content, "bundle.js").await?;
+            js_content = minification_service
+                .minify_bundle(js_content, "bundle.js")
+                .await?;
             let stats = minification_service.get_stats(&original_content, &js_content);
             tracing::info!("🗜️  {}", stats);
         }
 
         // 🌍 ENVIRONMENT VARIABLES REPLACEMENT
-        let env_manager = crate::utils::EnvVarsManager::load_from_files(&config.root, &config.mode)?;
+        let env_manager =
+            crate::utils::EnvVarsManager::load_from_files(&config.root, &config.mode)?;
         let env_count = env_manager.get_all().len();
         if env_count > 0 {
             Logger::debug(&format!("🌍 Replacing {} environment variables", env_count));
@@ -1110,7 +1261,8 @@ impl BuildService for SokuBuildService {
             all_css_files.push(css_module.path.clone());
         }
 
-        let css_names: Vec<String> = all_css_files.iter()
+        let css_names: Vec<String> = all_css_files
+            .iter()
             .filter_map(|p| {
                 p.file_name()
                     .and_then(|n| n.to_str())
@@ -1120,7 +1272,9 @@ impl BuildService for SokuBuildService {
         self.ui.show_processing_phase(&css_names, "🎨 CSS");
 
         let css_cache_key = self.generate_css_cache_key(&all_css_files);
-        let css_content = if let Some(cached_css) = self.cache.get_css(&css_cache_key, &css_cache_key) {
+        let css_content = if let Some(cached_css) =
+            self.cache.get_css(&css_cache_key, &css_cache_key)
+        {
             Logger::debug("✅ Using cached CSS bundle");
             cached_css
         } else {
@@ -1128,22 +1282,25 @@ impl BuildService for SokuBuildService {
 
             // Process CSS files in parallel if we have many files
             let result = if all_css_files.len() > 2 {
-                Logger::debug(&format!("🔄 Processing {} CSS files in parallel", all_css_files.len()));
+                Logger::debug(&format!(
+                    "🔄 Processing {} CSS files in parallel",
+                    all_css_files.len()
+                ));
 
                 // Read CSS files in parallel
-                let file_contents = parallel::process_async_parallel(
-                    all_css_files.clone(),
-                    |path| async move {
+                let file_contents =
+                    parallel::process_async_parallel(all_css_files.clone(), |path| async move {
                         match std::fs::read_to_string(&path) {
                             Ok(content) => Some((path, content)),
                             Err(_) => None,
                         }
-                    }
-                ).await;
+                    })
+                    .await;
 
                 // Filter successful reads and bundle
                 let valid_files: Vec<_> = file_contents.into_iter().flatten().collect();
-                let _combined_css = valid_files.iter()
+                let _combined_css = valid_files
+                    .iter()
                     .map(|(_, content)| content.as_str())
                     .collect::<Vec<_>>()
                     .join("\n\n/* Next CSS file */\n\n");
@@ -1156,15 +1313,18 @@ impl BuildService for SokuBuildService {
             };
 
             // Cache the result for future builds
-            self.cache.cache_css(&css_cache_key, &css_cache_key, result.clone());
+            self.cache
+                .cache_css(&css_cache_key, &css_cache_key, result.clone());
             result
         };
-
 
         // 🌐 WASM PROCESSING
         let mut wasm_loader_code = String::new();
         if !structure.wasm_files.is_empty() {
-            Logger::info(&format!("🌐 Processing {} WASM modules", structure.wasm_files.len()));
+            Logger::info(&format!(
+                "🌐 Processing {} WASM modules",
+                structure.wasm_files.len()
+            ));
 
             let wasm_processor = crate::utils::WasmProcessor::new();
 
@@ -1177,22 +1337,31 @@ impl BuildService for SokuBuildService {
                 wasm_loader_code.push_str("\n\n");
 
                 // Copy WASM file to output directory
-                let wasm_filename = wasm_path.file_name()
+                let wasm_filename = wasm_path
+                    .file_name()
                     .and_then(|n| n.to_str())
                     .unwrap_or("module.wasm");
                 let output_wasm_path = config.outdir.join(wasm_filename);
 
                 // Use tokio::fs for async file copy
-                tokio::fs::copy(wasm_path, &output_wasm_path).await
+                tokio::fs::copy(wasm_path, &output_wasm_path)
+                    .await
                     .map_err(crate::utils::SokuError::Io)?;
 
-                Logger::debug(&format!("  ✓ {} → {}", wasm_filename, output_wasm_path.display()));
+                Logger::debug(&format!(
+                    "  ✓ {} → {}",
+                    wasm_filename,
+                    output_wasm_path.display()
+                ));
             }
         }
 
         // Append WASM loader code to JS bundle
         let final_js_content = if !wasm_loader_code.is_empty() {
-            format!("{}\n\n// === WASM Loaders ===\n{}", js_content, wasm_loader_code)
+            format!(
+                "{}\n\n// === WASM Loaders ===\n{}",
+                js_content, wasm_loader_code
+            )
         } else {
             js_content.clone()
         };
@@ -1205,7 +1374,7 @@ impl BuildService for SokuBuildService {
             for module in &js_only_modules {
                 generator.add_source(
                     module.path.to_string_lossy().to_string(),
-                    module.content.clone()
+                    module.content.clone(),
                 );
             }
 
@@ -1217,25 +1386,36 @@ impl BuildService for SokuBuildService {
         };
 
         // 💾 WRITE FILES
-        let output_files = self.write_output_files(config, &final_js_content, &css_content, enhanced_source_map).await?;
+        let output_files = self
+            .write_output_files(config, &final_js_content, &css_content, enhanced_source_map)
+            .await?;
 
         let build_time = build_start.elapsed();
 
         // 🎉 EPIC COMPLETION SHOWCASE!
-        let node_modules_count = js_modules.iter()
+        let node_modules_count = js_modules
+            .iter()
             .filter(|m| m.path.to_string_lossy().contains("node_modules"))
             .count();
 
         let completion_stats = CompletionStats {
-            output_files: output_files.iter().filter_map(|f| {
-                f.path.file_name()
-                    .and_then(|n| n.to_str())
-                    .map(|name| OutputFileInfo {
-                        name: name.to_string(),
-                        size: f.size,
-                    })
-            }).collect(),
-            node_modules_optimized: if node_modules_count > 0 { Some(node_modules_count) } else { None },
+            output_files: output_files
+                .iter()
+                .filter_map(|f| {
+                    f.path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .map(|name| OutputFileInfo {
+                            name: name.to_string(),
+                            size: f.size,
+                        })
+                })
+                .collect(),
+            node_modules_optimized: if node_modules_count > 0 {
+                Some(node_modules_count)
+            } else {
+                None
+            },
             timing_breakdown: Some(TimingBreakdown {
                 file_scan_ms: 0,
                 js_processing_ms: 0,
@@ -1251,10 +1431,17 @@ impl BuildService for SokuBuildService {
         // End total timing and report bottlenecks
 
         // Update file metadata for incremental builds (after successful build)
-        Logger::debug(&format!("Updating file metadata for {} modules", js_modules.len()));
+        Logger::debug(&format!(
+            "Updating file metadata for {} modules",
+            js_modules.len()
+        ));
         for module in &js_modules {
             if let Err(e) = self.incremental_state.update_file(&module.path) {
-                Logger::debug(&format!("Failed to update file metadata for {}: {}", module.path.display(), e));
+                Logger::debug(&format!(
+                    "Failed to update file metadata for {}: {}",
+                    module.path.display(),
+                    e
+                ));
             }
         }
 
@@ -1284,7 +1471,9 @@ impl BuildService for SokuBuildService {
             js_only_modules.clone(),
             PluginEvent::AfterBuild,
         );
-        self.plugin_manager.trigger_after_build(&plugin_context, &result).await?;
+        self.plugin_manager
+            .trigger_after_build(&plugin_context, &result)
+            .await?;
 
         Ok(result)
     }

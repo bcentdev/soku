@@ -54,11 +54,11 @@ pub struct ChunkInfo {
 #[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 pub enum ChunkType {
-    Entry,       // Main entry point
-    Vendor,      // Third-party dependencies
-    Common,      // Shared code between chunks
-    Route,       // Route-specific code
-    Async,       // Dynamically imported code
+    Entry,  // Main entry point
+    Vendor, // Third-party dependencies
+    Common, // Shared code between chunks
+    Route,  // Route-specific code
+    Async,  // Dynamically imported code
 }
 
 impl CodeSplitter {
@@ -71,7 +71,11 @@ impl CodeSplitter {
     }
 
     /// Analyze modules and create optimal code splitting strategy
-    pub fn analyze_and_split(&mut self, modules: &[ModuleInfo], entry_points: &[String]) -> Result<Vec<ChunkInfo>> {
+    pub fn analyze_and_split(
+        &mut self,
+        modules: &[ModuleInfo],
+        entry_points: &[String],
+    ) -> Result<Vec<ChunkInfo>> {
         // Step 1: Identify entry points and routes
         let entry_modules = self.identify_entry_modules(modules, entry_points);
 
@@ -93,14 +97,19 @@ impl CodeSplitter {
     }
 
     /// Identify entry point modules
-    fn identify_entry_modules(&self, modules: &[ModuleInfo], entry_points: &[String]) -> Vec<ModuleInfo> {
-        modules.iter()
+    fn identify_entry_modules(
+        &self,
+        modules: &[ModuleInfo],
+        entry_points: &[String],
+    ) -> Vec<ModuleInfo> {
+        modules
+            .iter()
             .filter(|module| {
                 let path_str = module.path.to_string_lossy();
                 entry_points.iter().any(|entry| {
-                    path_str.contains(entry) ||
-                    path_str.contains("main") ||
-                    path_str.contains("index")
+                    path_str.contains(entry)
+                        || path_str.contains("main")
+                        || path_str.contains("index")
                 })
             })
             .cloned()
@@ -109,10 +118,9 @@ impl CodeSplitter {
 
     /// Identify vendor modules (from node_modules)
     fn identify_vendor_modules(&self, modules: &[ModuleInfo]) -> Vec<ModuleInfo> {
-        modules.iter()
-            .filter(|module| {
-                module.path.to_string_lossy().contains("node_modules")
-            })
+        modules
+            .iter()
+            .filter(|module| module.path.to_string_lossy().contains("node_modules"))
             .cloned()
             .collect()
     }
@@ -129,14 +137,18 @@ impl CodeSplitter {
         }
 
         // Find modules that are commonly used
-        let common_deps: HashSet<String> = dependency_usage.iter()
+        let common_deps: HashSet<String> = dependency_usage
+            .iter()
             .filter(|(_, &count)| count >= self.config.common_dependency_threshold)
             .map(|(dep, _)| dep.clone())
             .collect();
 
-        modules.iter()
+        modules
+            .iter()
             .filter(|module| {
-                let module_name = module.path.file_stem()
+                let module_name = module
+                    .path
+                    .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or("")
                     .to_string();
@@ -156,22 +168,24 @@ impl CodeSplitter {
     ) -> Result<()> {
         // Create vendor chunk if we have vendor modules
         if !vendor_modules.is_empty() {
-            self.chunks.insert("vendor".to_string(), vendor_modules.to_vec());
+            self.chunks
+                .insert("vendor".to_string(), vendor_modules.to_vec());
             for module in vendor_modules {
                 self.module_chunk_map.insert(
                     module.path.to_string_lossy().to_string(),
-                    "vendor".to_string()
+                    "vendor".to_string(),
                 );
             }
         }
 
         // Create common chunk if we have common modules
         if !common_modules.is_empty() {
-            self.chunks.insert("common".to_string(), common_modules.to_vec());
+            self.chunks
+                .insert("common".to_string(), common_modules.to_vec());
             for module in common_modules {
                 self.module_chunk_map.insert(
                     module.path.to_string_lossy().to_string(),
-                    "common".to_string()
+                    "common".to_string(),
                 );
             }
         }
@@ -185,10 +199,8 @@ impl CodeSplitter {
             };
 
             self.chunks.insert(chunk_name.clone(), vec![module.clone()]);
-            self.module_chunk_map.insert(
-                module.path.to_string_lossy().to_string(),
-                chunk_name
-            );
+            self.module_chunk_map
+                .insert(module.path.to_string_lossy().to_string(), chunk_name);
         }
 
         // Assign remaining modules to appropriate chunks
@@ -215,7 +227,8 @@ impl CodeSplitter {
             let chunk_name = best_chunk.unwrap_or_else(|| "misc".to_string());
 
             // Add to chunk
-            self.chunks.entry(chunk_name.clone())
+            self.chunks
+                .entry(chunk_name.clone())
                 .or_default()
                 .push(module.clone());
 
@@ -233,11 +246,14 @@ impl CodeSplitter {
         for dep in &module.dependencies {
             for (chunk_name, chunk_modules) in &self.chunks {
                 for chunk_module in chunk_modules {
-                    if chunk_module.dependencies.contains(dep) ||
-                       chunk_module.path.file_stem()
-                           .and_then(|s| s.to_str())
-                           .map(|s| s == dep)
-                           .unwrap_or(false) {
+                    if chunk_module.dependencies.contains(dep)
+                        || chunk_module
+                            .path
+                            .file_stem()
+                            .and_then(|s| s.to_str())
+                            .map(|s| s == dep)
+                            .unwrap_or(false)
+                    {
                         *chunk_scores.entry(chunk_name.clone()).or_insert(0) += 1;
                     }
                 }
@@ -245,7 +261,8 @@ impl CodeSplitter {
         }
 
         // Return chunk with highest score
-        chunk_scores.into_iter()
+        chunk_scores
+            .into_iter()
             .max_by_key(|(_, score)| *score)
             .map(|(chunk_name, _)| chunk_name)
     }
@@ -261,8 +278,10 @@ impl CodeSplitter {
 
             if total_size > self.config.max_chunk_size {
                 chunks_to_split.push(chunk_name.clone());
-            } else if modules.len() < self.config.min_modules_per_chunk &&
-                     chunk_name != "vendor" && chunk_name != "main" {
+            } else if modules.len() < self.config.min_modules_per_chunk
+                && chunk_name != "vendor"
+                && chunk_name != "main"
+            {
                 chunks_to_merge.push(chunk_name.clone());
             }
         }
@@ -290,16 +309,19 @@ impl CodeSplitter {
             for module in modules {
                 let module_size = module.content.len();
 
-                if current_size + module_size > self.config.max_chunk_size && !current_chunk.is_empty() {
+                if current_size + module_size > self.config.max_chunk_size
+                    && !current_chunk.is_empty()
+                {
                     // Create new chunk
                     let new_chunk_name = format!("{}-{}", chunk_name, chunk_counter);
-                    self.chunks.insert(new_chunk_name.clone(), current_chunk.clone());
+                    self.chunks
+                        .insert(new_chunk_name.clone(), current_chunk.clone());
 
                     // Update module mappings
                     for chunk_module in &current_chunk {
                         self.module_chunk_map.insert(
                             chunk_module.path.to_string_lossy().to_string(),
-                            new_chunk_name.clone()
+                            new_chunk_name.clone(),
                         );
                     }
 
@@ -320,12 +342,13 @@ impl CodeSplitter {
                     format!("{}-{}", chunk_name, chunk_counter)
                 };
 
-                self.chunks.insert(final_chunk_name.clone(), current_chunk.clone());
+                self.chunks
+                    .insert(final_chunk_name.clone(), current_chunk.clone());
 
                 for chunk_module in &current_chunk {
                     self.module_chunk_map.insert(
                         chunk_module.path.to_string_lossy().to_string(),
-                        final_chunk_name.clone()
+                        final_chunk_name.clone(),
                     );
                 }
             }
@@ -348,13 +371,14 @@ impl CodeSplitter {
         // Create merged chunk
         if !merged_modules.is_empty() {
             let merged_chunk_name = "shared".to_string();
-            self.chunks.insert(merged_chunk_name.clone(), merged_modules.clone());
+            self.chunks
+                .insert(merged_chunk_name.clone(), merged_modules.clone());
 
             // Update module mappings
             for module in &merged_modules {
                 self.module_chunk_map.insert(
                     module.path.to_string_lossy().to_string(),
-                    merged_chunk_name.clone()
+                    merged_chunk_name.clone(),
                 );
             }
         }
@@ -369,23 +393,26 @@ impl CodeSplitter {
 
     /// Generate chunk information for output
     fn generate_chunk_info(&self) -> Vec<ChunkInfo> {
-        self.chunks.iter().map(|(name, modules)| {
-            let chunk_type = match name.as_str() {
-                "main" => ChunkType::Entry,
-                "vendor" => ChunkType::Vendor,
-                "common" | "shared" => ChunkType::Common,
-                name if name.starts_with("entry") => ChunkType::Entry,
-                _ => ChunkType::Route,
-            };
+        self.chunks
+            .iter()
+            .map(|(name, modules)| {
+                let chunk_type = match name.as_str() {
+                    "main" => ChunkType::Entry,
+                    "vendor" => ChunkType::Vendor,
+                    "common" | "shared" => ChunkType::Common,
+                    name if name.starts_with("entry") => ChunkType::Entry,
+                    _ => ChunkType::Route,
+                };
 
-            ChunkInfo {
-                name: name.clone(),
-                modules: modules.clone(),
-                size_bytes: self.calculate_chunk_size(modules),
-                dependencies: self.extract_chunk_dependencies(modules),
-                chunk_type,
-            }
-        }).collect()
+                ChunkInfo {
+                    name: name.clone(),
+                    modules: modules.clone(),
+                    size_bytes: self.calculate_chunk_size(modules),
+                    dependencies: self.extract_chunk_dependencies(modules),
+                    chunk_type,
+                }
+            })
+            .collect()
     }
 
     /// Extract dependencies for a chunk
@@ -460,15 +487,31 @@ mod tests {
         let modules = vec![
             create_test_module("main.js", "console.log('main');", vec!["utils".to_string()]),
             create_test_module("utils.js", "export function helper() {}", vec![]),
-            create_test_module("node_modules/react/index.js", "export default React;", vec![]),
+            create_test_module(
+                "node_modules/react/index.js",
+                "export default React;",
+                vec![],
+            ),
         ];
 
-        let chunks = splitter.analyze_and_split(&modules, &["main.js".to_string()]).unwrap();
+        let chunks = splitter
+            .analyze_and_split(&modules, &["main.js".to_string()])
+            .unwrap();
 
         // Should create at least main and vendor chunks
-        assert!(chunks.len() >= 2, "Expected at least 2 chunks, got {}", chunks.len());
-        assert!(chunks.iter().any(|c| c.chunk_type == ChunkType::Entry), "No Entry chunk found");
-        assert!(chunks.iter().any(|c| c.chunk_type == ChunkType::Vendor), "No Vendor chunk found");
+        assert!(
+            chunks.len() >= 2,
+            "Expected at least 2 chunks, got {}",
+            chunks.len()
+        );
+        assert!(
+            chunks.iter().any(|c| c.chunk_type == ChunkType::Entry),
+            "No Entry chunk found"
+        );
+        assert!(
+            chunks.iter().any(|c| c.chunk_type == ChunkType::Vendor),
+            "No Vendor chunk found"
+        );
     }
 
     #[test]
@@ -481,11 +524,11 @@ mod tests {
         let mut splitter = CodeSplitter::new(config);
 
         let large_content = "a".repeat(200); // Larger than max chunk size
-        let modules = vec![
-            create_test_module("main.js", &large_content, vec![]),
-        ];
+        let modules = vec![create_test_module("main.js", &large_content, vec![])];
 
-        let chunks = splitter.analyze_and_split(&modules, &["main.js".to_string()]).unwrap();
+        let chunks = splitter
+            .analyze_and_split(&modules, &["main.js".to_string()])
+            .unwrap();
 
         // Should split the large module
         assert!(!chunks.is_empty());

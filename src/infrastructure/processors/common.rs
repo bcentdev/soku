@@ -1,18 +1,18 @@
+use crate::core::{interfaces::JsProcessor, models::*};
+use crate::utils::performance::SokuCache;
+use crate::utils::{ErrorContext, Logger, Result, SokuError};
+use async_trait::async_trait;
+use once_cell::sync::Lazy;
+use oxc_allocator::Allocator;
+use oxc_diagnostics::OxcDiagnostic;
+use oxc_parser::Parser;
+use oxc_span::SourceType;
+use regex::Regex;
 /// Shared functionality between JS processors
 /// This module contains common code extracted from js_processor.rs and enhanced_js_processor.rs
 /// to eliminate duplication and provide a single source of truth.
 use std::path::Path;
 use std::sync::Arc;
-use once_cell::sync::Lazy;
-use regex::Regex;
-use crate::utils::performance::SokuCache;
-use crate::utils::{Result, SokuError, ErrorContext, Logger};
-use crate::core::{models::*, interfaces::JsProcessor};
-use oxc_allocator::Allocator;
-use oxc_parser::Parser;
-use oxc_span::SourceType;
-use oxc_diagnostics::OxcDiagnostic;
-use async_trait::async_trait;
 
 // ============================================================================
 // Processing Strategy Pattern (Shared)
@@ -263,7 +263,9 @@ impl UnifiedJsProcessor {
     pub fn process_content(&self, content: &str, file_path: &Path) -> Result<String> {
         // Check cache first
         let path_str = file_path.to_string_lossy();
-        if let Some(cached) = get_cached_js(&self.cache, &path_str, content, self.options.enable_cache) {
+        if let Some(cached) =
+            get_cached_js(&self.cache, &path_str, content, self.options.enable_cache)
+        {
             Logger::debug(&format!("Cache hit for {}", path_str));
             return Ok(cached);
         }
@@ -285,7 +287,13 @@ impl UnifiedJsProcessor {
         };
 
         // Store in cache
-        store_cached_js(&self.cache, &path_str, content, processed.clone(), self.options.enable_cache);
+        store_cached_js(
+            &self.cache,
+            &path_str,
+            content,
+            processed.clone(),
+            self.options.enable_cache,
+        );
 
         Ok(processed)
     }
@@ -310,12 +318,14 @@ impl UnifiedJsProcessor {
         let allocator = Allocator::default();
 
         // Determine if file has TypeScript or JSX
-        let has_ts = file_path.extension()
+        let has_ts = file_path
+            .extension()
             .and_then(|s| s.to_str())
             .map(|ext| ext == "ts" || ext == "tsx")
             .unwrap_or(false);
 
-        let has_jsx = file_path.extension()
+        let has_jsx = file_path
+            .extension()
             .and_then(|s| s.to_str())
             .map(|ext| ext == "tsx" || ext == "jsx")
             .unwrap_or(false);
@@ -335,7 +345,7 @@ impl UnifiedJsProcessor {
             content,
             config,
             file_path,
-            "Standard processing"
+            "Standard processing",
         );
         // Ignore parse errors in Standard mode
 
@@ -355,12 +365,14 @@ impl UnifiedJsProcessor {
         let allocator = Allocator::default();
 
         // Determine file characteristics
-        let has_ts = file_path.extension()
+        let has_ts = file_path
+            .extension()
             .and_then(|s| s.to_str())
             .map(|ext| ext == "ts" || ext == "tsx")
             .unwrap_or(false);
 
-        let has_jsx = file_path.extension()
+        let has_jsx = file_path
+            .extension()
             .and_then(|s| s.to_str())
             .map(|ext| ext == "tsx" || ext == "jsx")
             .unwrap_or(false);
@@ -380,7 +392,7 @@ impl UnifiedJsProcessor {
             content,
             config,
             file_path,
-            "Enhanced processing"
+            "Enhanced processing",
         ) {
             Ok(result) => result,
             Err(_) => {
@@ -415,38 +427,45 @@ impl UnifiedJsProcessor {
 #[async_trait]
 impl JsProcessor for UnifiedJsProcessor {
     async fn process_module(&self, module: &ModuleInfo) -> Result<String> {
-        let _timer = crate::utils::Timer::start(&format!("Processing {} ({})",
-            module.path.file_name()
+        let _timer = crate::utils::Timer::start(&format!(
+            "Processing {} ({})",
+            module
+                .path
+                .file_name()
                 .and_then(|s| s.to_str())
                 .unwrap_or("unknown"),
-            self.strategy.name()));
+            self.strategy.name()
+        ));
 
         // Use the unified process_content method
         self.process_content(&module.content, &module.path)
     }
 
     async fn bundle_modules(&self, modules: &[ModuleInfo]) -> Result<String> {
-        let _timer = crate::utils::Timer::start(&format!("Bundling modules ({})", self.strategy.name()));
+        let _timer =
+            crate::utils::Timer::start(&format!("Bundling modules ({})", self.strategy.name()));
 
         let mut bundle = String::new();
-        bundle.push_str(&format!("// Soku Bundler - {} Mode Build\n", self.strategy.name()));
+        bundle.push_str(&format!(
+            "// Soku Bundler - {} Mode Build\n",
+            self.strategy.name()
+        ));
         bundle.push_str("(function() {\n'use strict';\n\n");
 
         // Process each module
         for module in modules {
             if self.supports_module_type(&module.module_type) {
                 Logger::processing_file(
-                    module.path.file_name()
+                    module
+                        .path
+                        .file_name()
                         .and_then(|s| s.to_str())
                         .unwrap_or("unknown"),
-                    "bundling"
+                    "bundling",
                 );
 
                 let processed = self.process_module(module).await?;
-                bundle.push_str(&format!(
-                    "// Module: {}\n",
-                    module.path.display()
-                ));
+                bundle.push_str(&format!("// Module: {}\n", module.path.display()));
                 bundle.push_str(&processed);
                 bundle.push_str("\n\n");
             }
@@ -459,7 +478,7 @@ impl JsProcessor for UnifiedJsProcessor {
     async fn bundle_modules_with_tree_shaking(
         &self,
         modules: &[ModuleInfo],
-        _tree_shaking_stats: Option<&TreeShakingStats>
+        _tree_shaking_stats: Option<&TreeShakingStats>,
     ) -> Result<String> {
         // For now, delegate to bundle_modules
         // Tree shaking is handled at a higher level
@@ -469,7 +488,7 @@ impl JsProcessor for UnifiedJsProcessor {
     async fn bundle_modules_with_source_maps(
         &self,
         modules: &[ModuleInfo],
-        config: &BuildConfig
+        config: &BuildConfig,
     ) -> Result<BundleOutput> {
         if !config.enable_source_maps {
             // Source maps disabled, just bundle normally
@@ -528,8 +547,9 @@ impl JsProcessor for UnifiedJsProcessor {
             "mappings": "" // Simplified - no detailed mappings for now
         });
 
-        let source_map_str = serde_json::to_string(&source_map_json)
-            .map_err(|e| crate::utils::SokuError::build(format!("Failed to generate source map: {}", e)))?;
+        let source_map_str = serde_json::to_string(&source_map_json).map_err(|e| {
+            crate::utils::SokuError::build(format!("Failed to generate source map: {}", e))
+        })?;
 
         Ok(BundleOutput {
             code: bundle,
@@ -544,20 +564,16 @@ impl JsProcessor for UnifiedJsProcessor {
 
 // Pre-compiled regex patterns for TypeScript stripping (shared across processors)
 static TYPE_ANNOTATION_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]*([,)=])").unwrap()
+    Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]*([,)=])")
+        .unwrap()
 });
 
-static RETURN_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"\)\s*:\s*[^=]+\s*(=>)").unwrap()
-});
+static RETURN_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\)\s*:\s*[^=]+\s*(=>)").unwrap());
 
-static GENERIC_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)<[^<>]*>").unwrap()
-});
+static GENERIC_TYPE_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)<[^<>]*>").unwrap());
 
-static SIMPLE_GENERIC_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"<[^<>]*>").unwrap()
-});
+static SIMPLE_GENERIC_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"<[^<>]*>").unwrap());
 
 // ============================================================================
 // Unified OXC Parsing Interface (Shared)
@@ -636,7 +652,7 @@ pub fn parse_with_oxc<'a>(
 
         let detailed_error = SokuError::parse_with_context(
             format!("{}: {}", error_prefix, first_error),
-            error_context
+            error_context,
         );
 
         Logger::warn(&detailed_error.format_detailed());
@@ -791,7 +807,10 @@ fn optimize_lodash_content(content: &str, package_name: &str) -> String {
         }
     }
 
-    format!("// TREE-SHAKEN: Optimized {} content\n{}", package_name, result)
+    format!(
+        "// TREE-SHAKEN: Optimized {} content\n{}",
+        package_name, result
+    )
 }
 
 /// General optimization for other node_modules packages
@@ -949,7 +968,9 @@ pub fn clean_typescript_inline_annotations(content: &str) -> String {
     let mut result = content.to_string();
 
     // Remove class property type annotations: propertyName: Type; -> propertyName;
-    if let Ok(re) = Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]+;") {
+    if let Ok(re) =
+        Regex::new(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$<>\[\]|&\s]+;")
+    {
         result = re.replace_all(&result, "$1;").to_string();
     }
 
@@ -959,7 +980,9 @@ pub fn clean_typescript_inline_annotations(content: &str) -> String {
     }
 
     // Remove simple type annotations: name: Type -> name
-    result = TYPE_ANNOTATION_REGEX.replace_all(&result, "$1$2").to_string();
+    result = TYPE_ANNOTATION_REGEX
+        .replace_all(&result, "$1$2")
+        .to_string();
 
     // Remove function return types: ): Type => -> ) =>
     result = RETURN_TYPE_REGEX.replace_all(&result, ")$1").to_string();
@@ -1071,12 +1094,10 @@ pub fn store_cached_css(
 // ============================================================================
 
 // Pre-compiled regex patterns for dependency extraction
-static CSS_IMPORT_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"import\s+['"]([^'"]+)['"]"#).unwrap()
-});
-static REQUIRE_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"require\s*\(\s*['"]([^'"]+)['"]\s*\)"#).unwrap()
-});
+static CSS_IMPORT_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"import\s+['"]([^'"]+)['"]"#).unwrap());
+static REQUIRE_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"require\s*\(\s*['"]([^'"]+)['"]\s*\)"#).unwrap());
 
 /// Extract dependencies from JavaScript/TypeScript content
 ///

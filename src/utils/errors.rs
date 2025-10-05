@@ -1,5 +1,5 @@
-use thiserror::Error;
 use std::path::PathBuf;
+use thiserror::Error;
 
 /// Enhanced error with file location context
 #[derive(Debug, Clone)]
@@ -52,13 +52,13 @@ pub enum SokuError {
     #[error("Parse error: {message}")]
     Parse {
         message: String,
-        context: Option<ErrorContext>
+        context: Option<ErrorContext>,
     },
 
     #[error("Build error: {message}")]
     Build {
         message: String,
-        context: Option<ErrorContext>
+        context: Option<ErrorContext>,
     },
 
     #[error("Tree shaking error: {0}")]
@@ -156,7 +156,10 @@ impl SokuError {
             }
 
             if let Some(ref snippet) = ctx.code_snippet {
-                output.push_str(&format!("\n📝 Code:\n{}", self.format_code_snippet(snippet, ctx.line)));
+                output.push_str(&format!(
+                    "\n📝 Code:\n{}",
+                    self.format_code_snippet(snippet, ctx.line)
+                ));
             }
         }
 

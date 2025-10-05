@@ -60,17 +60,24 @@ jobs:
     - run: cargo clippy --all-targets -- -W warnings
 
   build:
-    name: Build Release
+    name: Check binary size
+    needs: [test, fmt, clippy]
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
-    
+
     - name: Build release
       run: cargo build --release --verbose
-    
+
     - name: Check binary size
       run: |
+        size_limit=5242880 # 5 MB en bytes
+        actual_size=$(stat -c%s "target/release/soku")
         ls -lh target/release/soku
+        if [ "$actual_size" -gt "$size_limit" ]; then
+        echo "Error: El binario supera los 5 MB ($actual_size bytes)."
+        exit 1
+        fi
         size target/release/soku || true

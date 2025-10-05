@@ -1,4 +1,4 @@
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 pub struct Logger;
 
@@ -43,7 +43,6 @@ impl Logger {
 
     #[allow(dead_code)]
     pub fn debug(_message: &str) {}
-
 
     #[allow(dead_code)] // Logging utility - may be used in future
     pub fn build_complete(

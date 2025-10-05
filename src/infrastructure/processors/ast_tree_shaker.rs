@@ -1,8 +1,8 @@
-use std::collections::{HashMap, HashSet};
-use regex::Regex;
 use crate::core::models::{ModuleInfo, TreeShakingStats};
 use crate::utils::Result;
 use async_trait::async_trait;
+use regex::Regex;
+use std::collections::{HashMap, HashSet};
 
 /// Advanced AST-based tree shaker for precise dead code elimination
 pub struct AstTreeShaker {
@@ -69,7 +69,8 @@ impl AstTreeShaker {
     /// Extract exports with sophisticated pattern matching
     fn extract_exports_advanced(&self, content: &str, exports: &mut HashSet<String>) -> Result<()> {
         // Pattern 1: export const/let/var name = ...
-        let export_var_regex = Regex::new(r"export\s+(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)")?;
+        let export_var_regex =
+            Regex::new(r"export\s+(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)")?;
         for cap in export_var_regex.captures_iter(content) {
             exports.insert(cap[1].to_string());
         }
@@ -91,8 +92,10 @@ impl AstTreeShaker {
         for cap in export_list_regex.captures_iter(content) {
             let names = cap[1].split(',');
             for name in names {
-                let clean_name = name.trim()
-                    .split(" as ").next()
+                let clean_name = name
+                    .trim()
+                    .split(" as ")
+                    .next()
                     .unwrap_or(name.trim())
                     .trim();
                 if !clean_name.is_empty() {
@@ -112,12 +115,15 @@ impl AstTreeShaker {
     /// Extract imports with sophisticated pattern matching
     fn extract_imports_advanced(&self, content: &str, imports: &mut HashSet<String>) -> Result<()> {
         // Pattern 1: import { name1, name2 } from '...'
-        let named_import_regex = Regex::new(r#"import\s*\{\s*([^}]+)\s*\}\s*from\s*['"]([^'"]+)['"]"#)?;
+        let named_import_regex =
+            Regex::new(r#"import\s*\{\s*([^}]+)\s*\}\s*from\s*['"]([^'"]+)['"]"#)?;
         for cap in named_import_regex.captures_iter(content) {
             let names = cap[1].split(',');
             for name in names {
-                let clean_name = name.trim()
-                    .split(" as ").next()
+                let clean_name = name
+                    .trim()
+                    .split(" as ")
+                    .next()
                     .unwrap_or(name.trim())
                     .trim();
                 if !clean_name.is_empty() {
@@ -127,13 +133,15 @@ impl AstTreeShaker {
         }
 
         // Pattern 2: import name from '...'
-        let default_import_regex = Regex::new(r#"import\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s+from\s*['"]([^'"]+)['"]"#)?;
+        let default_import_regex =
+            Regex::new(r#"import\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s+from\s*['"]([^'"]+)['"]"#)?;
         for _cap in default_import_regex.captures_iter(content) {
             imports.insert("default".to_string());
         }
 
         // Pattern 3: import * as name from '...'
-        let namespace_import_regex = Regex::new(r"import\s*\*\s*as\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s+from")?;
+        let namespace_import_regex =
+            Regex::new(r"import\s*\*\s*as\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s+from")?;
         for _cap in namespace_import_regex.captures_iter(content) {
             imports.insert("*".to_string());
         }
@@ -244,7 +252,8 @@ impl AstTreeShaker {
         if let Some(dead_code_list) = self.dead_code.get(&module_path) {
             let lines: Vec<&str> = module.content.lines().collect();
             let mut result = String::new();
-            let dead_symbols: HashSet<String> = dead_code_list.iter()
+            let dead_symbols: HashSet<String> = dead_code_list
+                .iter()
                 .map(|d| d.symbol_name.clone())
                 .collect();
 
@@ -254,11 +263,15 @@ impl AstTreeShaker {
                 // Skip lines that export dead symbols
                 let mut should_skip = false;
                 for dead_symbol in &dead_symbols {
-                    if line_content.contains(&format!("export {}", dead_symbol)) ||
-                       line_content.contains(&format!("export const {}", dead_symbol)) ||
-                       line_content.contains(&format!("export function {}", dead_symbol)) {
+                    if line_content.contains(&format!("export {}", dead_symbol))
+                        || line_content.contains(&format!("export const {}", dead_symbol))
+                        || line_content.contains(&format!("export function {}", dead_symbol))
+                    {
                         should_skip = true;
-                        result.push_str(&format!("// TREE-SHAKEN: Removed unused export '{}'\n", dead_symbol));
+                        result.push_str(&format!(
+                            "// TREE-SHAKEN: Removed unused export '{}'\n",
+                            dead_symbol
+                        ));
                         break;
                     }
                 }
@@ -278,7 +291,11 @@ impl AstTreeShaker {
     /// Get comprehensive tree shaking statistics
     pub fn get_advanced_stats(&self) -> TreeShakingStats {
         let total_exports: usize = self.exports.values().map(|s| s.len()).sum();
-        let unused_exports = self.usage_counts.values().filter(|&&count| count == 0).count();
+        let unused_exports = self
+            .usage_counts
+            .values()
+            .filter(|&&count| count == 0)
+            .count();
         let total_dead_code_items: usize = self.dead_code.values().map(|v| v.len()).sum();
 
         // Build used exports map: module_path -> {export1, export2, ...}

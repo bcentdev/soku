@@ -1,13 +1,13 @@
-use crate::core::{models::*, services::*, interfaces::*};
+use crate::core::{interfaces::*, models::*, services::*};
 use crate::infrastructure::{
-    TokioFileSystemService, SokuFileSystemService,
-    LightningCssProcessor, ScssProcessor, RegexTreeShaker, SokuHmrService, generate_hmr_client_code,
-    ProcessingStrategy, UnifiedJsProcessor
+    generate_hmr_client_code, LightningCssProcessor, ProcessingStrategy, RegexTreeShaker,
+    ScssProcessor, SokuFileSystemService, SokuHmrService, TokioFileSystemService,
+    UnifiedJsProcessor,
 };
-use crate::utils::{Result, Logger};
+use crate::utils::{Logger, Result};
 use clap::{Parser, Subcommand, ValueEnum};
-use std::sync::Arc;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 /// Processing strategy for JavaScript/TypeScript files
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -143,9 +143,7 @@ impl CliHandler {
         let cli = Cli::parse();
 
         match cli.command {
-            Commands::Dev { root, port } => {
-                self.handle_dev_command(&root, port).await
-            }
+            Commands::Dev { root, port } => self.handle_dev_command(&root, port).await,
             Commands::Build {
                 root,
                 outdir,
@@ -160,14 +158,24 @@ impl CliHandler {
                 analyze,
                 mode,
             } => {
-                self.handle_build_command(&root, outdir.as_deref(), !no_tree_shaking, !no_minify, source_maps, strategy, turbo_mode, normal_mode, no_cache, code_splitting, analyze, &mode).await
+                self.handle_build_command(
+                    &root,
+                    outdir.as_deref(),
+                    !no_tree_shaking,
+                    !no_minify,
+                    source_maps,
+                    strategy,
+                    turbo_mode,
+                    normal_mode,
+                    no_cache,
+                    code_splitting,
+                    analyze,
+                    &mode,
+                )
+                .await
             }
-            Commands::Preview { dir, port } => {
-                self.handle_preview_command(&dir, port).await
-            }
-            Commands::Info => {
-                self.handle_info_command().await
-            }
+            Commands::Preview { dir, port } => self.handle_preview_command(&dir, port).await,
+            Commands::Info => self.handle_info_command().await,
             Commands::Watch {
                 root,
                 outdir,
@@ -187,7 +195,8 @@ impl CliHandler {
                     clear,
                     verbose,
                     strategy,
-                ).await
+                )
+                .await
             }
         }
     }
@@ -293,22 +302,22 @@ impl CliHandler {
             }
         ));
 
-        let js_processor: Arc<dyn JsProcessor> = Arc::new(UnifiedJsProcessor::new(selected_strategy));
+        let js_processor: Arc<dyn JsProcessor> =
+            Arc::new(UnifiedJsProcessor::new(selected_strategy));
 
         // Create CSS processor with SCSS/SASS support
         let lightning_css = Arc::new(LightningCssProcessor::new(enable_minification));
-        let css_processor = Arc::new(ScssProcessor::with_css_processor(enable_minification, lightning_css));
+        let css_processor = Arc::new(ScssProcessor::with_css_processor(
+            enable_minification,
+            lightning_css,
+        ));
 
         if should_use_turbo_mode {
             Logger::info("🔥 Turbo Mode: SIMD optimizations and advanced caching enabled");
         }
 
         // Create build service
-        let mut build_service = SokuBuildService::new(
-            fs_service,
-            js_processor,
-            css_processor,
-        );
+        let mut build_service = SokuBuildService::new(fs_service, js_processor, css_processor);
 
         // Add tree shaker if enabled
         if enable_tree_shaking {
@@ -327,11 +336,15 @@ impl CliHandler {
                 // Add helpful hints based on error type
                 let error_str = e.to_string();
                 if error_str.contains("No such file or directory") {
-                    Logger::error("   💡 Tip: Check that the entry file exists in the project root");
+                    Logger::error(
+                        "   💡 Tip: Check that the entry file exists in the project root",
+                    );
                 } else if error_str.contains("Invalid UTF-8") {
                     Logger::error("   💡 Tip: Ensure all source files are valid UTF-8 encoded");
                 } else if error_str.contains("parse") || error_str.contains("syntax") {
-                    Logger::error("   💡 Tip: Check for syntax errors in your JavaScript/TypeScript files");
+                    Logger::error(
+                        "   💡 Tip: Check for syntax errors in your JavaScript/TypeScript files",
+                    );
                 }
 
                 return Err(e);
@@ -340,7 +353,7 @@ impl CliHandler {
 
         // Generate bundle analysis if requested
         if enable_analysis && result.success {
-            use crate::utils::{BundleAnalysis, display_analysis};
+            use crate::utils::{display_analysis, BundleAnalysis};
 
             let analysis = BundleAnalysis::analyze(&result.modules, &result);
             display_analysis(&analysis);
@@ -350,7 +363,10 @@ impl CliHandler {
             if let Err(e) = analysis.save_json(&analysis_path) {
                 Logger::warn(&format!("Failed to save analysis JSON: {}", e));
             } else {
-                Logger::info(&format!("📊 Analysis saved to: {}", analysis_path.display()));
+                Logger::info(&format!(
+                    "📊 Analysis saved to: {}",
+                    analysis_path.display()
+                ));
             }
         }
 
@@ -359,7 +375,9 @@ impl CliHandler {
             for (i, error) in result.errors.iter().enumerate() {
                 Logger::error(&format!("   {}. {}", i + 1, error));
             }
-            return Err(crate::utils::SokuError::build("Build failed with errors".to_string()));
+            return Err(crate::utils::SokuError::build(
+                "Build failed with errors".to_string(),
+            ));
         }
 
         Ok(())
@@ -462,7 +480,9 @@ impl CliHandler {
         tracing::info!("👀 Soku Watch Mode");
         tracing::info!("══════════════════════════════════════");
 
-        let root_path = Path::new(root).canonicalize().unwrap_or_else(|_| PathBuf::from(root));
+        let root_path = Path::new(root)
+            .canonicalize()
+            .unwrap_or_else(|_| PathBuf::from(root));
         let outdir_path = root_path.join(outdir);
 
         // Create build config
@@ -476,8 +496,8 @@ impl CliHandler {
             max_chunk_size: None,
             mode: "development".to_string(), // Watch mode is for development
             alias: std::collections::HashMap::new(), // No aliases in watch mode
-            external: Vec::new(), // No external deps in watch mode
-            vendor_chunk: false, // No vendor splitting in watch mode
+            external: Vec::new(),            // No external deps in watch mode
+            vendor_chunk: false,             // No vendor splitting in watch mode
             entries: std::collections::HashMap::new(), // No multiple entries in watch mode
         };
 
@@ -510,13 +530,12 @@ impl CliHandler {
 
         // Create CSS processor with SCSS/SASS support
         let lightning_css = Arc::new(LightningCssProcessor::new(enable_minification));
-        let css_processor = Arc::new(ScssProcessor::with_css_processor(enable_minification, lightning_css));
+        let css_processor = Arc::new(ScssProcessor::with_css_processor(
+            enable_minification,
+            lightning_css,
+        ));
 
-        let mut build_service = SokuBuildService::new(
-            fs_service,
-            js_processor,
-            css_processor,
-        );
+        let mut build_service = SokuBuildService::new(fs_service, js_processor, css_processor);
 
         if enable_tree_shaking {
             let tree_shaker = Arc::new(RegexTreeShaker::new());
@@ -567,15 +586,15 @@ impl CliHandler {
         let config = BuildConfig {
             root: PathBuf::from(root),
             outdir: PathBuf::from("dist"),
-            enable_tree_shaking: false, // Disabled for faster dev builds
-            enable_minification: false, // Disabled for dev
-            enable_source_maps: true,   // Enabled for debugging
+            enable_tree_shaking: false,   // Disabled for faster dev builds
+            enable_minification: false,   // Disabled for dev
+            enable_source_maps: true,     // Enabled for debugging
             enable_code_splitting: false, // Disabled for dev
             max_chunk_size: Some(250_000), // 250KB default
             mode: "development".to_string(), // Dev server with HMR
             alias: std::collections::HashMap::new(), // No aliases in dev mode
-            external: Vec::new(), // No external deps in dev mode
-            vendor_chunk: false, // No vendor splitting in dev mode
+            external: Vec::new(),         // No external deps in dev mode
+            vendor_chunk: false,          // No vendor splitting in dev mode
             entries: std::collections::HashMap::new(), // No multiple entries in dev mode
         };
 
@@ -588,19 +607,17 @@ impl CliHandler {
         let css_processor = Arc::new(ScssProcessor::with_css_processor(false, lightning_css));
 
         // Create build service
-        let mut build_service = SokuBuildService::new(
-            fs_service,
-            js_processor,
-            css_processor,
-        );
+        let mut build_service = SokuBuildService::new(fs_service, js_processor, css_processor);
 
         // Execute build
         let mut result = build_service.build(&config).await?;
 
         // Inject HMR client code into the main bundle
-        if let Some(js_bundle) = result.output_files.iter_mut().find(|f|
-            f.path.file_name().and_then(|n| n.to_str()) == Some("bundle.js")
-        ) {
+        if let Some(js_bundle) = result
+            .output_files
+            .iter_mut()
+            .find(|f| f.path.file_name().and_then(|n| n.to_str()) == Some("bundle.js"))
+        {
             let hmr_client = generate_hmr_client_code(hmr_port);
             js_bundle.content = format!("{}\n\n{}", hmr_client, js_bundle.content);
             js_bundle.size = js_bundle.content.len();
@@ -609,11 +626,13 @@ impl CliHandler {
         // Write files to disk
         for output_file in &result.output_files {
             if let Some(parent) = output_file.path.parent() {
-                tokio::fs::create_dir_all(parent).await
+                tokio::fs::create_dir_all(parent)
+                    .await
                     .map_err(crate::utils::SokuError::Io)?;
             }
 
-            tokio::fs::write(&output_file.path, &output_file.content).await
+            tokio::fs::write(&output_file.path, &output_file.content)
+                .await
                 .map_err(crate::utils::SokuError::Io)?;
         }
 
@@ -648,21 +667,37 @@ impl CliHandler {
 
     /// Recursively scan directory for all relevant files
     #[allow(clippy::only_used_in_recursion)]
-    fn scan_directory_recursive<'a>(&'a self, dir: &'a Path) -> std::pin::Pin<std::boxed::Box<dyn std::future::Future<Output = Result<Vec<PathBuf>>> + 'a>> {
+    fn scan_directory_recursive<'a>(
+        &'a self,
+        dir: &'a Path,
+    ) -> std::pin::Pin<std::boxed::Box<dyn std::future::Future<Output = Result<Vec<PathBuf>>> + 'a>>
+    {
         Box::pin(async move {
             let mut files = Vec::new();
-            let mut entries = tokio::fs::read_dir(dir).await
+            let mut entries = tokio::fs::read_dir(dir)
+                .await
                 .map_err(crate::utils::SokuError::Io)?;
 
-            while let Some(entry) = entries.next_entry().await
-                .map_err(crate::utils::SokuError::Io)? {
-
+            while let Some(entry) = entries
+                .next_entry()
+                .await
+                .map_err(crate::utils::SokuError::Io)?
+            {
                 let path = entry.path();
 
                 if path.is_dir() {
                     // Skip common directories to avoid
                     if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                        if matches!(name, "node_modules" | ".git" | "target" | "dist" | ".next" | "build" | ".soku-cache") {
+                        if matches!(
+                            name,
+                            "node_modules"
+                                | ".git"
+                                | "target"
+                                | "dist"
+                                | ".next"
+                                | "build"
+                                | ".soku-cache"
+                        ) {
                             continue;
                         }
                     }
@@ -702,10 +737,10 @@ impl ProjectAnalysis {
         // 3. Large total size (>= 50KB) - memory mapping and caching help
         // 4. Complex projects - advanced optimizations worth the overhead
 
-        self.total_files >= 8 ||
-        self.typescript_files > 0 ||
-        self.total_size_kb >= 50 ||
-        (self.total_files >= 5 && self.total_size_kb >= 25)
+        self.total_files >= 8
+            || self.typescript_files > 0
+            || self.total_size_kb >= 50
+            || (self.total_files >= 5 && self.total_size_kb >= 25)
     }
 }
 

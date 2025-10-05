@@ -2,8 +2,8 @@
 // Currently infrastructure for future integration
 use crate::core::models::ModuleInfo;
 use crate::utils::{Result, SokuError};
-use std::collections::{HashMap, HashSet};
 use regex::Regex;
+use std::collections::{HashMap, HashSet};
 
 /// Dynamic import analyzer and splitter
 #[allow(dead_code)] // Infrastructure for future integration
@@ -26,8 +26,8 @@ impl DynamicImportSplitter {
     /// Analyze code for dynamic import() statements
     pub fn analyze_dynamic_imports(&mut self, modules: &[ModuleInfo]) -> Result<()> {
         // Regex to match import('path') or import("path")
-        let import_re = Regex::new(r#"import\s*\(\s*['"]([^'"]+)['"]\s*\)"#)
-            .map_err(|e| SokuError::Build {
+        let import_re =
+            Regex::new(r#"import\s*\(\s*['"]([^'"]+)['"]\s*\)"#).map_err(|e| SokuError::Build {
                 message: format!("Failed to create import regex: {}", e),
                 context: None,
             })?;
@@ -64,19 +64,27 @@ impl DynamicImportSplitter {
 
     /// Check if a module is dynamically imported
     pub fn is_dynamically_imported(&self, module_path: &str) -> bool {
-        self.dynamic_imports.values()
-            .any(|imports| imports.iter().any(|imp| {
+        self.dynamic_imports.values().any(|imports| {
+            imports.iter().any(|imp| {
                 // Normalize paths for comparison
                 let imp_normalized = imp.trim_start_matches("./").trim_start_matches("../");
-                let module_normalized = module_path.trim_start_matches("./").trim_start_matches("../");
+                let module_normalized = module_path
+                    .trim_start_matches("./")
+                    .trim_start_matches("../");
 
                 // Check if paths match (either exact or contains)
-                module_normalized.contains(imp_normalized) || imp_normalized.contains(module_normalized)
-            }))
+                module_normalized.contains(imp_normalized)
+                    || imp_normalized.contains(module_normalized)
+            })
+        })
     }
 
     /// Replace import() statements with chunk loader calls
-    pub fn replace_dynamic_imports(&mut self, code: &str, chunk_manifest: &HashMap<String, String>) -> String {
+    pub fn replace_dynamic_imports(
+        &mut self,
+        code: &str,
+        chunk_manifest: &HashMap<String, String>,
+    ) -> String {
         let import_re = Regex::new(r#"import\s*\(\s*['"]([^'"]+)['"]\s*\)"#).unwrap();
 
         let mut result = code.to_string();
@@ -88,7 +96,8 @@ impl DynamicImportSplitter {
                 let import_str = import_path.as_str();
 
                 // Find matching chunk in manifest
-                let chunk_file = chunk_manifest.iter()
+                let chunk_file = chunk_manifest
+                    .iter()
                     .find(|(path, _)| path.contains(import_str))
                     .map(|(_, file)| file.clone())
                     .unwrap_or_else(|| {
@@ -99,7 +108,7 @@ impl DynamicImportSplitter {
                 // Replace import() with __soku_load_chunk()
                 replacements.push((
                     full_match.as_str().to_string(),
-                    format!("__soku_load_chunk('{}')", chunk_file)
+                    format!("__soku_load_chunk('{}')", chunk_file),
                 ));
             }
         }
@@ -157,7 +166,8 @@ impl DynamicImportSplitter {
     return loadPromise;
   };
 })();
-"#.to_string()
+"#
+        .to_string()
     }
 
     /// Create chunk manifest mapping module paths to chunk files
@@ -181,9 +191,7 @@ impl DynamicImportSplitter {
 
     /// Get dynamic import statistics
     pub fn get_stats(&self) -> DynamicImportStats {
-        let total_dynamic_imports: usize = self.dynamic_imports.values()
-            .map(|v| v.len())
-            .sum();
+        let total_dynamic_imports: usize = self.dynamic_imports.values().map(|v| v.len()).sum();
 
         DynamicImportStats {
             modules_with_imports: self.dynamic_imports.len(),
@@ -228,12 +236,13 @@ mod tests {
     fn test_detect_dynamic_imports() {
         let mut splitter = DynamicImportSplitter::new();
 
-        let modules = vec![
-            create_test_module("main.js", r#"
+        let modules = vec![create_test_module(
+            "main.js",
+            r#"
                 import('./utils.js');
                 import("./components.js");
-            "#),
-        ];
+            "#,
+        )];
 
         splitter.analyze_dynamic_imports(&modules).unwrap();
 
@@ -247,9 +256,7 @@ mod tests {
     fn test_is_dynamically_imported() {
         let mut splitter = DynamicImportSplitter::new();
 
-        let modules = vec![
-            create_test_module("main.js", "import('./lazy.js');"),
-        ];
+        let modules = vec![create_test_module("main.js", "import('./lazy.js');")];
 
         splitter.analyze_dynamic_imports(&modules).unwrap();
 
@@ -307,10 +314,13 @@ mod tests {
         let mut splitter = DynamicImportSplitter::new();
 
         let modules = vec![
-            create_test_module("main.js", r#"
+            create_test_module(
+                "main.js",
+                r#"
                 import('./a.js');
                 import('./b.js');
-            "#),
+            "#,
+            ),
             create_test_module("other.js", "import('./c.js');"),
         ];
 

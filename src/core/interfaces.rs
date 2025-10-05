@@ -1,7 +1,7 @@
 use crate::core::models::*;
 use crate::utils::Result;
-use std::path::{Path, PathBuf};
 use async_trait::async_trait;
+use std::path::{Path, PathBuf};
 
 /// File system operations interface
 #[async_trait]
@@ -17,8 +17,16 @@ pub trait FileSystemService: Send + Sync {
 pub trait JsProcessor: Send + Sync {
     async fn process_module(&self, module: &ModuleInfo) -> Result<String>;
     async fn bundle_modules(&self, modules: &[ModuleInfo]) -> Result<String>;
-    async fn bundle_modules_with_tree_shaking(&self, modules: &[ModuleInfo], tree_shaking_stats: Option<&TreeShakingStats>) -> Result<String>;
-    async fn bundle_modules_with_source_maps(&self, modules: &[ModuleInfo], config: &BuildConfig) -> Result<BundleOutput>;
+    async fn bundle_modules_with_tree_shaking(
+        &self,
+        modules: &[ModuleInfo],
+        tree_shaking_stats: Option<&TreeShakingStats>,
+    ) -> Result<String>;
+    async fn bundle_modules_with_source_maps(
+        &self,
+        modules: &[ModuleInfo],
+        config: &BuildConfig,
+    ) -> Result<BundleOutput>;
     fn supports_module_type(&self, module_type: &ModuleType) -> bool;
 }
 

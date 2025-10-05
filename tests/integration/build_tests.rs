@@ -1,23 +1,20 @@
-use std::path::PathBuf;
-use soku::core::models::BuildConfig;
 use soku::core::interfaces::BuildService;
-use soku::infrastructure::{TokioFileSystemService, UnifiedJsProcessor, LightningCssProcessor};
+use soku::core::models::BuildConfig;
 use soku::infrastructure::processors::ProcessingStrategy;
+use soku::infrastructure::{LightningCssProcessor, TokioFileSystemService, UnifiedJsProcessor};
+use std::path::PathBuf;
 
 #[tokio::test]
 async fn test_simple_project_build() {
-    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/simple-project");
+    let fixtures_dir =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/simple-project");
 
     let fs_service = std::sync::Arc::new(TokioFileSystemService);
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = soku::core::services::SokuBuildService::new(
-        fs_service,
-        js_processor,
-        css_processor,
-    );
+    let mut build_service =
+        soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor);
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
@@ -31,13 +28,17 @@ async fn test_simple_project_build() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-        entries: std::collections::HashMap::new(),    };
+        entries: std::collections::HashMap::new(),
+    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "Build should succeed");
 
     let build_result = result.unwrap();
-    assert!(!build_result.output_files.is_empty(), "Should have output files");
+    assert!(
+        !build_result.output_files.is_empty(),
+        "Should have output files"
+    );
 
     // Check bundle.js exists
     let bundle_path = config.outdir.join("bundle.js");
@@ -49,18 +50,15 @@ async fn test_simple_project_build() {
 
 #[tokio::test]
 async fn test_typescript_project_build() {
-    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/typescript-project");
+    let fixtures_dir =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/typescript-project");
 
     let fs_service = std::sync::Arc::new(TokioFileSystemService);
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Enhanced));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = soku::core::services::SokuBuildService::new(
-        fs_service,
-        js_processor,
-        css_processor,
-    );
+    let mut build_service =
+        soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor);
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
@@ -74,7 +72,8 @@ async fn test_typescript_project_build() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-        entries: std::collections::HashMap::new(),    };
+        entries: std::collections::HashMap::new(),
+    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "TypeScript build should succeed");
@@ -87,8 +86,14 @@ async fn test_typescript_project_build() {
 
     let bundle_content = std::fs::read_to_string(&bundle_path).unwrap();
     // Verify bundle contains expected JavaScript code
-    assert!(bundle_content.contains("Calculator"), "Bundle should contain Calculator class");
-    assert!(bundle_content.contains("function"), "Bundle should contain function keyword or similar");
+    assert!(
+        bundle_content.contains("Calculator"),
+        "Bundle should contain Calculator class"
+    );
+    assert!(
+        bundle_content.contains("function"),
+        "Bundle should contain function keyword or similar"
+    );
 
     // Cleanup
     let _ = std::fs::remove_dir_all(config.outdir);
@@ -96,18 +101,15 @@ async fn test_typescript_project_build() {
 
 #[tokio::test]
 async fn test_source_maps_generation() {
-    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/simple-project");
+    let fixtures_dir =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/simple-project");
 
     let fs_service = std::sync::Arc::new(TokioFileSystemService);
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = soku::core::services::SokuBuildService::new(
-        fs_service,
-        js_processor,
-        css_processor,
-    );
+    let mut build_service =
+        soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor);
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
@@ -121,7 +123,8 @@ async fn test_source_maps_generation() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-        entries: std::collections::HashMap::new(),    };
+        entries: std::collections::HashMap::new(),
+    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "Build with source maps should succeed");
@@ -132,14 +135,26 @@ async fn test_source_maps_generation() {
 
     // Check source map content
     let source_map_content = std::fs::read_to_string(&source_map_path).unwrap();
-    assert!(source_map_content.contains("\"version\"") && source_map_content.contains("3"), "Should be source map v3");
-    assert!(source_map_content.contains("\"sources\""), "Should have sources field");
-    assert!(source_map_content.contains("\"sourcesContent\""), "Should have sourcesContent field");
+    assert!(
+        source_map_content.contains("\"version\"") && source_map_content.contains("3"),
+        "Should be source map v3"
+    );
+    assert!(
+        source_map_content.contains("\"sources\""),
+        "Should have sources field"
+    );
+    assert!(
+        source_map_content.contains("\"sourcesContent\""),
+        "Should have sourcesContent field"
+    );
 
     // Check bundle has sourceMappingURL
     let bundle_path = config.outdir.join("bundle.js");
     let bundle_content = std::fs::read_to_string(&bundle_path).unwrap();
-    assert!(bundle_content.contains("sourceMappingURL=bundle.js.map"), "Should have sourceMappingURL comment");
+    assert!(
+        bundle_content.contains("sourceMappingURL=bundle.js.map"),
+        "Should have sourceMappingURL comment"
+    );
 
     // Cleanup
     let _ = std::fs::remove_dir_all(config.outdir);
@@ -147,18 +162,15 @@ async fn test_source_maps_generation() {
 
 #[tokio::test]
 async fn test_demo_project_build() {
-    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/demo-project");
+    let fixtures_dir =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/demo-project");
 
     let fs_service = std::sync::Arc::new(TokioFileSystemService);
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(false));
 
-    let mut build_service = soku::core::services::SokuBuildService::new(
-        fs_service,
-        js_processor,
-        css_processor,
-    );
+    let mut build_service =
+        soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor);
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
@@ -172,13 +184,17 @@ async fn test_demo_project_build() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-        entries: std::collections::HashMap::new(),    };
+        entries: std::collections::HashMap::new(),
+    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "Demo project build should succeed");
 
     let build_result = result.unwrap();
-    assert!(!build_result.output_files.is_empty(), "Should have output files");
+    assert!(
+        !build_result.output_files.is_empty(),
+        "Should have output files"
+    );
 
     // Check bundle.js and bundle.css exist
     let js_bundle_path = config.outdir.join("bundle.js");
@@ -188,8 +204,10 @@ async fn test_demo_project_build() {
 
     // Verify bundle contains expected code
     let bundle_content = std::fs::read_to_string(&js_bundle_path).unwrap();
-    assert!(bundle_content.contains("main.js") || !bundle_content.is_empty(),
-            "Bundle should contain JavaScript code");
+    assert!(
+        bundle_content.contains("main.js") || !bundle_content.is_empty(),
+        "Bundle should contain JavaScript code"
+    );
 
     // Cleanup
     let _ = std::fs::remove_dir_all(config.outdir);

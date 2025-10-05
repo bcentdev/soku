@@ -1,6 +1,6 @@
+use crate::utils::{Logger, Result, SokuError};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use crate::utils::{Result, SokuError, Logger};
 
 /// Environment variables manager for build-time variable injection
 pub struct EnvVarsManager {
@@ -40,24 +40,44 @@ impl EnvVarsManager {
         }
 
         // Add built-in variables
-        manager.variables.insert("NODE_ENV".to_string(), mode.to_string());
-        manager.variables.insert("MODE".to_string(), mode.to_string());
+        manager
+            .variables
+            .insert("NODE_ENV".to_string(), mode.to_string());
+        manager
+            .variables
+            .insert("MODE".to_string(), mode.to_string());
 
         // Add import.meta.env specific variables
-        manager.variables.insert("DEV".to_string(),
-            if mode == "development" { "true" } else { "false" }.to_string());
-        manager.variables.insert("PROD".to_string(),
-            if mode == "production" { "true" } else { "false" }.to_string());
+        manager.variables.insert(
+            "DEV".to_string(),
+            if mode == "development" {
+                "true"
+            } else {
+                "false"
+            }
+            .to_string(),
+        );
+        manager.variables.insert(
+            "PROD".to_string(),
+            if mode == "production" {
+                "true"
+            } else {
+                "false"
+            }
+            .to_string(),
+        );
 
-        Logger::debug(&format!("Loaded {} environment variables", manager.variables.len()));
+        Logger::debug(&format!(
+            "Loaded {} environment variables",
+            manager.variables.len()
+        ));
 
         Ok(manager)
     }
 
     /// Load variables from a specific .env file
     fn load_env_file(&mut self, path: &PathBuf) -> Result<()> {
-        let content = std::fs::read_to_string(path)
-            .map_err(SokuError::Io)?;
+        let content = std::fs::read_to_string(path).map_err(SokuError::Io)?;
 
         Logger::debug(&format!("Loading env file: {}", path.display()));
 
@@ -103,8 +123,9 @@ impl EnvVarsManager {
         }
 
         // Remove quotes from value if present
-        let value = if (value.starts_with('"') && value.ends_with('"')) ||
-                       (value.starts_with('\'') && value.ends_with('\'')) {
+        let value = if (value.starts_with('"') && value.ends_with('"'))
+            || (value.starts_with('\'') && value.ends_with('\''))
+        {
             &value[1..value.len() - 1]
         } else {
             value
@@ -195,8 +216,8 @@ impl Default for EnvVarsManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use std::io::Write;
+    use tempfile::tempdir;
 
     #[test]
     fn test_parse_env_line() {
@@ -272,6 +293,9 @@ mod tests {
         assert_eq!(manager.format_value_for_js("123"), "123");
         assert_eq!(manager.format_value_for_js("3.14"), "3.14");
         assert_eq!(manager.format_value_for_js("hello"), r#""hello""#);
-        assert_eq!(manager.format_value_for_js("hello \"world\""), r#""hello \"world\"""#);
+        assert_eq!(
+            manager.format_value_for_js("hello \"world\""),
+            r#""hello \"world\"""#
+        );
     }
 }

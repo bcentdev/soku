@@ -1,11 +1,11 @@
 #![allow(dead_code)] // Enhanced JS processor - advanced features, may not all be used yet
 
 use crate::core::{interfaces::JsProcessor, models::*};
-use crate::utils::{Result, SokuError, Logger, SokuCache};
+use crate::utils::{Logger, Result, SokuCache, SokuError};
 use oxc_allocator::Allocator;
 use oxc_ast::ast;
-use std::sync::Arc;
 use std::path::Path;
+use std::sync::Arc;
 // Note: Regex patterns now live in common.rs to avoid duplication
 
 /// Enhanced JavaScript/TypeScript processor with advanced caching and optimizations
@@ -50,7 +50,6 @@ impl EnhancedJsProcessor {
         }
     }
 
-
     pub fn with_persistent_cache(cache_dir: &Path) -> Self {
         Self {
             cache: Arc::new(SokuCache::with_persistent_cache(cache_dir)),
@@ -60,12 +59,18 @@ impl EnhancedJsProcessor {
 
     /// Enhanced TypeScript processing with AST-based transformation
     async fn process_typescript(&self, module: &ModuleInfo) -> Result<String> {
-        let _timer = crate::utils::Timer::start(&format!("AST TypeScript processing {}",
-            module.path.file_name()
+        let _timer = crate::utils::Timer::start(&format!(
+            "AST TypeScript processing {}",
+            module
+                .path
+                .file_name()
                 .and_then(|s| s.to_str())
-                .unwrap_or("unknown")));
+                .unwrap_or("unknown")
+        ));
 
-        let file_extension = module.path.extension()
+        let file_extension = module
+            .path
+            .extension()
             .and_then(|s| s.to_str())
             .unwrap_or("");
 
@@ -78,7 +83,9 @@ impl EnhancedJsProcessor {
         } else {
             Logger::processing_typescript(&format!(
                 "TypeScript {} (AST-based)",
-                module.path.file_name()
+                module
+                    .path
+                    .file_name()
                     .and_then(|s| s.to_str())
                     .unwrap_or("unknown")
             ));
@@ -98,7 +105,7 @@ impl EnhancedJsProcessor {
             content,
             super::common::ParsingConfig::jsx(),
             file_path,
-            "JSX/TSX parsing failed"
+            "JSX/TSX parsing failed",
         ) {
             Ok(result) => result,
             Err(_) => {
@@ -143,12 +150,16 @@ impl EnhancedJsProcessor {
         // Handle simple JSX elements: <div>content</div> -> React.createElement('div', null, 'content')
         // Fixed: Removed backreference \1, match with general closing tag pattern
         if let Ok(re) = regex::Regex::new(r"<(\w+)>([^<]*)</\w+>") {
-            result = re.replace_all(&result, "React.createElement('$1', null, '$2')").to_string();
+            result = re
+                .replace_all(&result, "React.createElement('$1', null, '$2')")
+                .to_string();
         }
 
         // Handle self-closing JSX: <div /> -> React.createElement('div', null)
         if let Ok(re) = regex::Regex::new(r"<(\w+)\s*/>") {
-            result = re.replace_all(&result, "React.createElement('$1', null)").to_string();
+            result = re
+                .replace_all(&result, "React.createElement('$1', null)")
+                .to_string();
         }
 
         // For complex JSX with props, fall back to null for now
@@ -170,7 +181,9 @@ impl EnhancedJsProcessor {
 
         // Transform simple lowercase elements: <div>text</div> (single line)
         // Fixed: Removed backreference \1, match with general lowercase closing tag
-        if let Ok(re) = regex::Regex::new(r#"<([a-z][a-zA-Z0-9]*)\s*([^>]*?)>\s*([^<>]*?)\s*</[a-z][a-zA-Z0-9]*>"#) {
+        if let Ok(re) = regex::Regex::new(
+            r#"<([a-z][a-zA-Z0-9]*)\s*([^>]*?)>\s*([^<>]*?)\s*</[a-z][a-zA-Z0-9]*>"#,
+        ) {
             let callback = |caps: &regex::Captures| {
                 let element = &caps[1];
                 let props = caps.get(2).map_or("", |m| m.as_str()).trim();
@@ -188,9 +201,16 @@ impl EnhancedJsProcessor {
                     &format!(", \"{}\"", children)
                 };
 
-                let replacement = format!("React.createElement(\"{}\", {}{children_str})", element, props_obj);
+                let replacement = format!(
+                    "React.createElement(\"{}\", {}{children_str})",
+                    element, props_obj
+                );
                 if let Some(original) = caps.get(0) {
-                    Logger::debug(&format!("JSX transform: {} -> {}", original.as_str(), replacement));
+                    Logger::debug(&format!(
+                        "JSX transform: {} -> {}",
+                        original.as_str(),
+                        replacement
+                    ));
                 }
                 replacement
             };
@@ -200,7 +220,8 @@ impl EnhancedJsProcessor {
         // Transform self-closing lowercase elements: <input type="text" />
         if let Ok(re) = regex::RegexBuilder::new(r#"<([a-z][a-zA-Z0-9]*)\s*([^/>]*?)\s*/\s*>"#)
             .dot_matches_new_line(true)
-            .build() {
+            .build()
+        {
             let callback = |caps: &regex::Captures| {
                 let element = &caps[1];
                 let props = caps.get(2).map_or("", |m| m.as_str()).trim();
@@ -219,7 +240,8 @@ impl EnhancedJsProcessor {
         // Transform self-closing component tags: <Component prop={value} />
         if let Ok(re) = regex::RegexBuilder::new(r#"<([A-Z][a-zA-Z0-9.]*)\s*([^/>]*?)\s*/\s*>"#)
             .dot_matches_new_line(true)
-            .build() {
+            .build()
+        {
             let callback = |caps: &regex::Captures| {
                 let component = &caps[1];
                 let props = caps.get(2).map_or("", |m| m.as_str()).trim();
@@ -237,7 +259,9 @@ impl EnhancedJsProcessor {
 
         // Transform simple component elements: <Component>content</Component> (single line)
         // Fixed: Removed backreference \1, match with general uppercase closing tag
-        if let Ok(re) = regex::Regex::new(r#"<([A-Z][a-zA-Z0-9.]*)\s*([^>]*?)>\s*([^<>]*?)\s*</[A-Z][a-zA-Z0-9.]*>"#) {
+        if let Ok(re) = regex::Regex::new(
+            r#"<([A-Z][a-zA-Z0-9.]*)\s*([^>]*?)>\s*([^<>]*?)\s*</[A-Z][a-zA-Z0-9.]*>"#,
+        ) {
             let callback = |caps: &regex::Captures| {
                 let component = &caps[1];
                 let props = caps.get(2).map_or("", |m| m.as_str()).trim();
@@ -255,7 +279,10 @@ impl EnhancedJsProcessor {
                     &format!(", {}", children)
                 };
 
-                format!("React.createElement({}, {}{children_str})", component, props_obj)
+                format!(
+                    "React.createElement({}, {}{children_str})",
+                    component, props_obj
+                )
             };
             result = re.replace_all(&result, callback).to_string();
         }
@@ -303,7 +330,10 @@ impl EnhancedJsProcessor {
             for caps in re.captures_iter(props) {
                 let prop_name = &caps[1];
                 let value = &caps[2];
-                if !prop_pairs.iter().any(|p| p.starts_with(&format!("{}:", prop_name))) {
+                if !prop_pairs
+                    .iter()
+                    .any(|p| p.starts_with(&format!("{}:", prop_name)))
+                {
                     prop_pairs.push(format!("{}: \"{}\"", prop_name, value));
                 }
             }
@@ -314,7 +344,10 @@ impl EnhancedJsProcessor {
             for caps in re.captures_iter(props) {
                 let prop_name = &caps[1];
                 let expression = &caps[2];
-                if !prop_pairs.iter().any(|p| p.starts_with(&format!("{}:", prop_name))) {
+                if !prop_pairs
+                    .iter()
+                    .any(|p| p.starts_with(&format!("{}:", prop_name)))
+                {
                     prop_pairs.push(format!("{}: {}", prop_name, expression));
                 }
             }
@@ -329,7 +362,10 @@ impl EnhancedJsProcessor {
                 if let Some(full_match) = caps.get(0) {
                     let after_match = &props[full_match.end()..];
                     if !after_match.trim_start().starts_with('=')
-                       && !prop_pairs.iter().any(|p| p.starts_with(&format!("{}:", prop_name))) {
+                        && !prop_pairs
+                            .iter()
+                            .any(|p| p.starts_with(&format!("{}:", prop_name)))
+                    {
                         prop_pairs.push(format!("{}: true", prop_name));
                     }
                 }
@@ -353,7 +389,7 @@ impl EnhancedJsProcessor {
             content,
             super::common::ParsingConfig::typescript(),
             file_path,
-            "TypeScript parsing failed"
+            "TypeScript parsing failed",
         ) {
             Ok(result) => result,
             Err(_) => {
@@ -372,7 +408,11 @@ impl EnhancedJsProcessor {
     }
 
     /// Extract JavaScript code from TypeScript AST
-    fn extract_javascript_from_ast(&self, _program: &ast::Program, original_content: &str) -> String {
+    fn extract_javascript_from_ast(
+        &self,
+        _program: &ast::Program,
+        original_content: &str,
+    ) -> String {
         // For initial implementation, perform selective stripping based on AST validation
         // This ensures we only transform syntactically valid TypeScript
 
@@ -390,7 +430,9 @@ impl EnhancedJsProcessor {
         let mut prop_pairs = Vec::new();
 
         // Simple regex to match prop="value" or prop={expression}
-        if let Ok(re) = regex::Regex::new(r#"([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})"#) {
+        if let Ok(re) =
+            regex::Regex::new(r#"([a-zA-Z][a-zA-Z0-9]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})"#)
+        {
             for caps in re.captures_iter(props) {
                 let prop_name = &caps[1];
                 let value = if let Some(quoted) = caps.get(2).or(caps.get(3)) {
@@ -432,20 +474,26 @@ impl EnhancedJsProcessor {
             }
 
             // Skip single-line type aliases
-            if (trimmed.starts_with("type ") || trimmed.starts_with("export type ")) &&
-               trimmed.contains("=") && trimmed.ends_with(";") && !trimmed.contains("{") {
+            if (trimmed.starts_with("type ") || trimmed.starts_with("export type "))
+                && trimmed.contains("=")
+                && trimmed.ends_with(";")
+                && !trimmed.contains("{")
+            {
                 continue;
             }
 
             // Check if we're starting a multi-line TypeScript declaration
-            if trimmed.starts_with("interface ") ||
-               trimmed.starts_with("export interface ") ||
-               trimmed.starts_with("type ") && trimmed.contains("=") && trimmed.contains("{") ||
-               trimmed.starts_with("export type ") && trimmed.contains("=") && trimmed.contains("{") ||
-               trimmed.starts_with("enum ") ||
-               trimmed.starts_with("export enum ") ||
-               trimmed.starts_with("const enum ") ||
-               trimmed.starts_with("export const enum ") {
+            if trimmed.starts_with("interface ")
+                || trimmed.starts_with("export interface ")
+                || trimmed.starts_with("type ") && trimmed.contains("=") && trimmed.contains("{")
+                || trimmed.starts_with("export type ")
+                    && trimmed.contains("=")
+                    && trimmed.contains("{")
+                || trimmed.starts_with("enum ")
+                || trimmed.starts_with("export enum ")
+                || trimmed.starts_with("const enum ")
+                || trimmed.starts_with("export const enum ")
+            {
                 in_declaration = true;
                 if trimmed.contains('{') {
                     brace_depth = trimmed.matches('{').count() - trimmed.matches('}').count();
@@ -501,7 +549,9 @@ impl EnhancedJsProcessor {
         }
 
         // Fix template literal syntax: ${variant $disabled -> ${variant} ${disabled
-        if let Ok(re) = regex::Regex::new(r"\$\{([a-zA-Z_$][a-zA-Z0-9_$]*)\s+\$([a-zA-Z_$][a-zA-Z0-9_$]*)") {
+        if let Ok(re) =
+            regex::Regex::new(r"\$\{([a-zA-Z_$][a-zA-Z0-9_$]*)\s+\$([a-zA-Z_$][a-zA-Z0-9_$]*)")
+        {
             result = re.replace_all(&result, "${$1} ${$2").to_string();
         }
 
@@ -521,12 +571,16 @@ impl EnhancedJsProcessor {
         }
 
         // Clean variable declarations: let x: number = 5 -> let x = 5
-        if let Ok(re) = regex::Regex::new(r"(let|const|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[^=]+(\s*=)") {
+        if let Ok(re) =
+            regex::Regex::new(r"(let|const|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:\s*[^=]+(\s*=)")
+        {
             result = re.replace_all(&result, "$1 $2$3").to_string();
         }
 
         // Clean function return types: function foo(): Type -> function foo()
-        if let Ok(re) = regex::Regex::new(r"(function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\))\s*:\s*[^{]+(\s*\{)") {
+        if let Ok(re) = regex::Regex::new(
+            r"(function\s+[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\))\s*:\s*[^{]+(\s*\{)",
+        ) {
             result = re.replace_all(&result, "$1$2").to_string();
         }
 
@@ -577,48 +631,50 @@ impl EnhancedJsProcessor {
 
         // Clean regular typed parameters: (x: number, y: string) -> (x, y)
         if let Ok(re) = regex::Regex::new(r"\(([^)]*)\)") {
-            result = re.replace_all(&result, |caps: &regex::Captures| {
-                let params = &caps[1];
-                if params.trim().is_empty() {
-                    return "()".to_string();
-                }
+            result = re
+                .replace_all(&result, |caps: &regex::Captures| {
+                    let params = &caps[1];
+                    if params.trim().is_empty() {
+                        return "()".to_string();
+                    }
 
-                // Handle destructuring separately from regular params
-                if params.contains('{') && !params.contains(':') {
-                    // Already processed destructuring above
-                    return format!("({})", params);
-                }
+                    // Handle destructuring separately from regular params
+                    if params.contains('{') && !params.contains(':') {
+                        // Already processed destructuring above
+                        return format!("({})", params);
+                    }
 
-                let cleaned_params: Vec<String> = params
-                    .split(',')
-                    .map(|param| {
-                        let trimmed = param.trim();
+                    let cleaned_params: Vec<String> = params
+                        .split(',')
+                        .map(|param| {
+                            let trimmed = param.trim();
 
-                        // Handle destructuring: { text, onClick }: Props -> { text, onClick }
-                        if trimmed.starts_with('{') {
-                            if let Some(colon_pos) = trimmed.find(':') {
-                                let destructured = trimmed[..colon_pos].trim();
-                                return destructured.to_string();
+                            // Handle destructuring: { text, onClick }: Props -> { text, onClick }
+                            if trimmed.starts_with('{') {
+                                if let Some(colon_pos) = trimmed.find(':') {
+                                    let destructured = trimmed[..colon_pos].trim();
+                                    return destructured.to_string();
+                                }
+                                return trimmed.to_string();
                             }
-                            return trimmed.to_string();
-                        }
 
-                        // Extract parameter name before colon: "x: number" -> "x"
-                        if let Some(colon_pos) = trimmed.find(':') {
-                            let param_name = trimmed[..colon_pos].trim();
-                            // Handle optional parameters: "x?" -> "x"
-                            let clean_name = param_name.trim_end_matches('?');
-                            // Handle default values: "disabled = false" -> keep as is
-                            clean_name.to_string()
-                        } else {
-                            // Keep parameters that don't have types
-                            trimmed.trim_end_matches('?').to_string()
-                        }
-                    })
-                    .collect();
+                            // Extract parameter name before colon: "x: number" -> "x"
+                            if let Some(colon_pos) = trimmed.find(':') {
+                                let param_name = trimmed[..colon_pos].trim();
+                                // Handle optional parameters: "x?" -> "x"
+                                let clean_name = param_name.trim_end_matches('?');
+                                // Handle default values: "disabled = false" -> keep as is
+                                clean_name.to_string()
+                            } else {
+                                // Keep parameters that don't have types
+                                trimmed.trim_end_matches('?').to_string()
+                            }
+                        })
+                        .collect();
 
-                format!("({})", cleaned_params.join(", "))
-            }).to_string();
+                    format!("({})", cleaned_params.join(", "))
+                })
+                .to_string();
         }
 
         result
@@ -640,7 +696,10 @@ impl EnhancedJsProcessor {
         }
 
         // Handle export const with types: export const x: number = 5 -> export const x = 5
-        if result.contains("export const") || result.contains("export let") || result.contains("export var") {
+        if result.contains("export const")
+            || result.contains("export let")
+            || result.contains("export var")
+        {
             result = self.clean_typescript_annotations(&result);
         }
 
@@ -661,12 +720,13 @@ impl EnhancedJsProcessor {
             &module.content,
             super::common::ParsingConfig::javascript(),
             &module.path,
-            "JavaScript parsing warning"
+            "JavaScript parsing warning",
         );
         // Ignore parse errors, just log warnings (already done in parse_with_oxc)
 
         // Simple processing: remove import/export statements for bundling
-        let processed = module.content
+        let processed = module
+            .content
             .lines()
             .filter(|line| {
                 let trimmed = line.trim();
@@ -682,25 +742,27 @@ impl EnhancedJsProcessor {
 #[async_trait::async_trait]
 impl JsProcessor for EnhancedJsProcessor {
     async fn process_module(&self, module: &ModuleInfo) -> Result<String> {
-        let _timer = crate::utils::Timer::start(&format!("Enhanced processing {}",
-            module.path.file_name()
+        let _timer = crate::utils::Timer::start(&format!(
+            "Enhanced processing {}",
+            module
+                .path
+                .file_name()
                 .and_then(|s| s.to_str())
-                .unwrap_or("unknown")));
+                .unwrap_or("unknown")
+        ));
 
         // Check cache first for lightning-fast rebuilds (using unified cache interface)
         let path_str = module.path.to_string_lossy();
-        if let Some(cached) = super::common::get_cached_js(&self.cache, &path_str, &module.content, self.enable_cache) {
+        if let Some(cached) =
+            super::common::get_cached_js(&self.cache, &path_str, &module.content, self.enable_cache)
+        {
             Logger::debug("Cache hit for enhanced processing");
             return Ok(cached);
         }
 
         let result = match module.module_type {
-            ModuleType::TypeScript => {
-                self.process_typescript(module).await
-            }
-            ModuleType::JavaScript => {
-                self.process_javascript(module).await
-            }
+            ModuleType::TypeScript => self.process_typescript(module).await,
+            ModuleType::JavaScript => self.process_javascript(module).await,
             _ => Err(SokuError::build(format!(
                 "Unsupported module type for enhanced processor: {:?}",
                 module.module_type
@@ -709,7 +771,13 @@ impl JsProcessor for EnhancedJsProcessor {
 
         // Cache the result for future builds (using unified cache interface)
         if let Ok(ref processed) = result {
-            super::common::store_cached_js(&self.cache, &path_str, &module.content, processed.clone(), self.enable_cache);
+            super::common::store_cached_js(
+                &self.cache,
+                &path_str,
+                &module.content,
+                processed.clone(),
+                self.enable_cache,
+            );
         }
 
         result
@@ -726,14 +794,16 @@ impl JsProcessor for EnhancedJsProcessor {
         for module in modules {
             if self.supports_module_type(&module.module_type) {
                 Logger::processing_file(
-                    module.path.file_name()
+                    module
+                        .path
+                        .file_name()
                         .and_then(|s| s.to_str())
                         .unwrap_or("unknown"),
                     match module.module_type {
                         ModuleType::TypeScript => "Enhanced TS",
                         ModuleType::JavaScript => "Enhanced JS",
-                        _ => "Enhanced"
-                    }
+                        _ => "Enhanced",
+                    },
                 );
 
                 let processed = self.process_module(module).await?;
@@ -743,7 +813,7 @@ impl JsProcessor for EnhancedJsProcessor {
                     match module.module_type {
                         ModuleType::TypeScript => "TypeScript → JavaScript",
                         ModuleType::JavaScript => "JavaScript",
-                        _ => "Unknown"
+                        _ => "Unknown",
                     }
                 ));
                 bundle.push_str(&processed);
@@ -755,18 +825,29 @@ impl JsProcessor for EnhancedJsProcessor {
         Ok(bundle)
     }
 
-    async fn bundle_modules_with_tree_shaking(&self, modules: &[ModuleInfo], _tree_shaking_stats: Option<&TreeShakingStats>) -> Result<String> {
-        let _timer = crate::utils::Timer::start("Enhanced bundling with tree shaking and node_modules optimization");
+    async fn bundle_modules_with_tree_shaking(
+        &self,
+        modules: &[ModuleInfo],
+        _tree_shaking_stats: Option<&TreeShakingStats>,
+    ) -> Result<String> {
+        let _timer = crate::utils::Timer::start(
+            "Enhanced bundling with tree shaking and node_modules optimization",
+        );
 
         let mut bundle = String::new();
         bundle.push_str("// Soku Bundler - Enhanced Build with Node Modules Tree Shaking\n");
         bundle.push_str("(function() {\n'use strict';\n\n");
 
         // Separate node_modules from local modules for different processing
-        let (local_modules, node_modules): (Vec<_>, Vec<_>) = modules.iter()
+        let (local_modules, node_modules): (Vec<_>, Vec<_>) = modules
+            .iter()
             .partition(|module| !self.is_node_modules_path(&module.path));
 
-        Logger::debug(&format!("Processing {} local modules, {} node_modules", local_modules.len(), node_modules.len()));
+        Logger::debug(&format!(
+            "Processing {} local modules, {} node_modules",
+            local_modules.len(),
+            node_modules.len()
+        ));
 
         // Process local modules first
         for module in local_modules {
@@ -782,15 +863,20 @@ impl JsProcessor for EnhancedJsProcessor {
 
             for module in node_modules {
                 Logger::processing_file(
-                    module.path.file_name()
+                    module
+                        .path
+                        .file_name()
                         .and_then(|s| s.to_str())
                         .unwrap_or("unknown"),
-                    "tree shaking node_modules"
+                    "tree shaking node_modules",
                 );
 
                 let processed = self.optimize_node_module_content(&module.content, &module.path);
 
-                bundle.push_str(&format!("// Node Module: {}\n", self.extract_package_name(&module.path)));
+                bundle.push_str(&format!(
+                    "// Node Module: {}\n",
+                    self.extract_package_name(&module.path)
+                ));
                 bundle.push_str(&processed);
                 bundle.push_str("\n\n");
             }
@@ -801,14 +887,21 @@ impl JsProcessor for EnhancedJsProcessor {
         Ok(bundle)
     }
 
-    async fn bundle_modules_with_source_maps(&self, modules: &[ModuleInfo], config: &BuildConfig) -> Result<BundleOutput> {
+    async fn bundle_modules_with_source_maps(
+        &self,
+        modules: &[ModuleInfo],
+        config: &BuildConfig,
+    ) -> Result<BundleOutput> {
         // For now, use a simple implementation that delegates to regular bundling
         // TODO: Implement proper source maps for enhanced TypeScript processing
         if config.enable_source_maps {
             let code = self.bundle_modules(modules).await?;
             Ok(BundleOutput {
                 code: format!("{}\n//# sourceMappingURL=bundle.js.map", code),
-                source_map: Some(r#"{"version":3,"sources":["enhanced"],"names":[],"mappings":"AAAA"}"#.to_string()),
+                source_map: Some(
+                    r#"{"version":3,"sources":["enhanced"],"names":[],"mappings":"AAAA"}"#
+                        .to_string(),
+                ),
             })
         } else {
             let code = self.bundle_modules(modules).await?;
@@ -818,7 +911,6 @@ impl JsProcessor for EnhancedJsProcessor {
             })
         }
     }
-
 
     fn supports_module_type(&self, module_type: &ModuleType) -> bool {
         matches!(module_type, ModuleType::JavaScript | ModuleType::TypeScript)
@@ -877,7 +969,8 @@ function processUser(user: User): void {
 
 let count: number = 42;
 const items: Array<string> = ['a', 'b'];
-"#.to_string(),
+"#
+            .to_string(),
             module_type: ModuleType::TypeScript,
             dependencies: vec![],
             exports: vec![],
@@ -900,7 +993,8 @@ const items: Array<string> = ['a', 'b'];
 
         // Check that some type stripping occurred (spacing may vary)
         assert!(result.contains("let count") && result.contains("42")); // Should have ": number" removed
-        assert!(result.contains("const items") && result.contains("['a', 'b']")); // Should have "Array<string>" removed
+        assert!(result.contains("const items") && result.contains("['a', 'b']"));
+        // Should have "Array<string>" removed
     }
 
     #[tokio::test]
@@ -945,7 +1039,8 @@ interface Props {
 const Counter = ({ title, count }: Props) => {
     return <div><h1>{title}</h1><p>Count: {count}</p></div>;
 };
-"#.to_string(),
+"#
+            .to_string(),
             module_type: ModuleType::TypeScript,
             dependencies: vec![],
             exports: vec![],
@@ -993,7 +1088,8 @@ class AppComponent {
 class MyService {
     constructor() {}
 }
-"#.to_string(),
+"#
+            .to_string(),
             module_type: ModuleType::TypeScript,
             dependencies: vec![],
             exports: vec![],

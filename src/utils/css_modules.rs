@@ -2,10 +2,10 @@
 // Provides scoped CSS with unique class names to avoid global namespace pollution
 
 use crate::utils::Result;
+use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
-use regex::Regex;
-use serde::{Serialize, Deserialize};
 
 /// CSS Module transformation result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,7 +54,8 @@ impl CssModulesProcessor {
         // Extract and transform class names
         let class_names = self.extract_class_names(content);
         for class_name in class_names {
-            let scoped_name = format!("{}_{}_{}",
+            let scoped_name = format!(
+                "{}_{}_{}",
                 module_name,
                 class_name,
                 &hash[..6] // Use first 6 chars of hash
@@ -66,24 +67,24 @@ impl CssModulesProcessor {
             // Use word boundaries to avoid replacing partial matches
             let pattern = format!(r"\.{}\b", regex::escape(&class_name));
             let re = Regex::new(&pattern).unwrap();
-            transformed_css = re.replace_all(&transformed_css, format!(".{}", scoped_name)).to_string();
+            transformed_css = re
+                .replace_all(&transformed_css, format!(".{}", scoped_name))
+                .to_string();
         }
 
         // Extract and transform ID names
         let id_names = self.extract_id_names(content);
         for id_name in id_names {
-            let scoped_name = format!("{}_{}_{}",
-                module_name,
-                id_name,
-                &hash[..6]
-            );
+            let scoped_name = format!("{}_{}_{}", module_name, id_name, &hash[..6]);
 
             exports.insert(id_name.clone(), scoped_name.clone());
 
             // Replace all occurrences of the ID name
             let pattern = format!(r"#{}\b", regex::escape(&id_name));
             let re = Regex::new(&pattern).unwrap();
-            transformed_css = re.replace_all(&transformed_css, format!("#{}", scoped_name)).to_string();
+            transformed_css = re
+                .replace_all(&transformed_css, format!("#{}", scoped_name))
+                .to_string();
         }
 
         Ok(CssModuleResult {
@@ -130,8 +131,7 @@ impl CssModulesProcessor {
             .and_then(|s| s.to_str())
             .map(|s| {
                 // Remove .module suffix if present
-                s.trim_end_matches(".module")
-                    .replace(['-', '.'], "_")
+                s.trim_end_matches(".module").replace(['-', '.'], "_")
             })
             .unwrap_or_else(|| "Module".to_string())
     }
@@ -145,7 +145,6 @@ impl CssModulesProcessor {
         content.hash(&mut hasher);
         format!("{:x}", hasher.finish())
     }
-
 }
 
 impl Default for CssModulesProcessor {
@@ -154,7 +153,6 @@ impl Default for CssModulesProcessor {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -162,10 +160,18 @@ mod tests {
 
     #[test]
     fn test_is_css_module() {
-        assert!(CssModulesProcessor::is_css_module(&PathBuf::from("Button.module.css")));
-        assert!(CssModulesProcessor::is_css_module(&PathBuf::from("components/Card.module.css")));
-        assert!(!CssModulesProcessor::is_css_module(&PathBuf::from("styles.css")));
-        assert!(!CssModulesProcessor::is_css_module(&PathBuf::from("global.css")));
+        assert!(CssModulesProcessor::is_css_module(&PathBuf::from(
+            "Button.module.css"
+        )));
+        assert!(CssModulesProcessor::is_css_module(&PathBuf::from(
+            "components/Card.module.css"
+        )));
+        assert!(!CssModulesProcessor::is_css_module(&PathBuf::from(
+            "styles.css"
+        )));
+        assert!(!CssModulesProcessor::is_css_module(&PathBuf::from(
+            "global.css"
+        )));
     }
 
     #[test]
@@ -228,5 +234,4 @@ mod tests {
         assert_eq!(result.css.matches("Button_button_").count(), 3);
         assert_eq!(result.exports.len(), 1);
     }
-
 }

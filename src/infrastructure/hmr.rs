@@ -1,14 +1,14 @@
-use crate::utils::{Result, SokuError};
 use crate::infrastructure::HmrHookManager;
+use crate::utils::{Result, SokuError};
+use dashmap::DashMap;
+use futures::{SinkExt, StreamExt};
+use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
-use futures::{SinkExt, StreamExt};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use dashmap::DashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HmrUpdate {
@@ -69,7 +69,8 @@ impl SokuHmrService {
     /// Start HMR server with WebSocket support
     pub async fn start_server(&self, port: u16) -> Result<()> {
         let addr = format!("127.0.0.1:{}", port);
-        let listener = tokio::net::TcpListener::bind(&addr).await
+        let listener = tokio::net::TcpListener::bind(&addr)
+            .await
             .map_err(|e| SokuError::build(format!("HMR server bind failed: {}", e)))?;
 
         tracing::info!("🔥 HMR server started on ws://{}", addr);
@@ -132,7 +133,8 @@ impl SokuHmrService {
         clients: Arc<DashMap<String, HmrClient>>,
         hook_manager: Arc<tokio::sync::Mutex<HmrHookManager>>,
     ) -> Result<()> {
-        let ws_stream = accept_async(stream).await
+        let ws_stream = accept_async(stream)
+            .await
             .map_err(|e| SokuError::build(format!("WebSocket handshake failed: {}", e)))?;
 
         let (mut ws_sender, mut ws_receiver) = ws_stream.split();
@@ -151,7 +153,11 @@ impl SokuHmrService {
         tracing::info!("🔌 HMR client connected: {}", client_id);
 
         // 🪝 HMR HOOK: Client connect
-        let _ = hook_manager.lock().await.trigger_client_connect(&client_id).await;
+        let _ = hook_manager
+            .lock()
+            .await
+            .trigger_client_connect(&client_id)
+            .await;
 
         // Send initial connection message
         let welcome = HmrUpdate {
@@ -198,7 +204,11 @@ impl SokuHmrService {
         tracing::info!("🔌 HMR client disconnected: {}", client_id);
 
         // 🪝 HMR HOOK: Client disconnect
-        let _ = hook_manager.lock().await.trigger_client_disconnect(&client_id).await;
+        let _ = hook_manager
+            .lock()
+            .await
+            .trigger_client_disconnect(&client_id)
+            .await;
 
         Ok(())
     }
@@ -218,10 +228,12 @@ impl SokuHmrService {
                 }
             },
             Config::default(),
-        ).map_err(|e| SokuError::build(format!("File watcher setup failed: {}", e)))?;
+        )
+        .map_err(|e| SokuError::build(format!("File watcher setup failed: {}", e)))?;
 
         // Watch the root directory
-        watcher.watch(&root_path, RecursiveMode::Recursive)
+        watcher
+            .watch(&root_path, RecursiveMode::Recursive)
             .map_err(|e| SokuError::build(format!("Watch setup failed: {}", e)))?;
 
         tracing::info!("👁️  File watcher started for: {}", root_path.display());
@@ -257,9 +269,7 @@ impl SokuHmrService {
                 continue;
             }
 
-            let relative_path = path.strip_prefix(root_path)
-                .unwrap_or(&path)
-                .to_path_buf();
+            let relative_path = path.strip_prefix(root_path).unwrap_or(&path).to_path_buf();
 
             let update_kind = match event.kind {
                 EventKind::Create(_) => HmrUpdateKind::FileAdded,
@@ -299,11 +309,7 @@ impl SokuHmrService {
             if let Err(e) = update_sender.send(update.clone()) {
                 tracing::warn!("Failed to broadcast HMR update: {}", e);
             } else {
-                tracing::info!(
-                    "🔥 HMR: {:?} - {}",
-                    update.kind,
-                    update.path.display()
-                );
+                tracing::info!("🔥 HMR: {:?} - {}", update.kind, update.path.display());
             }
         }
 
@@ -312,7 +318,10 @@ impl SokuHmrService {
 
     fn is_source_file(path: &Path) -> bool {
         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-            matches!(ext, "js" | "ts" | "tsx" | "jsx" | "css" | "scss" | "less" | "html" | "vue")
+            matches!(
+                ext,
+                "js" | "ts" | "tsx" | "jsx" | "css" | "scss" | "less" | "html" | "vue"
+            )
         } else {
             false
         }
@@ -333,9 +342,7 @@ impl SokuHmrService {
             false
         }
     }
-
 }
-
 
 #[cfg(test)]
 mod tests {

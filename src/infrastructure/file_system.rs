@@ -9,18 +9,16 @@ pub struct TokioFileSystemService;
 impl FileSystemService for TokioFileSystemService {
     async fn scan_directory(&self, path: &Path) -> Result<ProjectStructure> {
         let mut structure = ProjectStructure::default();
-        let mut entries = fs::read_dir(path).await
-            .map_err(SokuError::Io)?;
+        let mut entries = fs::read_dir(path).await.map_err(SokuError::Io)?;
 
-        while let Some(entry) = entries.next_entry().await
-            .map_err(SokuError::Io)? {
-
+        while let Some(entry) = entries.next_entry().await.map_err(SokuError::Io)? {
             let path = entry.path();
             if !path.is_file() {
                 continue;
             }
 
-            let extension = path.extension()
+            let extension = path
+                .extension()
                 .and_then(|s| s.to_str())
                 .unwrap_or("")
                 .to_lowercase();
@@ -45,8 +43,7 @@ impl FileSystemService for TokioFileSystemService {
     }
 
     async fn read_file(&self, path: &Path) -> Result<String> {
-        fs::read_to_string(path).await
-            .map_err(SokuError::Io)
+        fs::read_to_string(path).await.map_err(SokuError::Io)
     }
 
     async fn write_file(&self, path: &Path, content: &str) -> Result<()> {
@@ -55,15 +52,12 @@ impl FileSystemService for TokioFileSystemService {
             self.create_directory(parent).await?;
         }
 
-        fs::write(path, content).await
-            .map_err(SokuError::Io)
+        fs::write(path, content).await.map_err(SokuError::Io)
     }
 
     async fn create_directory(&self, path: &Path) -> Result<()> {
-        fs::create_dir_all(path).await
-            .map_err(SokuError::Io)
+        fs::create_dir_all(path).await.map_err(SokuError::Io)
     }
-
 }
 
 #[cfg(test)]
@@ -99,9 +93,18 @@ mod tests {
         let css_file = temp_dir.path().join("test.css");
         let html_file = temp_dir.path().join("test.html");
 
-        fs_service.write_file(&js_file, "console.log('test');").await.unwrap();
-        fs_service.write_file(&css_file, "body { color: red; }").await.unwrap();
-        fs_service.write_file(&html_file, "<html></html>").await.unwrap();
+        fs_service
+            .write_file(&js_file, "console.log('test');")
+            .await
+            .unwrap();
+        fs_service
+            .write_file(&css_file, "body { color: red; }")
+            .await
+            .unwrap();
+        fs_service
+            .write_file(&html_file, "<html></html>")
+            .await
+            .unwrap();
 
         // Scan directory
         let structure = fs_service.scan_directory(temp_dir.path()).await.unwrap();

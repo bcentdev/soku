@@ -1,4 +1,4 @@
-use crate::utils::{Result, SokuError, Logger};
+use crate::utils::{Logger, Result, SokuError};
 use std::path::Path;
 
 /// Asset processor for handling non-JS assets (JSON, images, etc.)
@@ -12,14 +12,14 @@ impl AssetProcessor {
     /// Process JSON file and convert to ES module
     pub fn process_json(&self, content: &str, file_path: &Path) -> Result<String> {
         // Validate JSON
-        let _: serde_json::Value = serde_json::from_str(content)
-            .map_err(|e| SokuError::build(format!(
-                "Invalid JSON in {}: {}",
-                file_path.display(),
-                e
-            )))?;
+        let _: serde_json::Value = serde_json::from_str(content).map_err(|e| {
+            SokuError::build(format!("Invalid JSON in {}: {}", file_path.display(), e))
+        })?;
 
-        Logger::debug(&format!("📦 Processing JSON asset: {}", file_path.display()));
+        Logger::debug(&format!(
+            "📦 Processing JSON asset: {}",
+            file_path.display()
+        ));
 
         // Convert JSON to ES module
         // We export the JSON as a default export
@@ -105,7 +105,9 @@ mod tests {
     #[test]
     fn test_is_asset_file() {
         assert!(AssetProcessor::is_asset_file(&PathBuf::from("config.json")));
-        assert!(AssetProcessor::is_asset_file(&PathBuf::from("data/config.json")));
+        assert!(AssetProcessor::is_asset_file(&PathBuf::from(
+            "data/config.json"
+        )));
         assert!(!AssetProcessor::is_asset_file(&PathBuf::from("main.js")));
         assert!(!AssetProcessor::is_asset_file(&PathBuf::from("style.css")));
     }

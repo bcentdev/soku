@@ -2,7 +2,7 @@
 #![allow(dead_code)] // Public API - used via examples and external integrations
 
 use crate::core::models::ModuleInfo;
-use crate::utils::{Result, SokuError, Plugin};
+use crate::utils::{Plugin, Result, SokuError};
 use async_trait::async_trait;
 use regex::Regex;
 use std::sync::Arc;
@@ -14,7 +14,10 @@ type TransformerFn = Arc<dyn Fn(&str) -> Result<String> + Send + Sync>;
 #[derive(Clone)]
 pub enum TransformerType {
     /// Simple regex-based replacement
-    Regex { pattern: String, replacement: String },
+    Regex {
+        pattern: String,
+        replacement: String,
+    },
     /// Custom function transformer
     Function(TransformerFn),
     /// Conditional transformer with file pattern matching
@@ -27,21 +30,23 @@ pub enum TransformerType {
 impl std::fmt::Debug for TransformerType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TransformerType::Regex { pattern, replacement } => {
-                f.debug_struct("Regex")
-                    .field("pattern", pattern)
-                    .field("replacement", replacement)
-                    .finish()
-            }
-            TransformerType::Function(_) => {
-                f.debug_tuple("Function").field(&"<closure>").finish()
-            }
-            TransformerType::Conditional { file_pattern, transformer } => {
-                f.debug_struct("Conditional")
-                    .field("file_pattern", file_pattern)
-                    .field("transformer", transformer)
-                    .finish()
-            }
+            TransformerType::Regex {
+                pattern,
+                replacement,
+            } => f
+                .debug_struct("Regex")
+                .field("pattern", pattern)
+                .field("replacement", replacement)
+                .finish(),
+            TransformerType::Function(_) => f.debug_tuple("Function").field(&"<closure>").finish(),
+            TransformerType::Conditional {
+                file_pattern,
+                transformer,
+            } => f
+                .debug_struct("Conditional")
+                .field("file_pattern", file_pattern)
+                .field("transformer", transformer)
+                .finish(),
         }
     }
 }
@@ -56,7 +61,11 @@ pub struct CustomTransformer {
 
 impl CustomTransformer {
     /// Create a new regex-based transformer
-    pub fn regex(name: impl Into<String>, pattern: impl Into<String>, replacement: impl Into<String>) -> Self {
+    pub fn regex(
+        name: impl Into<String>,
+        pattern: impl Into<String>,
+        replacement: impl Into<String>,
+    ) -> Self {
         Self {
             name: name.into(),
             transformer_type: TransformerType::Regex {
@@ -80,7 +89,11 @@ impl CustomTransformer {
     }
 
     /// Create a conditional transformer (only applies to matching files)
-    pub fn conditional(name: impl Into<String>, file_pattern: impl Into<String>, transformer_type: TransformerType) -> Self {
+    pub fn conditional(
+        name: impl Into<String>,
+        file_pattern: impl Into<String>,
+        transformer_type: TransformerType,
+    ) -> Self {
         Self {
             name: name.into(),
             transformer_type: TransformerType::Conditional {
@@ -104,18 +117,24 @@ impl CustomTransformer {
         }
 
         match &self.transformer_type {
-            TransformerType::Regex { pattern, replacement } => {
-                let re = Regex::new(pattern)
-                    .map_err(|e| SokuError::Build {
-                        message: format!("Invalid regex pattern in transformer '{}': {}", self.name, e),
-                        context: None,
-                    })?;
+            TransformerType::Regex {
+                pattern,
+                replacement,
+            } => {
+                let re = Regex::new(pattern).map_err(|e| SokuError::Build {
+                    message: format!(
+                        "Invalid regex pattern in transformer '{}': {}",
+                        self.name, e
+                    ),
+                    context: None,
+                })?;
                 Ok(re.replace_all(code, replacement.as_str()).to_string())
             }
-            TransformerType::Function(func) => {
-                func(code)
-            }
-            TransformerType::Conditional { file_pattern, transformer } => {
+            TransformerType::Function(func) => func(code),
+            TransformerType::Conditional {
+                file_pattern,
+                transformer,
+            } => {
                 if let Some(path) = file_path {
                     // Simple pattern matching (could be enhanced with glob patterns)
                     if path.contains(file_pattern) {
@@ -149,8 +168,14 @@ impl TransformerBuilder {
     }
 
     /// Add a regex-based transformer
-    pub fn add_regex(mut self, name: impl Into<String>, pattern: impl Into<String>, replacement: impl Into<String>) -> Self {
-        self.transformers.push(CustomTransformer::regex(name, pattern, replacement));
+    pub fn add_regex(
+        mut self,
+        name: impl Into<String>,
+        pattern: impl Into<String>,
+        replacement: impl Into<String>,
+    ) -> Self {
+        self.transformers
+            .push(CustomTransformer::regex(name, pattern, replacement));
         self
     }
 
@@ -159,13 +184,23 @@ impl TransformerBuilder {
     where
         F: Fn(&str) -> Result<String> + Send + Sync + 'static,
     {
-        self.transformers.push(CustomTransformer::function(name, func));
+        self.transformers
+            .push(CustomTransformer::function(name, func));
         self
     }
 
     /// Add a conditional transformer
-    pub fn add_conditional(mut self, name: impl Into<String>, file_pattern: impl Into<String>, transformer_type: TransformerType) -> Self {
-        self.transformers.push(CustomTransformer::conditional(name, file_pattern, transformer_type));
+    pub fn add_conditional(
+        mut self,
+        name: impl Into<String>,
+        file_pattern: impl Into<String>,
+        transformer_type: TransformerType,
+    ) -> Self {
+        self.transformers.push(CustomTransformer::conditional(
+            name,
+            file_pattern,
+            transformer_type,
+        ));
         self
     }
 
@@ -274,7 +309,7 @@ impl BuiltInTransformers {
         CustomTransformer::regex(
             "remove-console-logs",
             r"console\.(log|debug|info|warn|error)\([^)]*\);?\s*",
-            ""
+            "",
         )
     }
 
@@ -282,9 +317,7 @@ impl BuiltInTransformers {
     pub fn remove_comments() -> CustomTransformer {
         CustomTransformer::function("remove-comments", |code| {
             // Simple comment removal (not AST-based, may have edge cases)
-            let code = Regex::new(r"//.*$")
-                .unwrap()
-                .replace_all(code, "");
+            let code = Regex::new(r"//.*$").unwrap().replace_all(code, "");
             let code = Regex::new(r"/\*[\s\S]*?\*/")
                 .unwrap()
                 .replace_all(&code, "");
@@ -294,21 +327,16 @@ impl BuiltInTransformers {
 
     /// Remove debugger statements
     pub fn remove_debugger() -> CustomTransformer {
-        CustomTransformer::regex(
-            "remove-debugger",
-            r"debugger;?\s*",
-            ""
-        )
+        CustomTransformer::regex("remove-debugger", r"debugger;?\s*", "")
     }
 
     /// Replace string literals (case-sensitive)
     pub fn replace_string(from: impl Into<String>, to: impl Into<String>) -> CustomTransformer {
         let from = from.into();
         let to = to.into();
-        CustomTransformer::function(
-            format!("replace-string-{}", from),
-            move |code| Ok(code.replace(&from, &to))
-        )
+        CustomTransformer::function(format!("replace-string-{}", from), move |code| {
+            Ok(code.replace(&from, &to))
+        })
     }
 
     /// Transform arrow functions to regular functions (simple cases)
@@ -316,7 +344,7 @@ impl BuiltInTransformers {
         CustomTransformer::regex(
             "arrow-to-function",
             r"const\s+(\w+)\s*=\s*\(([^)]*)\)\s*=>\s*\{",
-            "function $1($2) {"
+            "function $1($2) {",
         )
     }
 
@@ -366,9 +394,7 @@ mod tests {
 
     #[test]
     fn test_function_transformer() {
-        let transformer = CustomTransformer::function("uppercase", |code| {
-            Ok(code.to_uppercase())
-        });
+        let transformer = CustomTransformer::function("uppercase", |code| Ok(code.to_uppercase()));
         let result = transformer.transform("hello", None).unwrap();
         assert_eq!(result, "HELLO");
     }
@@ -392,8 +418,7 @@ mod tests {
 
     #[test]
     fn test_disabled_transformer() {
-        let transformer = CustomTransformer::regex("test", "foo", "bar")
-            .with_enabled(false);
+        let transformer = CustomTransformer::regex("test", "foo", "bar").with_enabled(false);
         let result = transformer.transform("const x = foo;", None).unwrap();
         assert_eq!(result, "const x = foo;"); // Unchanged
     }
@@ -453,7 +478,9 @@ mod tests {
         assert!(result.starts_with("'use strict';"));
 
         // Should not duplicate
-        let result = transformer.transform("'use strict';\nconst x = 1;", None).unwrap();
+        let result = transformer
+            .transform("'use strict';\nconst x = 1;", None)
+            .unwrap();
         assert_eq!(result.matches("'use strict'").count(), 1);
     }
 
@@ -474,7 +501,9 @@ mod tests {
         let transformer = BuiltInTransformers::test_only(inner);
 
         // Should transform test files
-        let result = transformer.transform("production", Some("app.test.js")).unwrap();
+        let result = transformer
+            .transform("production", Some("app.test.js"))
+            .unwrap();
         assert_eq!(result, "test");
 
         // Should not transform regular files
@@ -519,7 +548,10 @@ mod tests {
             exports: Vec::new(),
         };
 
-        let result = plugin.transform_code(&module, "old code".to_string()).await.unwrap();
+        let result = plugin
+            .transform_code(&module, "old code".to_string())
+            .await
+            .unwrap();
         assert_eq!(result, "new code");
     }
 }

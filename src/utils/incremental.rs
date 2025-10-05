@@ -3,10 +3,10 @@
 // Incremental build system for Soku Bundler
 // Tracks file changes and dependencies for smart rebuilds
 
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use serde::{Serialize, Deserialize};
 
 /// File metadata for change detection
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,10 +94,7 @@ impl DependencyGraph {
             .insert(to.clone());
 
         // Add to reverse map
-        self.dependents
-            .entry(to)
-            .or_default()
-            .insert(from);
+        self.dependents.entry(to).or_default().insert(from);
     }
 
     /// Get all dependencies of a file
@@ -238,8 +235,7 @@ impl IncrementalBuildState {
         }
 
         // Serialize state to JSON
-        let json = serde_json::to_string_pretty(self)
-            .map_err(std::io::Error::other)?;
+        let json = serde_json::to_string_pretty(self).map_err(std::io::Error::other)?;
 
         // Write to file
         std::fs::write(state_path, json)?;
@@ -258,8 +254,7 @@ impl IncrementalBuildState {
 
         // Read and deserialize
         let json = std::fs::read_to_string(state_path)?;
-        let state: Self = serde_json::from_str(&json)
-            .map_err(std::io::Error::other)?;
+        let state: Self = serde_json::from_str(&json).map_err(std::io::Error::other)?;
 
         Ok(state)
     }

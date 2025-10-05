@@ -1,14 +1,14 @@
 // Watch mode for Soku Bundler
 // Monitors file changes and triggers automatic rebuilds
 
-use crate::core::models::BuildConfig;
 use crate::core::interfaces::BuildService;
-use crate::utils::{Result, Logger, SokuError};
-use notify::{Watcher, RecursiveMode, Event, EventKind, RecommendedWatcher};
+use crate::core::models::BuildConfig;
+use crate::utils::{Logger, Result, SokuError};
+use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver};
 use std::time::{Duration, Instant};
-use std::collections::HashSet;
 
 /// Configuration for watch mode
 #[derive(Debug, Clone)]
@@ -52,10 +52,15 @@ impl SokuWatcher {
     /// Start watching for file changes
     pub async fn watch<B: BuildService>(&self, build_service: &mut B) -> Result<()> {
         Logger::info("👀 Watch mode started - monitoring for changes...");
-        Logger::info(&format!("   Watching: {}", self.config.watch_paths.iter()
-            .map(|p| p.display().to_string())
-            .collect::<Vec<_>>()
-            .join(", ")));
+        Logger::info(&format!(
+            "   Watching: {}",
+            self.config
+                .watch_paths
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
         Logger::info("   Press Ctrl+C to stop");
 
         // Create channel for file system events
@@ -69,7 +74,8 @@ impl SokuWatcher {
                 }
             },
             notify::Config::default(),
-        ).map_err(|e| SokuError::Build {
+        )
+        .map_err(|e| SokuError::Build {
             message: format!("Failed to create watcher: {}", e),
             context: None,
         })?;
@@ -77,7 +83,8 @@ impl SokuWatcher {
         // Watch configured paths
         for path in &self.config.watch_paths {
             if path.exists() {
-                watcher.watch(path, RecursiveMode::Recursive)
+                watcher
+                    .watch(path, RecursiveMode::Recursive)
                     .map_err(|e| SokuError::Build {
                         message: format!("Failed to watch {}: {}", path.display(), e),
                         context: None,
@@ -142,8 +149,7 @@ impl SokuWatcher {
                 }
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
                     // Check if enough time has passed since last change
-                    if !changed_files.is_empty()
-                        && last_change_time.elapsed() >= debounce_duration
+                    if !changed_files.is_empty() && last_change_time.elapsed() >= debounce_duration
                     {
                         self.trigger_rebuild(&changed_files, build_service).await;
                         changed_files.clear();
@@ -170,7 +176,10 @@ impl SokuWatcher {
             print!("\x1B[2J\x1B[1;1H");
         }
 
-        Logger::info(&format!("\n🔄 Rebuilding... ({} files changed)", changed_files.len()));
+        Logger::info(&format!(
+            "\n🔄 Rebuilding... ({} files changed)",
+            changed_files.len()
+        ));
 
         if self.config.verbose {
             for path in changed_files {

@@ -3,11 +3,11 @@
 // This example shows how to use HMR hooks to customize
 // Hot Module Replacement behavior.
 
-use soku::infrastructure::{SokuHmrService, HmrHook, HmrHookContext, BuiltInHmrHooks};
-use soku::utils::Result;
 use async_trait::async_trait;
-use std::sync::Arc;
+use soku::infrastructure::{BuiltInHmrHooks, HmrHook, HmrHookContext, SokuHmrService};
+use soku::utils::Result;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 /// Custom HMR hook that logs detailed update information
 struct DetailedLoggingHook {
@@ -29,7 +29,8 @@ impl HmrHook for DetailedLoggingHook {
     }
 
     async fn before_update(&self, context: &HmrHookContext) -> Result<()> {
-        println!("🔥 [{}] Preparing to update: {}",
+        println!(
+            "🔥 [{}] Preparing to update: {}",
             self.name,
             context.file_path.display()
         );
@@ -40,9 +41,9 @@ impl HmrHook for DetailedLoggingHook {
     }
 
     async fn after_update(&self, context: &HmrHookContext) -> Result<()> {
-        println!("✅ [{}] Update sent to {} clients",
-            self.name,
-            context.client_count
+        println!(
+            "✅ [{}] Update sent to {} clients",
+            self.name, context.client_count
         );
         Ok(())
     }
@@ -58,7 +59,8 @@ impl HmrHook for DetailedLoggingHook {
     }
 
     async fn on_update_error(&self, context: &HmrHookContext, error: &str) -> Result<()> {
-        eprintln!("❌ [{}] Update failed for {}: {}",
+        eprintln!(
+            "❌ [{}] Update failed for {}: {}",
             self.name,
             context.file_path.display(),
             error
@@ -77,7 +79,9 @@ async fn main() -> Result<()> {
         .with_hook(Arc::new(BuiltInHmrHooks::logger().with_verbose(true)))
         .await
         // Full reload for config files
-        .with_hook(Arc::new(BuiltInHmrHooks::full_reload_on_pattern("config".to_string())))
+        .with_hook(Arc::new(BuiltInHmrHooks::full_reload_on_pattern(
+            "config".to_string(),
+        )))
         .await
         // Throttle updates (min 100ms between updates)
         .with_hook(Arc::new(BuiltInHmrHooks::throttle(100)))
@@ -94,7 +98,7 @@ async fn main() -> Result<()> {
             |content| {
                 let timestamp = chrono::Utc::now().to_rfc3339();
                 Ok(format!("// Updated at: {}\n{}", timestamp, content))
-            }
+            },
         )))
         .await;
 

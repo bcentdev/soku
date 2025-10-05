@@ -1,5 +1,5 @@
 use crate::core::interfaces::CssProcessor;
-use crate::utils::{Result, SokuError, Logger, SokuCache};
+use crate::utils::{Logger, Result, SokuCache, SokuError};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -130,8 +130,7 @@ impl CssProcessor for ScssProcessor {
             Logger::debug(&format!("Bundling file: {}", file_path.display()));
 
             // Read file content
-            let content = tokio::fs::read_to_string(file_path)
-                .await?;
+            let content = tokio::fs::read_to_string(file_path).await?;
 
             // Check if it's SCSS/SASS or regular CSS
             let processed = if Self::is_scss_file(file_path) {
@@ -146,10 +145,7 @@ impl CssProcessor for ScssProcessor {
             };
 
             // Add to bundle with comment
-            bundle.push_str(&format!(
-                "\n/* File: {} */\n",
-                file_path.display()
-            ));
+            bundle.push_str(&format!("\n/* File: {} */\n", file_path.display()));
             bundle.push_str(&processed);
             bundle.push('\n');
         }

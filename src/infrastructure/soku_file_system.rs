@@ -1,10 +1,9 @@
-
 use crate::core::{interfaces::FileSystemService, models::*};
-use crate::utils::{Result, SokuError, MmapFileReader, IncrementalCache, ContentHash};
 use crate::utils::parallel_files;
+use crate::utils::{ContentHash, IncrementalCache, MmapFileReader, Result, SokuError};
+use dashmap::DashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use dashmap::DashMap;
 
 /// Soku high-performance file system service with memory mapping and caching
 #[allow(dead_code)]
@@ -38,10 +37,9 @@ impl SokuFileSystemService {
         self.collect_files_recursive(path, &mut all_files).await?;
 
         // Process files in parallel using memory mapping
-        let results: Vec<_> = parallel_files::process_files_parallel(
-            &all_files,
-            |reader| self.classify_file_content(reader)
-        );
+        let results: Vec<_> = parallel_files::process_files_parallel(&all_files, |reader| {
+            self.classify_file_content(reader)
+        });
 
         // Aggregate results
         let mut structure = ProjectStructure::default();
@@ -53,27 +51,29 @@ impl SokuFileSystemService {
             }
 
             match result {
-                Ok(file_type) => {
-                    match file_type {
-                        FileType::JavaScript | FileType::TypeScript => {
-                            structure.js_modules.push(file_path.clone());
-                        }
-                        FileType::Css => {
-                            structure.css_files.push(file_path.clone());
-                        }
-                        FileType::Html => {
-                            structure.html_files.push(file_path.clone());
-                        }
-                        FileType::Wasm => {
-                            structure.wasm_files.push(file_path.clone());
-                        }
-                        FileType::Other => {
-                            structure.other_files.push(file_path.clone());
-                        }
+                Ok(file_type) => match file_type {
+                    FileType::JavaScript | FileType::TypeScript => {
+                        structure.js_modules.push(file_path.clone());
                     }
-                }
+                    FileType::Css => {
+                        structure.css_files.push(file_path.clone());
+                    }
+                    FileType::Html => {
+                        structure.html_files.push(file_path.clone());
+                    }
+                    FileType::Wasm => {
+                        structure.wasm_files.push(file_path.clone());
+                    }
+                    FileType::Other => {
+                        structure.other_files.push(file_path.clone());
+                    }
+                },
                 Err(e) => {
-                    crate::utils::Logger::warn(&format!("Failed to process file {}: {}", file_path.display(), e));
+                    crate::utils::Logger::warn(&format!(
+                        "Failed to process file {}: {}",
+                        file_path.display(),
+                        e
+                    ));
                 }
             }
         }
@@ -89,10 +89,8 @@ impl SokuFileSystemService {
         let reader = MmapFileReader::new(path)?;
         let content_hash = reader.compute_hash();
 
-        self.incremental_cache.get_or_compute(
-            &path_str,
-            content_hash,
-            || {
+        self.incremental_cache
+            .get_or_compute(&path_str, content_hash, || {
                 let content = reader.as_str()?.to_string();
 
                 // Update metadata
@@ -104,8 +102,7 @@ impl SokuFileSystemService {
                 self.file_metadata.insert(path.to_path_buf(), metadata);
 
                 Ok(content)
-            }
-        )
+            })
     }
 
     /// Read multiple files in parallel with memory mapping
@@ -148,12 +145,9 @@ impl SokuFileSystemService {
     }
 
     async fn collect_files_recursive(&self, dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
-        let mut entries = tokio::fs::read_dir(dir).await
-            .map_err(SokuError::Io)?;
+        let mut entries = tokio::fs::read_dir(dir).await.map_err(SokuError::Io)?;
 
-        while let Some(entry) = entries.next_entry().await
-            .map_err(SokuError::Io)? {
-
+        while let Some(entry) = entries.next_entry().await.map_err(SokuError::Io)? {
             let path = entry.path();
             if path.is_file() {
                 files.push(path);
@@ -167,7 +161,10 @@ impl SokuFileSystemService {
 
     fn should_skip_directory(&self, path: &Path) -> bool {
         if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            matches!(name, "node_modules" | ".git" | "target" | "dist" | ".next" | "build" | ".soku-cache")
+            matches!(
+                name,
+                "node_modules" | ".git" | "target" | "dist" | ".next" | "build" | ".soku-cache"
+            )
         } else {
             false
         }
@@ -177,27 +174,31 @@ impl SokuFileSystemService {
         let content = reader.as_str()?;
 
         // Use SIMD-optimized string operations for classification
-        if crate::utils::simd_strings::fast_string_contains(content, "interface ") ||
-           crate::utils::simd_strings::fast_string_contains(content, "type ") ||
-           crate::utils::simd_strings::fast_string_contains(content, ": string") ||
-           crate::utils::simd_strings::fast_string_contains(content, ": number") {
+        if crate::utils::simd_strings::fast_string_contains(content, "interface ")
+            || crate::utils::simd_strings::fast_string_contains(content, "type ")
+            || crate::utils::simd_strings::fast_string_contains(content, ": string")
+            || crate::utils::simd_strings::fast_string_contains(content, ": number")
+        {
             return Ok(FileType::TypeScript);
         }
 
-        if crate::utils::simd_strings::fast_string_contains(content, "function ") ||
-           crate::utils::simd_strings::fast_string_contains(content, "const ") ||
-           crate::utils::simd_strings::fast_string_contains(content, "import ") {
+        if crate::utils::simd_strings::fast_string_contains(content, "function ")
+            || crate::utils::simd_strings::fast_string_contains(content, "const ")
+            || crate::utils::simd_strings::fast_string_contains(content, "import ")
+        {
             return Ok(FileType::JavaScript);
         }
 
-        if crate::utils::simd_strings::fast_string_contains(content, "@media") ||
-           crate::utils::simd_strings::fast_string_contains(content, ".class") ||
-           crate::utils::simd_strings::fast_string_contains(content, "color:") {
+        if crate::utils::simd_strings::fast_string_contains(content, "@media")
+            || crate::utils::simd_strings::fast_string_contains(content, ".class")
+            || crate::utils::simd_strings::fast_string_contains(content, "color:")
+        {
             return Ok(FileType::Css);
         }
 
-        if crate::utils::simd_strings::fast_string_contains(content, "<html") ||
-           crate::utils::simd_strings::fast_string_contains(content, "<!DOCTYPE") {
+        if crate::utils::simd_strings::fast_string_contains(content, "<html")
+            || crate::utils::simd_strings::fast_string_contains(content, "<!DOCTYPE")
+        {
             return Ok(FileType::Html);
         }
 
@@ -246,7 +247,8 @@ impl FileSystemService for SokuFileSystemService {
             self.create_directory(parent).await?;
         }
 
-        tokio::fs::write(path, content).await
+        tokio::fs::write(path, content)
+            .await
             .map_err(SokuError::Io)?;
 
         // Update metadata after writing
@@ -264,8 +266,7 @@ impl FileSystemService for SokuFileSystemService {
     }
 
     async fn create_directory(&self, path: &Path) -> Result<()> {
-        tokio::fs::create_dir_all(path).await
-            .map_err(SokuError::Io)
+        tokio::fs::create_dir_all(path).await.map_err(SokuError::Io)
     }
 }
 
@@ -310,14 +311,27 @@ mod tests {
         let css_file = temp_dir.path().join("test.css");
 
         fs.write_file(&js_file, "function test() {}").await.unwrap();
-        fs.write_file(&ts_file, "interface User { name: string; }").await.unwrap();
-        fs.write_file(&css_file, ".class { color: red; }").await.unwrap();
+        fs.write_file(&ts_file, "interface User { name: string; }")
+            .await
+            .unwrap();
+        fs.write_file(&css_file, ".class { color: red; }")
+            .await
+            .unwrap();
 
         let structure = fs.scan_directory(temp_dir.path()).await.unwrap();
 
-        assert!(structure.js_modules.iter().any(|p| p.file_name().unwrap() == "test.js"));
-        assert!(structure.js_modules.iter().any(|p| p.file_name().unwrap() == "test.ts"));
-        assert!(structure.css_files.iter().any(|p| p.file_name().unwrap() == "test.css"));
+        assert!(structure
+            .js_modules
+            .iter()
+            .any(|p| p.file_name().unwrap() == "test.js"));
+        assert!(structure
+            .js_modules
+            .iter()
+            .any(|p| p.file_name().unwrap() == "test.ts"));
+        assert!(structure
+            .css_files
+            .iter()
+            .any(|p| p.file_name().unwrap() == "test.css"));
     }
 
     #[tokio::test]
@@ -329,7 +343,9 @@ mod tests {
         let mut paths = Vec::new();
         for i in 0..10 {
             let file_path = temp_dir.path().join(format!("file_{}.js", i));
-            fs.write_file(&file_path, &format!("const value{} = {};", i, i)).await.unwrap();
+            fs.write_file(&file_path, &format!("const value{} = {};", i, i))
+                .await
+                .unwrap();
             paths.push(file_path);
         }
 

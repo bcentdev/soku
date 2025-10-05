@@ -1,8 +1,8 @@
 use crate::core::models::BuildConfig;
-use crate::utils::{Logger, SokuError, Result};
-use std::path::{Path, PathBuf};
-use std::collections::HashMap;
+use crate::utils::{Logger, Result, SokuError};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// Configuration file format (soku.config.json)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,14 +93,10 @@ impl ConfigLoader {
 
         Logger::debug(&format!("Loading config from {}", config_path.display()));
 
-        let content = std::fs::read_to_string(&config_path)
-            .map_err(SokuError::Io)?;
+        let content = std::fs::read_to_string(&config_path).map_err(SokuError::Io)?;
 
         let config: SokuConfig = serde_json::from_str(&content)
-            .map_err(|e| SokuError::config(format!(
-                "Failed to parse soku.config.json: {}",
-                e
-            )))?;
+            .map_err(|e| SokuError::config(format!("Failed to parse soku.config.json: {}", e)))?;
 
         Logger::debug("✅ Config file loaded successfully");
         Ok(Some(config))
@@ -122,9 +118,7 @@ impl ConfigLoader {
         let base = file_config.unwrap_or_default();
 
         // Determine output directory (CLI > config file > default)
-        let outdir_str = outdir.unwrap_or_else(|| {
-            base.outdir.as_deref().unwrap_or("dist")
-        });
+        let outdir_str = outdir.unwrap_or_else(|| base.outdir.as_deref().unwrap_or("dist"));
 
         // Resolve outdir relative to root if it's a relative path
         let resolved_outdir = if Path::new(outdir_str).is_absolute() {
@@ -136,7 +130,8 @@ impl ConfigLoader {
         // Process entries: entries takes precedence over entry
         let entries = if let Some(entries_map) = base.entries {
             // Multiple entries from config
-            entries_map.into_iter()
+            entries_map
+                .into_iter()
                 .map(|(name, path_str)| {
                     let entry_path = if Path::new(&path_str).is_absolute() {
                         PathBuf::from(path_str)
@@ -163,18 +158,13 @@ impl ConfigLoader {
         BuildConfig {
             root,
             outdir: resolved_outdir,
-            enable_tree_shaking: enable_tree_shaking.unwrap_or_else(|| {
-                base.tree_shaking.unwrap_or(true)
-            }),
-            enable_minification: enable_minification.unwrap_or_else(|| {
-                base.minify.unwrap_or(true)
-            }),
-            enable_source_maps: enable_source_maps.unwrap_or_else(|| {
-                base.source_maps.unwrap_or(false)
-            }),
-            enable_code_splitting: enable_code_splitting.unwrap_or_else(|| {
-                base.code_splitting.unwrap_or(false)
-            }),
+            enable_tree_shaking: enable_tree_shaking
+                .unwrap_or_else(|| base.tree_shaking.unwrap_or(true)),
+            enable_minification: enable_minification.unwrap_or_else(|| base.minify.unwrap_or(true)),
+            enable_source_maps: enable_source_maps
+                .unwrap_or_else(|| base.source_maps.unwrap_or(false)),
+            enable_code_splitting: enable_code_splitting
+                .unwrap_or_else(|| base.code_splitting.unwrap_or(false)),
             max_chunk_size: max_chunk_size.or(base.max_chunk_size).or(Some(250_000)),
             mode,
             alias: base.alias.unwrap_or_default(),
@@ -198,7 +188,8 @@ impl ConfigLoader {
   "target": "es2020",
   "codeSplitting": false,
   "maxChunkSize": 250000
-}"#.to_string()
+}"#
+            .to_string()
         })
     }
 }

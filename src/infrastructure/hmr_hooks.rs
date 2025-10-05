@@ -3,9 +3,9 @@
 
 use crate::utils::Result;
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 
 /// Type alias for transform functions to reduce complexity
 type TransformFn = Arc<dyn Fn(&str) -> Result<String> + Send + Sync>;
@@ -73,7 +73,11 @@ pub trait HmrHook: Send + Sync {
     }
 
     /// Transform update content before sending
-    async fn transform_content(&self, _context: &HmrHookContext, content: String) -> Result<String> {
+    async fn transform_content(
+        &self,
+        _context: &HmrHookContext,
+        content: String,
+    ) -> Result<String> {
         Ok(content)
     }
 
@@ -111,9 +115,7 @@ pub struct HmrHookManager {
 impl HmrHookManager {
     #[allow(dead_code)] // Public API - used internally by HMR service
     pub fn new() -> Self {
-        Self {
-            hooks: Vec::new(),
-        }
+        Self { hooks: Vec::new() }
     }
 
     /// Register an HMR hook
@@ -143,7 +145,11 @@ impl HmrHookManager {
     }
 
     /// Transform content through all hooks
-    pub async fn transform_content(&self, context: &HmrHookContext, mut content: String) -> Result<String> {
+    pub async fn transform_content(
+        &self,
+        context: &HmrHookContext,
+        mut content: String,
+    ) -> Result<String> {
         for hook in &self.hooks {
             content = hook.transform_content(context, content).await?;
         }
@@ -205,9 +211,7 @@ pub struct BuiltInHmrHooks;
 impl BuiltInHmrHooks {
     /// Logging hook - logs all HMR events
     pub fn logger() -> LoggingHook {
-        LoggingHook {
-            verbose: false,
-        }
+        LoggingHook { verbose: false }
     }
 
     /// Full reload hook for specific file patterns
@@ -217,9 +221,7 @@ impl BuiltInHmrHooks {
 
     /// Notification hook - displays desktop notifications
     pub fn notification() -> NotificationHook {
-        NotificationHook {
-            enabled: true,
-        }
+        NotificationHook { enabled: true }
     }
 
     /// Throttle hook - limits update frequency
@@ -323,7 +325,11 @@ impl HmrHook for NotificationHook {
         if self.enabled {
             crate::utils::Logger::info(&format!(
                 "📢 [HMR] Desktop notification: {} updated",
-                context.file_path.file_name().unwrap_or_default().to_string_lossy()
+                context
+                    .file_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
             ));
         }
         Ok(())
@@ -371,7 +377,11 @@ impl HmrHook for TransformHook {
         &self.name
     }
 
-    async fn transform_content(&self, _context: &HmrHookContext, content: String) -> Result<String> {
+    async fn transform_content(
+        &self,
+        _context: &HmrHookContext,
+        content: String,
+    ) -> Result<String> {
         (self.transform_fn)(&content)
     }
 }
@@ -398,10 +408,7 @@ mod tests {
     #[tokio::test]
     async fn test_logging_hook_before_update() {
         let hook = BuiltInHmrHooks::logger();
-        let context = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        );
+        let context = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript);
 
         let result = hook.before_update(&context).await;
         assert!(result.is_ok());
@@ -410,10 +417,7 @@ mod tests {
     #[tokio::test]
     async fn test_logging_hook_after_update() {
         let hook = BuiltInHmrHooks::logger();
-        let context = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        );
+        let context = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript);
 
         let result = hook.after_update(&context).await;
         assert!(result.is_ok());
@@ -424,18 +428,13 @@ mod tests {
         let hook = BuiltInHmrHooks::full_reload_on_pattern("config".to_string());
 
         // Should reload for config files
-        let context = HmrHookContext::new(
-            PathBuf::from("soku.config.json"),
-            HmrHookUpdateKind::Other,
-        );
+        let context =
+            HmrHookContext::new(PathBuf::from("soku.config.json"), HmrHookUpdateKind::Other);
         let should_reload = hook.should_full_reload(&context).await.unwrap();
         assert!(should_reload);
 
         // Should not reload for regular files
-        let context = HmrHookContext::new(
-            PathBuf::from("main.js"),
-            HmrHookUpdateKind::JavaScript,
-        );
+        let context = HmrHookContext::new(PathBuf::from("main.js"), HmrHookUpdateKind::JavaScript);
         let should_reload = hook.should_full_reload(&context).await.unwrap();
         assert!(!should_reload);
     }
@@ -443,10 +442,7 @@ mod tests {
     #[tokio::test]
     async fn test_notification_hook() {
         let hook = BuiltInHmrHooks::notification();
-        let context = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        );
+        let context = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript);
 
         let result = hook.after_update(&context).await;
         assert!(result.is_ok());
@@ -456,18 +452,12 @@ mod tests {
     async fn test_throttle_hook() {
         let hook = BuiltInHmrHooks::throttle(100);
 
-        let context1 = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        );
+        let context1 = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript);
         let result1 = hook.before_update(&context1).await;
         assert!(result1.is_ok());
 
         // Immediate second update (should throttle)
-        let context2 = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        );
+        let context2 = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript);
         let result2 = hook.before_update(&context2).await;
         assert!(result2.is_ok());
     }
@@ -478,12 +468,12 @@ mod tests {
             Ok(content.to_uppercase())
         });
 
-        let context = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        );
+        let context = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript);
 
-        let result = hook.transform_content(&context, "hello".to_string()).await.unwrap();
+        let result = hook
+            .transform_content(&context, "hello".to_string())
+            .await
+            .unwrap();
         assert_eq!(result, "HELLO");
     }
 
@@ -492,10 +482,7 @@ mod tests {
         let mut manager = HmrHookManager::new();
         manager.register(Arc::new(BuiltInHmrHooks::logger()));
 
-        let context = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        );
+        let context = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript);
 
         let result = manager.trigger_before_update(&context).await;
         assert!(result.is_ok());
@@ -504,49 +491,46 @@ mod tests {
     #[tokio::test]
     async fn test_hook_manager_transform_content() {
         let mut manager = HmrHookManager::new();
-        manager.register(Arc::new(BuiltInHmrHooks::transform("add-header".to_string(), |content| {
-            Ok(format!("// Header\n{}", content))
-        })));
+        manager.register(Arc::new(BuiltInHmrHooks::transform(
+            "add-header".to_string(),
+            |content| Ok(format!("// Header\n{}", content)),
+        )));
 
-        let context = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        );
+        let context = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript);
 
-        let result = manager.transform_content(&context, "code".to_string()).await.unwrap();
+        let result = manager
+            .transform_content(&context, "code".to_string())
+            .await
+            .unwrap();
         assert!(result.starts_with("// Header"));
     }
 
     #[tokio::test]
     async fn test_hook_manager_should_full_reload() {
         let mut manager = HmrHookManager::new();
-        manager.register(Arc::new(BuiltInHmrHooks::full_reload_on_pattern("config".to_string())));
+        manager.register(Arc::new(BuiltInHmrHooks::full_reload_on_pattern(
+            "config".to_string(),
+        )));
 
         // Should reload for config files
-        let context = HmrHookContext::new(
-            PathBuf::from("soku.config.json"),
-            HmrHookUpdateKind::Other,
-        );
+        let context =
+            HmrHookContext::new(PathBuf::from("soku.config.json"), HmrHookUpdateKind::Other);
         let should_reload = manager.should_full_reload(&context).await.unwrap();
         assert!(should_reload);
     }
 
     #[tokio::test]
     async fn test_hook_context_with_content() {
-        let context = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        ).with_content("test content".to_string());
+        let context = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript)
+            .with_content("test content".to_string());
 
         assert_eq!(context.content, Some("test content".to_string()));
     }
 
     #[tokio::test]
     async fn test_hook_context_with_client_count() {
-        let context = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        ).with_client_count(5);
+        let context = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript)
+            .with_client_count(5);
 
         assert_eq!(context.client_count, 5);
     }
@@ -554,19 +538,21 @@ mod tests {
     #[tokio::test]
     async fn test_multiple_hooks_in_chain() {
         let mut manager = HmrHookManager::new();
-        manager.register(Arc::new(BuiltInHmrHooks::transform("first".to_string(), |content| {
-            Ok(format!("[{}]", content))
-        })));
-        manager.register(Arc::new(BuiltInHmrHooks::transform("second".to_string(), |content| {
-            Ok(content.to_uppercase())
-        })));
+        manager.register(Arc::new(BuiltInHmrHooks::transform(
+            "first".to_string(),
+            |content| Ok(format!("[{}]", content)),
+        )));
+        manager.register(Arc::new(BuiltInHmrHooks::transform(
+            "second".to_string(),
+            |content| Ok(content.to_uppercase()),
+        )));
 
-        let context = HmrHookContext::new(
-            PathBuf::from("test.js"),
-            HmrHookUpdateKind::JavaScript,
-        );
+        let context = HmrHookContext::new(PathBuf::from("test.js"), HmrHookUpdateKind::JavaScript);
 
-        let result = manager.transform_content(&context, "test".to_string()).await.unwrap();
+        let result = manager
+            .transform_content(&context, "test".to_string())
+            .await
+            .unwrap();
         assert_eq!(result, "[TEST]");
     }
 

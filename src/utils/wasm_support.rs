@@ -141,16 +141,27 @@ mod tests {
     fn test_is_wasm_module() {
         assert!(WasmProcessor::is_wasm_module(&PathBuf::from("module.wasm")));
         assert!(WasmProcessor::is_wasm_module(&PathBuf::from("math.WASM")));
-        assert!(WasmProcessor::is_wasm_module(&PathBuf::from("path/to/module.wasm")));
+        assert!(WasmProcessor::is_wasm_module(&PathBuf::from(
+            "path/to/module.wasm"
+        )));
         assert!(!WasmProcessor::is_wasm_module(&PathBuf::from("module.js")));
         assert!(!WasmProcessor::is_wasm_module(&PathBuf::from("module.wat")));
     }
 
     #[test]
     fn test_get_module_name() {
-        assert_eq!(WasmProcessor::get_module_name(&PathBuf::from("math.wasm")), "math");
-        assert_eq!(WasmProcessor::get_module_name(&PathBuf::from("my-module.wasm")), "my_module");
-        assert_eq!(WasmProcessor::get_module_name(&PathBuf::from("complex.name.wasm")), "complex_name");
+        assert_eq!(
+            WasmProcessor::get_module_name(&PathBuf::from("math.wasm")),
+            "math"
+        );
+        assert_eq!(
+            WasmProcessor::get_module_name(&PathBuf::from("my-module.wasm")),
+            "my_module"
+        );
+        assert_eq!(
+            WasmProcessor::get_module_name(&PathBuf::from("complex.name.wasm")),
+            "complex_name"
+        );
     }
 
     #[test]

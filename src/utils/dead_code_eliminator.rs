@@ -32,7 +32,10 @@ impl DeadCodeEliminator {
         result = self.eliminate_true_or(&result, &mut eliminated_count);
 
         if eliminated_count > 0 {
-            Logger::debug(&format!("🗑️  Eliminated {} dead code branches", eliminated_count));
+            Logger::debug(&format!(
+                "🗑️  Eliminated {} dead code branches",
+                eliminated_count
+            ));
         }
 
         result
@@ -61,10 +64,14 @@ impl DeadCodeEliminator {
                             let after_else = result[else_keyword_end..].trim_start();
                             if after_else.starts_with('{') {
                                 // else { ... }
-                                let else_block_start = else_keyword_end + (result[else_keyword_end..].len() - after_else.len());
-                                if let Some(else_block_end) = self.find_matching_brace(&result, else_block_start) {
+                                let else_block_start = else_keyword_end
+                                    + (result[else_keyword_end..].len() - after_else.len());
+                                if let Some(else_block_end) =
+                                    self.find_matching_brace(&result, else_block_start)
+                                {
                                     // Extract else block content and replace entire if-else
-                                    let else_content = result[else_block_start + 1..else_block_end].to_string();
+                                    let else_content =
+                                        result[else_block_start + 1..else_block_end].to_string();
                                     result.replace_range(start..else_block_end + 1, &else_content);
                                     *count += 1;
                                     continue;
@@ -108,8 +115,11 @@ impl DeadCodeEliminator {
 
                             let after_else = result[else_keyword_end..].trim_start();
                             if after_else.starts_with('{') {
-                                let else_block_start = else_keyword_end + (result[else_keyword_end..].len() - after_else.len());
-                                if let Some(else_block_end) = self.find_matching_brace(&result, else_block_start) {
+                                let else_block_start = else_keyword_end
+                                    + (result[else_keyword_end..].len() - after_else.len());
+                                if let Some(else_block_end) =
+                                    self.find_matching_brace(&result, else_block_start)
+                                {
                                     // Replace if-else with just the if content
                                     result.replace_range(start..else_block_end + 1, if_content);
                                     *count += 1;

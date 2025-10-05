@@ -1,23 +1,19 @@
-use std::path::PathBuf;
-use soku::core::models::BuildConfig;
 use soku::core::interfaces::BuildService;
-use soku::infrastructure::{TokioFileSystemService, UnifiedJsProcessor, LightningCssProcessor};
+use soku::core::models::BuildConfig;
 use soku::infrastructure::processors::ProcessingStrategy;
+use soku::infrastructure::{LightningCssProcessor, TokioFileSystemService, UnifiedJsProcessor};
+use std::path::PathBuf;
 
 #[tokio::test]
 async fn test_css_modules_detection() {
-    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/css-modules");
+    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/css-modules");
 
     let fs_service = std::sync::Arc::new(TokioFileSystemService);
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(true)); // CSS Modules enabled
 
-    let mut build_service = soku::core::services::SokuBuildService::new(
-        fs_service,
-        js_processor,
-        css_processor,
-    );
+    let mut build_service =
+        soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor);
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
@@ -31,7 +27,8 @@ async fn test_css_modules_detection() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-        entries: std::collections::HashMap::new(),    };
+        entries: std::collections::HashMap::new(),
+    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "CSS Modules build should succeed");
@@ -50,18 +47,14 @@ async fn test_css_modules_detection() {
 
 #[tokio::test]
 async fn test_css_modules_scoping() {
-    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/css-modules");
+    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/css-modules");
 
     let fs_service = std::sync::Arc::new(TokioFileSystemService);
     let js_processor = std::sync::Arc::new(UnifiedJsProcessor::new(ProcessingStrategy::Standard));
     let css_processor = std::sync::Arc::new(LightningCssProcessor::new(true));
 
-    let mut build_service = soku::core::services::SokuBuildService::new(
-        fs_service,
-        js_processor,
-        css_processor,
-    );
+    let mut build_service =
+        soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor);
 
     let config = BuildConfig {
         root: fixtures_dir.clone(),
@@ -75,7 +68,8 @@ async fn test_css_modules_scoping() {
         alias: std::collections::HashMap::new(),
         external: Vec::new(),
         vendor_chunk: false,
-        entries: std::collections::HashMap::new(),    };
+        entries: std::collections::HashMap::new(),
+    };
 
     let result = build_service.build(&config).await;
     assert!(result.is_ok(), "Build should succeed");

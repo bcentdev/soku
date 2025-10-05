@@ -1,12 +1,12 @@
 #![allow(dead_code)] // Performance utilities - may not all be used yet
 
 use dashmap::DashMap;
-use std::sync::Arc;
+use sled::{Db, Tree};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::Path;
-use sled::{Db, Tree};
-use string_interner::{StringInterner, DefaultSymbol, DefaultBackend};
+use std::sync::Arc;
+use string_interner::{DefaultBackend, DefaultSymbol, StringInterner};
 
 /// Soku-fast caching system with persistent storage
 pub struct SokuCache {
@@ -57,12 +57,18 @@ impl PersistentCache {
     }
 
     pub fn get_js(&self, key: &str) -> Option<CacheEntry> {
-        self.js_tree.get(key).ok()
+        self.js_tree
+            .get(key)
+            .ok()
             .and_then(|opt| opt)
             .and_then(|bytes| bincode::deserialize(&bytes).ok())
     }
 
-    pub fn set_js(&self, key: &str, entry: &CacheEntry) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub fn set_js(
+        &self,
+        key: &str,
+        entry: &CacheEntry,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let bytes = bincode::serialize(entry)?;
         self.js_tree.insert(key, bytes)?;
         self.js_tree.flush()?;
@@ -70,12 +76,18 @@ impl PersistentCache {
     }
 
     pub fn get_css(&self, key: &str) -> Option<CacheEntry> {
-        self.css_tree.get(key).ok()
+        self.css_tree
+            .get(key)
+            .ok()
             .and_then(|opt| opt)
             .and_then(|bytes| bincode::deserialize(&bytes).ok())
     }
 
-    pub fn set_css(&self, key: &str, entry: &CacheEntry) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub fn set_css(
+        &self,
+        key: &str,
+        entry: &CacheEntry,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let bytes = bincode::serialize(entry)?;
         self.css_tree.insert(key, bytes)?;
         self.css_tree.flush()?;
@@ -99,8 +111,7 @@ impl SokuCache {
     }
 
     pub fn with_persistent_cache(cache_dir: &Path) -> Self {
-        let persistent = PersistentCache::new(cache_dir).ok()
-            .map(Arc::new);
+        let persistent = PersistentCache::new(cache_dir).ok().map(Arc::new);
 
         Self {
             js_cache: Arc::new(DashMap::new()),
@@ -262,9 +273,9 @@ pub struct CacheStats {
 
 /// Parallel processing utilities
 pub mod parallel {
+    use futures::future::join_all;
     use rayon::prelude::*;
     use std::sync::Arc;
-    use futures::future::join_all;
     use tokio::task;
 
     /// Process multiple items in parallel using Rayon

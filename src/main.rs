@@ -1,10 +1,10 @@
 // Soku Bundler - Modern Architecture
 // Entry point with clean separation of concerns
 
-mod utils;
+mod cli;
 mod core;
 mod infrastructure;
-mod cli;
+mod utils;
 
 use cli::CliHandler;
 use utils::SokuError;

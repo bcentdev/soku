@@ -1,8 +1,8 @@
 use crate::core::interfaces::CssProcessor;
-use crate::utils::{Result, SokuError, Logger, SokuCache, CssModulesProcessor};
+use crate::utils::{CssModulesProcessor, Logger, Result, SokuCache, SokuError};
 use lightningcss::{
-    stylesheet::{StyleSheet, ParserOptions as CssParserOptions},
     printer::PrinterOptions,
+    stylesheet::{ParserOptions as CssParserOptions, StyleSheet},
 };
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -25,10 +25,12 @@ impl LightningCssProcessor {
 #[async_trait::async_trait]
 impl CssProcessor for LightningCssProcessor {
     async fn process_css(&self, content: &str, path: &Path) -> Result<String> {
-        let _timer = crate::utils::Timer::start(&format!("Processing CSS {}",
+        let _timer = crate::utils::Timer::start(&format!(
+            "Processing CSS {}",
             path.file_name()
                 .and_then(|s| s.to_str())
-                .unwrap_or("unknown")));
+                .unwrap_or("unknown")
+        ));
 
         // Check cache first
         let path_str = path.to_string_lossy();
@@ -39,19 +41,26 @@ impl CssProcessor for LightningCssProcessor {
         Logger::processing_css(
             path.file_name()
                 .and_then(|s| s.to_str())
-                .unwrap_or("unknown")
+                .unwrap_or("unknown"),
         );
 
         // Check if this is a CSS Module
         let css_content = if CssModulesProcessor::is_css_module(path) {
-            Logger::info(&format!("📦 CSS Module detected: {}",
-                path.file_name().and_then(|s| s.to_str()).unwrap_or("unknown")));
+            Logger::info(&format!(
+                "📦 CSS Module detected: {}",
+                path.file_name()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown")
+            ));
 
             let css_modules = CssModulesProcessor::new();
             let module_result = css_modules.process(content, path)?;
 
             // TODO: Save exports for JS import resolution
-            Logger::debug(&format!("CSS Module exports: {:?}", module_result.exports.keys()));
+            Logger::debug(&format!(
+                "CSS Module exports: {:?}",
+                module_result.exports.keys()
+            ));
 
             module_result.css
         } else {
@@ -99,14 +108,16 @@ impl CssProcessor for LightningCssProcessor {
         bundle.push_str("/* Soku Bundler - CSS Bundle */\n");
 
         for css_file in files {
-            let content = tokio::fs::read_to_string(css_file).await
+            let content = tokio::fs::read_to_string(css_file)
+                .await
                 .map_err(SokuError::Io)?;
 
             let processed = self.process_css(&content, css_file).await?;
 
             bundle.push_str(&format!(
                 "/* From: {} */\n",
-                css_file.file_name()
+                css_file
+                    .file_name()
                     .and_then(|s| s.to_str())
                     .unwrap_or("unknown")
             ));
@@ -116,7 +127,6 @@ impl CssProcessor for LightningCssProcessor {
 
         Ok(bundle)
     }
-
 }
 
 impl LightningCssProcessor {
@@ -177,8 +187,12 @@ mod tests {
         let css1_path = temp_dir.path().join("style1.css");
         let css2_path = temp_dir.path().join("style2.css");
 
-        tokio::fs::write(&css1_path, "body { color: red; }").await.unwrap();
-        tokio::fs::write(&css2_path, ".container { margin: 0; }").await.unwrap();
+        tokio::fs::write(&css1_path, "body { color: red; }")
+            .await
+            .unwrap();
+        tokio::fs::write(&css2_path, ".container { margin: 0; }")
+            .await
+            .unwrap();
 
         let files = vec![css1_path, css2_path];
         let result = processor.bundle_css(&files).await.unwrap();

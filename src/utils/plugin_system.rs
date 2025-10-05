@@ -3,8 +3,8 @@
 
 use crate::core::models::{BuildConfig, BuildResult, ModuleInfo};
 use crate::utils::Result;
-use std::sync::Arc;
 use async_trait::async_trait;
+use std::sync::Arc;
 
 /// Plugin lifecycle events
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -143,7 +143,11 @@ impl PluginManager {
     }
 
     /// Trigger after_build event
-    pub async fn trigger_after_build(&self, context: &PluginContext, result: &BuildResult) -> Result<()> {
+    pub async fn trigger_after_build(
+        &self,
+        context: &PluginContext,
+        result: &BuildResult,
+    ) -> Result<()> {
         for plugin in &self.plugins {
             plugin.after_build(context, result).await?;
         }
@@ -159,7 +163,11 @@ impl PluginManager {
     }
 
     /// Trigger after_bundle event
-    pub async fn trigger_after_bundle(&self, context: &PluginContext, bundle_code: &str) -> Result<()> {
+    pub async fn trigger_after_bundle(
+        &self,
+        context: &PluginContext,
+        bundle_code: &str,
+    ) -> Result<()> {
         for plugin in &self.plugins {
             plugin.after_bundle(context, bundle_code).await?;
         }
@@ -175,7 +183,11 @@ impl PluginManager {
     }
 
     /// Resolve import through plugins (first plugin that returns Some wins)
-    pub async fn resolve_import(&self, import_path: &str, from_file: &str) -> Result<Option<String>> {
+    pub async fn resolve_import(
+        &self,
+        import_path: &str,
+        from_file: &str,
+    ) -> Result<Option<String>> {
         for plugin in &self.plugins {
             if let Some(resolved) = plugin.resolve_import(import_path, from_file).await? {
                 return Ok(Some(resolved));
@@ -233,13 +245,21 @@ impl Plugin for LoggerPlugin {
     }
 
     async fn before_build(&self, context: &PluginContext) -> Result<()> {
-        crate::utils::Logger::info(&format!("🔌 [{}] Build starting with {} modules", self.name, context.modules.len()));
+        crate::utils::Logger::info(&format!(
+            "🔌 [{}] Build starting with {} modules",
+            self.name,
+            context.modules.len()
+        ));
         Ok(())
     }
 
     async fn after_build(&self, _context: &PluginContext, result: &BuildResult) -> Result<()> {
-        crate::utils::Logger::info(&format!("🔌 [{}] Build completed: {} modules, {} files",
-            self.name, result.js_modules_processed, result.output_files.len()));
+        crate::utils::Logger::info(&format!(
+            "🔌 [{}] Build completed: {} modules, {} files",
+            self.name,
+            result.js_modules_processed,
+            result.output_files.len()
+        ));
         Ok(())
     }
 }
@@ -270,7 +290,11 @@ impl Plugin for TransformPlugin {
     async fn transform_code(&self, module: &ModuleInfo, code: String) -> Result<String> {
         let transformed = code.replace(&self.pattern, &self.replacement);
         if transformed != code {
-            crate::utils::Logger::debug(&format!("🔌 [{}] Transformed: {}", self.name, module.path.display()));
+            crate::utils::Logger::debug(&format!(
+                "🔌 [{}] Transformed: {}",
+                self.name,
+                module.path.display()
+            ));
         }
         Ok(transformed)
     }
@@ -372,7 +396,10 @@ mod tests {
         let plugin = TransformPlugin::new("console.log".to_string(), "logger.info".to_string());
         let module = create_test_module("test.js", "console.log('hello');");
 
-        let transformed = plugin.transform_code(&module, module.content.clone()).await.unwrap();
+        let transformed = plugin
+            .transform_code(&module, module.content.clone())
+            .await
+            .unwrap();
         assert_eq!(transformed, "logger.info('hello');");
     }
 
@@ -381,7 +408,10 @@ mod tests {
         let plugin = TransformPlugin::new("console.error".to_string(), "logger.error".to_string());
         let module = create_test_module("test.js", "console.log('hello');");
 
-        let transformed = plugin.transform_code(&module, module.content.clone()).await.unwrap();
+        let transformed = plugin
+            .transform_code(&module, module.content.clone())
+            .await
+            .unwrap();
         assert_eq!(transformed, "console.log('hello');"); // Unchanged
     }
 
@@ -391,7 +421,10 @@ mod tests {
         aliases.insert("@/".to_string(), "./src/".to_string());
 
         let plugin = ImportResolverPlugin::new(aliases);
-        let resolved = plugin.resolve_import("@/components/Button", "main.js").await.unwrap();
+        let resolved = plugin
+            .resolve_import("@/components/Button", "main.js")
+            .await
+            .unwrap();
 
         assert_eq!(resolved, Some("./src/components/Button".to_string()));
     }
@@ -419,10 +452,16 @@ mod tests {
     #[tokio::test]
     async fn test_plugin_manager_transform_code() {
         let mut manager = PluginManager::new();
-        manager.register(Arc::new(TransformPlugin::new("foo".to_string(), "bar".to_string())));
+        manager.register(Arc::new(TransformPlugin::new(
+            "foo".to_string(),
+            "bar".to_string(),
+        )));
 
         let module = create_test_module("test.js", "const x = foo;");
-        let transformed = manager.transform_code(&module, module.content.clone()).await.unwrap();
+        let transformed = manager
+            .transform_code(&module, module.content.clone())
+            .await
+            .unwrap();
 
         assert_eq!(transformed, "const x = bar;");
     }
@@ -430,11 +469,20 @@ mod tests {
     #[tokio::test]
     async fn test_plugin_manager_multiple_transforms() {
         let mut manager = PluginManager::new();
-        manager.register(Arc::new(TransformPlugin::new("foo".to_string(), "bar".to_string())));
-        manager.register(Arc::new(TransformPlugin::new("bar".to_string(), "baz".to_string())));
+        manager.register(Arc::new(TransformPlugin::new(
+            "foo".to_string(),
+            "bar".to_string(),
+        )));
+        manager.register(Arc::new(TransformPlugin::new(
+            "bar".to_string(),
+            "baz".to_string(),
+        )));
 
         let module = create_test_module("test.js", "const x = foo;");
-        let transformed = manager.transform_code(&module, module.content.clone()).await.unwrap();
+        let transformed = manager
+            .transform_code(&module, module.content.clone())
+            .await
+            .unwrap();
 
         // First transform: foo -> bar, Second transform: bar -> baz
         assert_eq!(transformed, "const x = baz;");

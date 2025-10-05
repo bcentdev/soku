@@ -1,11 +1,11 @@
 // Bundle analysis for Soku Bundler
 // Provides size analysis and visualization of bundle contents
 
-use crate::core::models::{ModuleInfo, ModuleType, BuildResult};
-use crate::utils::{Result, Logger};
-use std::path::{Path, PathBuf};
+use crate::core::models::{BuildResult, ModuleInfo, ModuleType};
+use crate::utils::{Logger, Result};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
+use std::path::{Path, PathBuf};
 
 /// Statistics for a single module in the bundle
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,7 +67,7 @@ impl BundleAnalysis {
                     module_type: m.module_type.clone(),
                     original_size,
                     bundle_size: original_size, // Approximation
-                    percentage: 0.0, // Calculate later
+                    percentage: 0.0,            // Calculate later
                     dependencies: m.dependencies.clone(),
                 }
             })
@@ -143,7 +143,10 @@ impl BundleAnalysis {
         // Overview
         report.push_str("📦 OVERVIEW\n");
         report.push_str("─────────────────────────────────────────────────────────────\n");
-        report.push_str(&format!("  Total Size:      {}\n", Self::format_size(self.total_size)));
+        report.push_str(&format!(
+            "  Total Size:      {}\n",
+            Self::format_size(self.total_size)
+        ));
         report.push_str(&format!("  Total Modules:   {}\n", self.total_modules));
         report.push_str(&format!("  Dependencies:    {}\n", self.total_dependencies));
         report.push('\n');
@@ -168,7 +171,9 @@ impl BundleAnalysis {
         report.push_str("🔝 TOP 10 LARGEST MODULES\n");
         report.push_str("─────────────────────────────────────────────────────────────\n");
         for (i, module) in self.largest_modules.iter().enumerate() {
-            let filename = module.path.file_name()
+            let filename = module
+                .path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("unknown");
             let bar = Self::create_bar(module.percentage, 20);
@@ -188,14 +193,13 @@ impl BundleAnalysis {
 
     /// Save analysis to JSON file
     pub fn save_json(&self, path: &Path) -> Result<()> {
-        let json = serde_json::to_string_pretty(self)
-            .map_err(|e| crate::utils::SokuError::Build {
+        let json =
+            serde_json::to_string_pretty(self).map_err(|e| crate::utils::SokuError::Build {
                 message: format!("Failed to serialize analysis: {}", e),
                 context: None,
             })?;
 
-        std::fs::write(path, json)
-            .map_err(crate::utils::SokuError::Io)?;
+        std::fs::write(path, json).map_err(crate::utils::SokuError::Io)?;
 
         Ok(())
     }
@@ -265,7 +269,10 @@ mod tests {
     #[test]
     fn test_truncate() {
         assert_eq!(BundleAnalysis::truncate("short", 10), "short     ");
-        assert_eq!(BundleAnalysis::truncate("very_long_filename.js", 10), "very_lo...");
+        assert_eq!(
+            BundleAnalysis::truncate("very_long_filename.js", 10),
+            "very_lo..."
+        );
     }
 
     #[test]

@@ -1,9 +1,9 @@
-use std::path::Path;
-use std::fs::File;
-use memmap2::{Mmap, MmapOptions};
+use crate::utils::{Result, SokuError};
 use blake3::Hasher;
 use dashmap::DashMap;
-use crate::utils::{Result, SokuError};
+use memmap2::{Mmap, MmapOptions};
+use std::fs::File;
+use std::path::Path;
 
 /// Content hash for incremental compilation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -16,7 +16,6 @@ impl ContentHash {
         hasher.update(data);
         ContentHash(hasher.finalize().into())
     }
-
 }
 
 /// Memory-mapped file reader for zero-copy performance
@@ -29,8 +28,7 @@ pub struct MmapFileReader {
 impl MmapFileReader {
     /// Create a new memory-mapped file reader
     pub fn new(path: &Path) -> Result<Self> {
-        let file = File::open(path)
-            .map_err(SokuError::Io)?;
+        let file = File::open(path).map_err(SokuError::Io)?;
 
         let mmap = unsafe {
             MmapOptions::new()
@@ -38,10 +36,7 @@ impl MmapFileReader {
                 .map_err(|e| SokuError::build(format!("Memory mapping failed: {}", e)))?
         };
 
-        Ok(Self {
-            _file: file,
-            mmap,
-        })
+        Ok(Self { _file: file, mmap })
     }
 
     /// Get the content as a string slice (zero-copy)
@@ -82,7 +77,12 @@ impl IncrementalCache {
     }
 
     /// Get cached result or compute if not available
-    pub fn get_or_compute<F>(&self, path: &str, content_hash: ContentHash, compute_fn: F) -> Result<String>
+    pub fn get_or_compute<F>(
+        &self,
+        path: &str,
+        content_hash: ContentHash,
+        compute_fn: F,
+    ) -> Result<String>
     where
         F: FnOnce() -> Result<String>,
     {
@@ -180,7 +180,6 @@ pub mod parallel_files {
             })
             .collect()
     }
-
 }
 
 /// Optimized string processing (simplified SIMD for compatibility)
@@ -205,14 +204,13 @@ pub mod simd_strings {
         // Use standard contains for general case (still very fast)
         haystack.contains(needle)
     }
-
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::NamedTempFile;
     use std::io::Write;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_mmap_file_reader() {
@@ -239,7 +237,6 @@ mod tests {
         assert_ne!(hash1, hash3);
     }
 
-
     #[test]
     fn test_incremental_cache() {
         let cache = IncrementalCache::new();
@@ -247,15 +244,21 @@ mod tests {
         let hash2 = ContentHash::new(b"content2");
 
         // First computation
-        let result1 = cache.get_or_compute("file1", hash1, || Ok("result1".to_string())).unwrap();
+        let result1 = cache
+            .get_or_compute("file1", hash1, || Ok("result1".to_string()))
+            .unwrap();
         assert_eq!(result1, "result1");
 
         // Second computation with same hash (should be cached)
-        let result2 = cache.get_or_compute("file1", hash1, || Ok("different_result".to_string())).unwrap();
+        let result2 = cache
+            .get_or_compute("file1", hash1, || Ok("different_result".to_string()))
+            .unwrap();
         assert_eq!(result2, "result1"); // Should return cached result
 
         // Third computation with different hash
-        let result3 = cache.get_or_compute("file1", hash2, || Ok("result2".to_string())).unwrap();
+        let result3 = cache
+            .get_or_compute("file1", hash2, || Ok("result2".to_string()))
+            .unwrap();
         assert_eq!(result3, "result2");
 
         let stats = cache.stats();
@@ -272,5 +275,4 @@ mod tests {
         assert!(fast_string_contains("", ""));
         assert!(!fast_string_contains("short", "longer_than_haystack"));
     }
-
 }

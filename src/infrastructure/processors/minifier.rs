@@ -1,14 +1,14 @@
-use crate::utils::{Result, SokuError, ErrorContext};
+use crate::utils::{ErrorContext, Result, SokuError};
+use flate2::{write::GzEncoder, Compression};
 use oxc_allocator::Allocator;
 use oxc_codegen::{Codegen, CodegenOptions};
-use oxc_minifier::{Minifier, MinifierOptions, CompressOptions, MangleOptions};
+use oxc_diagnostics::OxcDiagnostic;
+use oxc_minifier::{CompressOptions, MangleOptions, Minifier, MinifierOptions};
 use oxc_parser::Parser;
 use oxc_span::SourceType;
-use oxc_diagnostics::OxcDiagnostic;
-use std::sync::Arc;
 use std::io::Write;
 use std::path::Path;
-use flate2::{Compression, write::GzEncoder};
+use std::sync::Arc;
 
 /// Lightning-fast JavaScript minification using oxc
 pub struct OxcMinifier {
@@ -28,8 +28,7 @@ impl OxcMinifier {
     /// Minify JavaScript code
     pub fn minify(&self, source_code: &str, filename: &str) -> Result<String> {
         let allocator = Allocator::default();
-        let source_type = SourceType::from_path(filename)
-            .unwrap_or_else(|_| SourceType::default());
+        let source_type = SourceType::from_path(filename).unwrap_or_else(|_| SourceType::default());
 
         // Parse the source code
         let parser = Parser::new(&allocator, source_code, source_type);
@@ -37,12 +36,16 @@ impl OxcMinifier {
 
         if !parse_result.errors.is_empty() {
             // Create detailed error context with location information
-            let error_context = Self::create_parse_error_context(&parse_result.errors, source_code, Path::new(filename));
+            let error_context = Self::create_parse_error_context(
+                &parse_result.errors,
+                source_code,
+                Path::new(filename),
+            );
             let first_error = &parse_result.errors[0];
 
             return Err(SokuError::parse_with_context(
                 format!("Parse error: {}", first_error),
-                error_context
+                error_context,
             ));
         }
 
@@ -74,8 +77,7 @@ impl OxcMinifier {
         compress: bool,
     ) -> Result<String> {
         let allocator = Allocator::default();
-        let source_type = SourceType::from_path(filename)
-            .unwrap_or_else(|_| SourceType::default());
+        let source_type = SourceType::from_path(filename).unwrap_or_else(|_| SourceType::default());
 
         // Parse the source code
         let parser = Parser::new(&allocator, source_code, source_type);
@@ -83,19 +85,31 @@ impl OxcMinifier {
 
         if !parse_result.errors.is_empty() {
             // Create detailed error context with location information
-            let error_context = Self::create_parse_error_context(&parse_result.errors, source_code, Path::new(filename));
+            let error_context = Self::create_parse_error_context(
+                &parse_result.errors,
+                source_code,
+                Path::new(filename),
+            );
             let first_error = &parse_result.errors[0];
 
             return Err(SokuError::parse_with_context(
                 format!("Parse error: {}", first_error),
-                error_context
+                error_context,
             ));
         }
 
         // Create custom minifier options
         let minifier_options = MinifierOptions {
-            mangle: if mangle { Some(MangleOptions::default()) } else { None },
-            compress: if compress { Some(CompressOptions::default()) } else { None },
+            mangle: if mangle {
+                Some(MangleOptions::default())
+            } else {
+                None
+            },
+            compress: if compress {
+                Some(CompressOptions::default())
+            } else {
+                None
+            },
         };
 
         // Minify the AST with oxc 0.90 API
@@ -131,7 +145,11 @@ impl OxcMinifier {
 
 impl OxcMinifier {
     /// Extract detailed error information from oxc parse errors
-    fn create_parse_error_context(errors: &[OxcDiagnostic], content: &str, file_path: &Path) -> ErrorContext {
+    fn create_parse_error_context(
+        errors: &[OxcDiagnostic],
+        content: &str,
+        file_path: &Path,
+    ) -> ErrorContext {
         // Try to extract span information from the first error
         let mut line_num = None;
         let mut col_num = None;
@@ -243,11 +261,9 @@ impl MinificationService {
         let filename = filename.to_string();
 
         // Run minification in a blocking task since oxc is CPU-intensive
-        tokio::task::spawn_blocking(move || {
-            minifier.minify(&bundle, &filename)
-        })
-        .await
-        .map_err(|e| SokuError::build(format!("Minification task failed: {}", e)))?
+        tokio::task::spawn_blocking(move || minifier.minify(&bundle, &filename))
+            .await
+            .map_err(|e| SokuError::build(format!("Minification task failed: {}", e)))?
     }
 
     /// Get minification statistics with compression analysis
@@ -262,23 +278,30 @@ impl MinificationService {
             saved_bytes: original.len().saturating_sub(minified.len()),
             gzip_original_size: gzip_original.len(),
             gzip_minified_size: gzip_minified.len(),
-            gzip_reduction_percentage: self.calculate_gzip_reduction(&gzip_original, &gzip_minified),
+            gzip_reduction_percentage: self
+                .calculate_gzip_reduction(&gzip_original, &gzip_minified),
         }
     }
 
     /// Compress content with gzip for analysis
     pub fn gzip_compress(&self, content: &[u8]) -> Result<Vec<u8>> {
         let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
-        encoder.write_all(content)
+        encoder
+            .write_all(content)
             .map_err(|e| SokuError::build(format!("Gzip compression failed: {}", e)))?;
 
-        encoder.finish()
+        encoder
+            .finish()
             .map_err(|e| SokuError::build(format!("Gzip finish failed: {}", e)))
     }
 
     /// Advanced minification with optimal settings for production
     #[allow(dead_code)]
-    pub async fn minify_with_advanced_optimization(&self, bundle: String, filename: &str) -> Result<AdvancedMinificationResult> {
+    pub async fn minify_with_advanced_optimization(
+        &self,
+        bundle: String,
+        filename: &str,
+    ) -> Result<AdvancedMinificationResult> {
         let minifier = self.minifier.clone();
         let filename = filename.to_string();
 
@@ -295,7 +318,9 @@ impl MinificationService {
                 code: final_minified.clone(),
                 original_size: bundle.len(),
                 minified_size: final_minified.len(),
-                compression_ratio: (bundle.len() as f64 - final_minified.len() as f64) / bundle.len() as f64 * 100.0,
+                compression_ratio: (bundle.len() as f64 - final_minified.len() as f64)
+                    / bundle.len() as f64
+                    * 100.0,
             })
         })
         .await
@@ -304,7 +329,9 @@ impl MinificationService {
 
     /// Calculate gzip compression reduction
     fn calculate_gzip_reduction(&self, original_gzip: &[u8], minified_gzip: &[u8]) -> f64 {
-        if original_gzip.is_empty() { return 0.0; }
+        if original_gzip.is_empty() {
+            return 0.0;
+        }
 
         let original_size = original_gzip.len() as f64;
         let minified_size = minified_gzip.len() as f64;

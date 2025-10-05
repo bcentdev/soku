@@ -1,6 +1,6 @@
-use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
+use std::path::PathBuf;
 
 /// Bundle output with optional source map
 #[derive(Debug, Clone)]
@@ -71,7 +71,7 @@ impl Default for BuildConfig {
             enable_tree_shaking: true,
             enable_minification: true,
             enable_source_maps: false,
-            enable_code_splitting: false, // Disabled by default for now
+            enable_code_splitting: false,  // Disabled by default for now
             max_chunk_size: Some(250_000), // 250KB default
             mode: "production".to_string(),
             alias: HashMap::new(),
@@ -173,4 +173,3 @@ pub struct ProjectStructure {
     pub wasm_files: Vec<PathBuf>,
     pub other_files: Vec<PathBuf>,
 }
-

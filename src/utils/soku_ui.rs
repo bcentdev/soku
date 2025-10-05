@@ -14,10 +14,14 @@ impl SokuUI {
 
     pub fn show_epic_banner(&self) {
         // Simple, clean output like Vite
-        println!("\n  {} {} {}", "SOKU".bright_cyan().bold(), "(速)".bright_white(), "v0.3.0".bright_white());
+        println!(
+            "\n  {} {} {}",
+            "SOKU".bright_cyan().bold(),
+            "(速)".bright_white(),
+            "v0.3.0".bright_white()
+        );
         println!();
     }
-
 
     pub fn show_file_discovery(&self, _js_count: usize, _css_count: usize, _wasm_count: usize) {}
 
@@ -38,7 +42,8 @@ impl SokuUI {
                 format!("{:.2} kB", size_kb)
             };
 
-            println!("  {} {} {}",
+            println!(
+                "  {} {} {}",
                 "dist/".bright_black(),
                 file.name.bright_cyan(),
                 format!("({})", size_str).bright_black()
@@ -49,7 +54,8 @@ impl SokuUI {
         if let Some(node_count) = stats.node_modules_optimized {
             if node_count > 0 {
                 println!();
-                println!("  {} {} node_modules optimized",
+                println!(
+                    "  {} {} node_modules optimized",
                     "🌳".bright_green(),
                     node_count.to_string().bright_cyan().bold()
                 );
@@ -57,9 +63,12 @@ impl SokuUI {
         }
 
         println!();
-        println!("  {} built in {}",
+        println!(
+            "  {} built in {}",
             "✓".bright_green(),
-            format!("{:.0}ms", build_time.as_secs_f64() * 1000.0).bright_white().bold()
+            format!("{:.0}ms", build_time.as_secs_f64() * 1000.0)
+                .bright_white()
+                .bold()
         );
 
         // Show detailed timing breakdown if available
@@ -70,9 +79,7 @@ impl SokuUI {
 
     pub fn show_timing_breakdown(&self, timing: &TimingBreakdown) {
         println!();
-        println!("  {} Timing breakdown:",
-            "⏱️".bright_yellow()
-        );
+        println!("  {} Timing breakdown:", "⏱️".bright_yellow());
 
         let phases = [
             ("File scanning", timing.file_scan_ms),
@@ -85,7 +92,8 @@ impl SokuUI {
 
         for (phase, time_ms) in phases {
             if time_ms > 0 {
-                println!("    {} {}ms",
+                println!(
+                    "    {} {}ms",
                     format!("{}:", phase).bright_blue(),
                     time_ms.to_string().bright_white()
                 );

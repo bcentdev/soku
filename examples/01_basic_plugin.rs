@@ -3,10 +3,10 @@
 // This example shows how to create and register a custom plugin
 // that logs build events and modifies module content.
 
-use soku::utils::{Plugin, PluginContext, Result};
-use soku::core::models::ModuleInfo;
-use soku::core::interfaces::BuildService;
 use async_trait::async_trait;
+use soku::core::interfaces::BuildService;
+use soku::core::models::ModuleInfo;
+use soku::utils::{Plugin, PluginContext, Result};
 use std::sync::Arc;
 
 /// Custom plugin that logs build events
@@ -32,14 +32,19 @@ impl Plugin for TimingPlugin {
 
     async fn before_build(&self, context: &PluginContext) -> Result<()> {
         *self.start_time.lock().unwrap() = Some(std::time::Instant::now());
-        println!("🔌 [{}] Build starting with {} modules",
+        println!(
+            "🔌 [{}] Build starting with {} modules",
             self.name,
             context.modules.len()
         );
         Ok(())
     }
 
-    async fn after_build(&self, _context: &PluginContext, result: &soku::core::models::BuildResult) -> Result<()> {
+    async fn after_build(
+        &self,
+        _context: &PluginContext,
+        result: &soku::core::models::BuildResult,
+    ) -> Result<()> {
         if let Some(start) = *self.start_time.lock().unwrap() {
             let duration = start.elapsed();
             println!("🔌 [{}] Build completed in {:?}", self.name, duration);
@@ -69,13 +74,14 @@ async fn main() -> Result<()> {
     // Create build service with current APIs
     let fs_service = Arc::new(soku::infrastructure::TokioFileSystemService);
     let js_processor = Arc::new(soku::infrastructure::UnifiedJsProcessor::new(
-        soku::infrastructure::ProcessingStrategy::Standard
+        soku::infrastructure::ProcessingStrategy::Standard,
     ));
     let css_processor = Arc::new(soku::infrastructure::LightningCssProcessor::new(false));
 
     // Create and register plugin
-    let service = soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
-        .with_plugin(Arc::new(TimingPlugin::new()));
+    let service =
+        soku::core::services::SokuBuildService::new(fs_service, js_processor, css_processor)
+            .with_plugin(Arc::new(TimingPlugin::new()));
 
     // Build configuration
     let config = soku::core::models::BuildConfig {
@@ -99,10 +105,7 @@ async fn main() -> Result<()> {
 
     println!("\n✨ Build successful! Output files:");
     for output in &result.output_files {
-        println!("   - {} ({} bytes)",
-            output.path.display(),
-            output.size
-        );
+        println!("   - {} ({} bytes)", output.path.display(), output.size);
     }
 
     Ok(())

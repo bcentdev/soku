@@ -1,9 +1,9 @@
-use std::path::{Path, PathBuf};
-use std::collections::HashMap;
-use std::sync::Arc;
+use crate::utils::{Result, SokuError};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use crate::utils::{Result, SokuError};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 /// Package.json structure for parsing npm packages
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -35,12 +35,12 @@ pub enum BrowserField {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)] // Part of package.json exports API
 pub enum ExportCondition {
-    Import,    // ESM import
+    Import, // ESM import
     #[allow(dead_code)]
-    Require,   // CommonJS require
-    Browser,   // Browser environment
-    Node,      // Node.js environment
-    Default,   // Fallback
+    Require, // CommonJS require
+    Browser, // Browser environment
+    Node,   // Node.js environment
+    Default, // Fallback
 }
 
 impl ExportCondition {
@@ -57,10 +57,10 @@ impl ExportCondition {
     /// Get priority order for resolution (higher priority first)
     fn priority_order() -> Vec<Self> {
         vec![
-            ExportCondition::Import,   // Prefer ESM
-            ExportCondition::Browser,  // Browser context
-            ExportCondition::Node,     // Node.js context
-            ExportCondition::Default,  // Fallback
+            ExportCondition::Import,  // Prefer ESM
+            ExportCondition::Browser, // Browser context
+            ExportCondition::Node,    // Node.js context
+            ExportCondition::Default, // Fallback
         ]
     }
 }
@@ -108,7 +108,8 @@ impl NodeModuleResolver {
         }
 
         // Handle node_modules imports
-        self.resolve_node_module(import_path, from_file, project_root).await
+        self.resolve_node_module(import_path, from_file, project_root)
+            .await
     }
 
     /// Resolve relative imports
@@ -128,7 +129,6 @@ impl NodeModuleResolver {
         // Parse package name and subpath
         let (pkg_name, subpath) = self.parse_package_specifier(package_name);
 
-
         // Walk up directory tree looking for node_modules
         let mut current_dir = from_file.parent()?;
 
@@ -140,7 +140,10 @@ impl NodeModuleResolver {
 
                 if package_dir.exists() && package_dir.is_dir() {
                     // Found the package, resolve the entry point
-                    if let Some(entry) = self.resolve_package_entry(&package_dir, subpath.clone()).await {
+                    if let Some(entry) = self
+                        .resolve_package_entry(&package_dir, subpath.clone())
+                        .await
+                    {
                         return Some(entry);
                     }
                 }
@@ -198,7 +201,9 @@ impl NodeModuleResolver {
         let package_json_path = package_dir.join("package.json");
         if !package_json_path.exists() {
             // No package.json, try index.js
-            return self.resolve_file_or_directory(&package_dir.join("index")).await;
+            return self
+                .resolve_file_or_directory(&package_dir.join("index"))
+                .await;
         }
 
         // Parse package.json
@@ -207,7 +212,10 @@ impl NodeModuleResolver {
         // Try different entry points in order of preference (Node.js 22/24 compatible)
         // 1. exports field (if present) - HIGHEST PRIORITY for modern packages
         if let Some(exports) = &package_json.exports {
-            if let Some(resolved) = self.resolve_exports(exports, subpath.as_deref(), package_dir).await {
+            if let Some(resolved) = self
+                .resolve_exports(exports, subpath.as_deref(), package_dir)
+                .await
+            {
                 return Some(resolved);
             }
         }
@@ -253,7 +261,8 @@ impl NodeModuleResolver {
         }
 
         // 5. Default to index.js
-        self.resolve_file_or_directory(&package_dir.join("index")).await
+        self.resolve_file_or_directory(&package_dir.join("index"))
+            .await
     }
 
     /// Try to resolve as file or directory
@@ -284,7 +293,13 @@ impl NodeModuleResolver {
         }
 
         // Try index files
-        for index in &["index.js", "index.jsx", "index.ts", "index.tsx", "index.json"] {
+        for index in &[
+            "index.js",
+            "index.jsx",
+            "index.ts",
+            "index.tsx",
+            "index.json",
+        ] {
             let index_file = path.join(index);
             if index_file.exists() && index_file.is_file() {
                 return Some(index_file);
@@ -335,7 +350,10 @@ impl NodeModuleResolver {
             Value::Object(map) => {
                 // Check if it's a conditional export or subpath export
                 let has_conditions = map.keys().any(|k| {
-                    matches!(k.as_str(), "import" | "require" | "browser" | "node" | "default")
+                    matches!(
+                        k.as_str(),
+                        "import" | "require" | "browser" | "node" | "default"
+                    )
                 });
 
                 if has_conditions && target_subpath == "." {
@@ -350,7 +368,10 @@ impl NodeModuleResolver {
 
                 // Try pattern matching: { "./*": "./dist/*.js" }
                 for (pattern, export_value) in map {
-                    if let Some(resolved) = self.match_subpath_pattern(pattern, target_subpath, export_value, package_dir).await {
+                    if let Some(resolved) = self
+                        .match_subpath_pattern(pattern, target_subpath, export_value, package_dir)
+                        .await
+                    {
                         return Some(resolved);
                     }
                 }
@@ -451,7 +472,8 @@ impl NodeModuleResolver {
         let package: PackageJson = serde_json::from_str(&content).ok()?;
 
         // Cache it
-        self.package_cache.insert(path.to_path_buf(), package.clone());
+        self.package_cache
+            .insert(path.to_path_buf(), package.clone());
 
         Some(package)
     }
@@ -474,27 +496,27 @@ impl NodeModuleResolver {
         }
 
         let mut packages = Vec::new();
-        let mut entries = tokio::fs::read_dir(&node_modules).await
+        let mut entries = tokio::fs::read_dir(&node_modules)
+            .await
             .map_err(SokuError::Io)?;
 
-        while let Some(entry) = entries.next_entry().await
-            .map_err(SokuError::Io)? {
-
+        while let Some(entry) = entries.next_entry().await.map_err(SokuError::Io)? {
             let path = entry.path();
             if path.is_dir() {
                 if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
                     // Handle scoped packages
                     if name.starts_with('@') {
                         // Read subdirectories for scoped packages
-                        let mut scoped_entries = tokio::fs::read_dir(&path).await
-                            .map_err(SokuError::Io)?;
+                        let mut scoped_entries =
+                            tokio::fs::read_dir(&path).await.map_err(SokuError::Io)?;
 
-                        while let Some(scoped_entry) = scoped_entries.next_entry().await
-                            .map_err(SokuError::Io)? {
-
+                        while let Some(scoped_entry) =
+                            scoped_entries.next_entry().await.map_err(SokuError::Io)?
+                        {
                             if scoped_entry.path().is_dir() {
-                                if let Some(pkg_name) = scoped_entry.path().file_name()
-                                    .and_then(|n| n.to_str()) {
+                                if let Some(pkg_name) =
+                                    scoped_entry.path().file_name().and_then(|n| n.to_str())
+                                {
                                     packages.push(format!("{}/{}", name, pkg_name));
                                 }
                             }
