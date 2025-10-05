@@ -763,6 +763,10 @@ impl BuildService for UltraBuildService {
             js_content = env_manager.replace_in_code(&js_content);
         }
 
+        // 🗑️ DEAD CODE ELIMINATION (after env var replacement)
+        let eliminator = crate::utils::DeadCodeEliminator::new();
+        js_content = eliminator.eliminate(&js_content);
+
         // 🎨 CSS PROCESSING WITH INTELLIGENT CACHING
         // Include both original CSS files and CSS modules found through imports
         let mut all_css_files = structure.css_files.clone();
