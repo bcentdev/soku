@@ -62,23 +62,23 @@ npm-packages/
 ├── darwin-arm64/
 │   ├── package.json
 │   └── bin/
-│       └── ultra          # Binary from target/aarch64-apple-darwin/release/ultra
+│       └── soku          # Binary from target/aarch64-apple-darwin/release/soku
 ├── darwin-x64/
 │   ├── package.json
 │   └── bin/
-│       └── ultra
+│       └── soku
 ├── linux-x64/
 │   ├── package.json
 │   └── bin/
-│       └── ultra
+│       └── soku
 ├── linux-arm64/
 │   ├── package.json
 │   └── bin/
-│       └── ultra
+│       └── soku
 └── win32-x64/
     ├── package.json
     └── bin/
-        └── ultra.exe
+        └── soku.exe
 ```
 
 Example `package.json` for platform package:
@@ -88,13 +88,13 @@ Example `package.json` for platform package:
   "name": "@soku/darwin-arm64",
   "version": "0.3.0",
   "description": "Ultra bundler native binary for macOS Apple Silicon",
-  "repository": "https://github.com/bcentdev/ultra",
+  "repository": "https://github.com/bcentdev/soku",
   "license": "MIT",
   "os": ["darwin"],
   "cpu": ["arm64"],
   "files": ["bin"],
   "bin": {
-    "ultra": "./bin/ultra"
+    "soku": "./bin/soku"
   }
 }
 ```
@@ -175,7 +175,7 @@ jobs:
       - name: Prepare platform package
         run: |
           mkdir -p npm-packages/${{ matrix.package }}/bin
-          cp target/${{ matrix.target }}/release/ultra* npm-packages/${{ matrix.package }}/bin/
+          cp target/${{ matrix.target }}/release/soku* npm-packages/${{ matrix.package }}/bin/
 
       - name: Create platform package.json
         working-directory: npm-packages/${{ matrix.package }}
@@ -185,7 +185,7 @@ jobs:
             "name": "@soku/${{ matrix.package }}",
             "version": "${{ github.event.release.tag_name }}",
             "description": "Ultra bundler for ${{ matrix.package }}",
-            "repository": "https://github.com/bcentdev/ultra",
+            "repository": "https://github.com/bcentdev/soku",
             "license": "MIT",
             "files": ["bin"]
           }
@@ -228,8 +228,8 @@ Before publishing, test the installation:
 npm install /path/to/soku
 
 # Test the CLI
-npx ultra --version
-npx ultra build
+npx soku --version
+npx soku build
 ```
 
 ## Version Management
@@ -256,8 +256,8 @@ npm install @soku/darwin-arm64  # or their platform
 Users on unsupported platforms need to build from source:
 
 ```bash
-git clone https://github.com/bcentdev/ultra
-cd ultra
+git clone https://github.com/bcentdev/soku
+cd soku
 cargo build --release
 ```
 
