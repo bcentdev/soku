@@ -1,20 +1,20 @@
-# Ultra Bundler - Quick Start Guide
+# Soku - Quick Start Guide
 
-Get started with Ultra Bundler's advanced features in minutes.
+Get started with Soku's advanced features in minutes.
 
 ## Installation
 
 ```bash
-cargo add ultra-bundler
+cargo add soku
 ```
 
 ## Basic Usage
 
 ```rust
-use ultra::core::services::UltraBuildService;
-use ultra::core::models::BuildConfig;
-use ultra::infrastructure::{TokioFileSystemService, LightningCssProcessor};
-use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+use soku::core::services::UltraBuildService;
+use soku::core::models::BuildConfig;
+use soku::infrastructure::{TokioFileSystemService, LightningCssProcessor};
+use soku::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::collections::HashMap;
@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 Ultra offers three processing strategies:
 
 ```rust
-use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+use soku::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 
 // Fast mode - minimal transformations, maximum speed
 let fast_processor = UnifiedJsProcessor::new(ProcessingStrategy::Fast);
@@ -73,7 +73,7 @@ let enhanced_processor = UnifiedJsProcessor::new(ProcessingStrategy::Enhanced);
 ## Adding Plugins
 
 ```rust
-use ultra::utils::{Plugin, PluginContext};
+use soku::utils::{Plugin, PluginContext};
 use async_trait::async_trait;
 
 // Create a plugin
@@ -96,7 +96,7 @@ let service = service.with_plugin(Arc::new(MyPlugin));
 ## Adding Custom Transformers
 
 ```rust
-use ultra::utils::BuiltInTransformers;
+use soku::utils::BuiltInTransformers;
 
 let service = service
     // Remove console.log in production
@@ -146,7 +146,7 @@ let config = BuildConfig {
 ## Hot Module Replacement
 
 ```rust
-use ultra::infrastructure::{UltraHmrService, BuiltInHmrHooks};
+use soku::infrastructure::{UltraHmrService, BuiltInHmrHooks};
 
 let hmr = UltraHmrService::new(PathBuf::from("./src"))
     .with_hook(Arc::new(BuiltInHmrHooks::logger()))
@@ -159,7 +159,7 @@ hmr.start_server(3001).await?;
 ## Tree Shaking
 
 ```rust
-use ultra::infrastructure::processors::TreeShaker;
+use soku::infrastructure::processors::TreeShaker;
 
 // Add tree shaker for dead code elimination
 let tree_shaker = Arc::new(TreeShaker::new());

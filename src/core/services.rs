@@ -33,10 +33,10 @@ impl UltraBuildService {
         js_processor: Arc<dyn JsProcessor>,
         css_processor: Arc<dyn CssProcessor>,
     ) -> Self {
-        // Initialize cache with persistent storage in .ultra-cache directory
+        // Initialize cache with persistent storage in .soku-cache directory
         let cache_dir = std::env::current_dir()
             .unwrap_or_else(|_| PathBuf::from("."))
-            .join(".ultra-cache");
+            .join(".soku-cache");
         let cache = Arc::new(UltraCache::with_persistent_cache(&cache_dir));
 
         // Load incremental state from disk if it exists

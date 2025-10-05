@@ -207,7 +207,7 @@ impl UltraWatcher {
                 path_str.contains(".git")
                     || path_str.contains("node_modules")
                     || path_str.contains("dist")
-                    || path_str.contains(".ultra-cache")
+                    || path_str.contains(".soku-cache")
                     || path_str.ends_with('~')
                     || path_str.ends_with(".swp")
                     || path_str.contains(".tmp")

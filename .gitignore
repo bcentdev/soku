@@ -45,4 +45,4 @@ build/
 
 # Examples specific
 examples/*/dist*
-examples/*/node_modules
+examples/*/node_modules/.soku-cache/

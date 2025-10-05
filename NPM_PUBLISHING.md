@@ -12,23 +12,23 @@ This guide explains how to publish Ultra as an npm package with native binaries 
 
 Ultra uses a multi-package strategy similar to esbuild and swc:
 
-1. **Main package** (`ultra-bundler`): JavaScript wrapper that detects platform and loads the correct binary
-2. **Platform packages** (`@ultra-bundler/*`): Contains native binaries for specific platforms
+1. **Main package** (`soku`): JavaScript wrapper that detects platform and loads the correct binary
+2. **Platform packages** (`@soku/*`): Contains native binaries for specific platforms
 
 ### Supported Platforms
 
-- `@ultra-bundler/darwin-arm64` - macOS Apple Silicon
-- `@ultra-bundler/darwin-x64` - macOS Intel
-- `@ultra-bundler/linux-x64` - Linux x86_64
-- `@ultra-bundler/linux-arm64` - Linux ARM64
-- `@ultra-bundler/win32-x64` - Windows x64
+- `@soku/darwin-arm64` - macOS Apple Silicon
+- `@soku/darwin-x64` - macOS Intel
+- `@soku/linux-x64` - Linux x86_64
+- `@soku/linux-arm64` - Linux ARM64
+- `@soku/win32-x64` - Windows x64
 
 ## Publishing Process
 
 ### Prerequisites
 
-1. **npm account** with access to publish `ultra-bundler` package
-2. **Organization** `@ultra-bundler` on npm (or change to your org name)
+1. **npm account** with access to publish `soku` package
+2. **Organization** `@soku` on npm (or change to your org name)
 3. **GitHub Actions** configured for multi-platform builds
 4. **npm token** added to GitHub secrets
 
@@ -85,7 +85,7 @@ Example `package.json` for platform package:
 
 ```json
 {
-  "name": "@ultra-bundler/darwin-arm64",
+  "name": "@soku/darwin-arm64",
   "version": "0.3.0",
   "description": "Ultra bundler native binary for macOS Apple Silicon",
   "repository": "https://github.com/bcentdev/ultra",
@@ -182,7 +182,7 @@ jobs:
         run: |
           cat > package.json <<EOF
           {
-            "name": "@ultra-bundler/${{ matrix.package }}",
+            "name": "@soku/${{ matrix.package }}",
             "version": "${{ github.event.release.tag_name }}",
             "description": "Ultra bundler for ${{ matrix.package }}",
             "repository": "https://github.com/bcentdev/ultra",
@@ -225,7 +225,7 @@ Before publishing, test the installation:
 
 ```bash
 # Install from local directory
-npm install /path/to/ultra-bundler
+npm install /path/to/soku
 
 # Test the CLI
 npx ultra --version
@@ -248,7 +248,7 @@ Update all three when releasing a new version.
 Users may see this if optional dependencies weren't installed. They can manually install:
 
 ```bash
-npm install @ultra-bundler/darwin-arm64  # or their platform
+npm install @soku/darwin-arm64  # or their platform
 ```
 
 ### Platform not supported

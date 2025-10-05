@@ -3,9 +3,9 @@
 // This example shows how to create and register a custom plugin
 // that logs build events and modifies module content.
 
-use ultra::utils::{Plugin, PluginContext, Result};
-use ultra::core::models::ModuleInfo;
-use ultra::core::interfaces::BuildService;
+use soku::utils::{Plugin, PluginContext, Result};
+use soku::core::models::ModuleInfo;
+use soku::core::interfaces::BuildService;
 use async_trait::async_trait;
 use std::sync::Arc;
 

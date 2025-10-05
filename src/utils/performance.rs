@@ -41,7 +41,7 @@ pub struct CacheEntry {
 impl PersistentCache {
     pub fn new(cache_dir: &Path) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         std::fs::create_dir_all(cache_dir)?;
-        let db_path = cache_dir.join("ultra_cache.sled");
+        let db_path = cache_dir.join("soku_cache.sled");
 
         let db = sled::open(db_path)?;
         let js_tree = db.open_tree("js_cache")?;

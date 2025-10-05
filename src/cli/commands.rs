@@ -659,7 +659,7 @@ impl CliHandler {
                 if path.is_dir() {
                     // Skip common directories to avoid
                     if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                        if matches!(name, "node_modules" | ".git" | "target" | "dist" | ".next" | "build" | ".ultra-cache") {
+                        if matches!(name, "node_modules" | ".git" | "target" | "dist" | ".next" | "build" | ".soku-cache") {
                             continue;
                         }
                     }

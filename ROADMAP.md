@@ -1,4 +1,4 @@
-# Ultra Bundler - Roadmap
+# Soku - Roadmap
 
 > Última actualización: 2025-10-05
 > Estado: 14,447 líneas Rust | 130 unit tests | 6 integration tests | 20 warnings | Sprint 10 COMPLETADO ✅

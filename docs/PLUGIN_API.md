@@ -1,6 +1,6 @@
 # Plugin API Documentation
 
-Ultra Bundler provides a powerful plugin system that allows you to customize the build process through lifecycle hooks.
+Soku provides a powerful plugin system that allows you to customize the build process through lifecycle hooks.
 
 ## Table of Contents
 
@@ -187,8 +187,8 @@ async fn before_build(&self, context: &PluginContext) -> Result<()> {
 ### Basic Plugin
 
 ```rust
-use ultra::utils::{Plugin, PluginContext, Result};
-use ultra::core::models::{ModuleInfo, BuildResult};
+use soku::utils::{Plugin, PluginContext, Result};
+use soku::core::models::{ModuleInfo, BuildResult};
 use async_trait::async_trait;
 
 struct MyPlugin {

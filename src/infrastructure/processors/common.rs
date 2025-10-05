@@ -160,10 +160,10 @@ impl ProcessingOptions {
 /// ## With Persistent Cache
 ///
 /// ```rust,no_run
-/// use ultra::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
+/// use soku::infrastructure::processors::{UnifiedJsProcessor, ProcessingStrategy};
 /// use std::path::Path;
 ///
-/// let cache_dir = Path::new(".ultra-cache");
+/// let cache_dir = Path::new(".soku-cache");
 /// let processor = UnifiedJsProcessor::with_persistent_cache(
 ///     ProcessingStrategy::Enhanced,
 ///     cache_dir

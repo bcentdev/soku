@@ -3,8 +3,8 @@
 // This example shows how to use custom transformers to modify
 // code during the build process.
 
-use ultra::utils::{CustomTransformer, BuiltInTransformers, TransformerBuilder, Result};
-use ultra::core::interfaces::BuildService;
+use soku::utils::{CustomTransformer, BuiltInTransformers, TransformerBuilder, Result};
+use soku::core::interfaces::BuildService;
 use std::sync::Arc;
 
 #[tokio::main]

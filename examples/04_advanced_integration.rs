@@ -3,9 +3,9 @@
 // This example shows how to combine plugins, transformers,
 // advanced source maps, and multiple entry points in a real-world scenario.
 
-use ultra::utils::{Plugin, PluginContext, CustomTransformer, BuiltInTransformers, Result};
-use ultra::core::models::{ModuleInfo, BuildConfig};
-use ultra::core::interfaces::BuildService;
+use soku::utils::{Plugin, PluginContext, CustomTransformer, BuiltInTransformers, Result};
+use soku::core::models::{ModuleInfo, BuildConfig};
+use soku::core::interfaces::BuildService;
 use async_trait::async_trait;
 use std::sync::Arc;
 use std::path::PathBuf;
