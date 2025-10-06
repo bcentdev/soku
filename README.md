@@ -1,6 +1,6 @@
 <div align="center">
 
-![Soku Banner](assets/soku-banner.svg)
+![Soku Banner](assets/soku-banner.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)](https://www.rust-lang.org)

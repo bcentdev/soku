@@ -30,14 +30,8 @@ jobs:
           target
         key: cargo-test-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
     
-    - name: Run unit tests
-      run: cargo test --lib
-    
-    - name: Run integration tests
-      run: cargo test --test integration_tests
-    
     - name: Run all tests
-      run: cargo test --verbose
+      run: cargo test
 
   fmt:
     name: Rustfmt
